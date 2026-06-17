@@ -1,0 +1,15 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:intl/intl.dart';
+
+import 'app/app.dart';
+import 'services/notifications.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('ru', null);
+  Intl.defaultLocale = 'ru';
+  await NotificationService.instance.init();
+  runApp(const ProviderScope(child: DayLaneApp()));
+}
