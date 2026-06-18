@@ -309,18 +309,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: OutlinedButton.icon(
+                              child: FilledButton.icon(
                                 onPressed: () => ref
                                     .read(repositoryProvider)
                                     .carryAll(tasks),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: dl.accent,
-                                  side: BorderSide(color: dl.accent),
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: dl.accent,
+                                  foregroundColor: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimary,
                                   visualDensity: VisualDensity.compact,
                                   shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20)),
                                 ),
-                                icon: const Icon(Icons.south, size: 16),
+                                icon: const Icon(
+                                    Icons.subdirectory_arrow_left, size: 16),
                                 label: const Text('Перенести всё на сегодня',
                                     style: TextStyle(fontSize: 13)),
                               ),
