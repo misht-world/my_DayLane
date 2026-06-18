@@ -79,7 +79,9 @@ class NotificationService {
     final base = _baseId(task.id!);
     final dates = _reminderDates(task);
     for (var i = 0; i < dates.length && i < _slotsPerTask; i++) {
-      final when = _atTime(dates[i], task.reminderMinutes);
+      // Сдвиг «за N дней до».
+      final fireDate = addDays(dates[i], -task.reminderDaysBefore);
+      final when = _atTime(fireDate, task.reminderMinutes);
       if (when.isBefore(tz.TZDateTime.now(tz.local))) continue;
       await _plugin.zonedSchedule(
         id: base + i,

@@ -45,7 +45,7 @@ class CalendarView extends ConsumerStatefulWidget {
 }
 
 class _CalendarViewState extends ConsumerState<CalendarView> {
-  CalendarMode _mode = CalendarMode.twoWeeks;
+  CalendarMode _mode = CalendarMode.month;
 
   static const _weekdayShort = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 
@@ -117,6 +117,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                   visibleLanes: visibleLanes,
                   isLastRow: r == rows - 1,
                   onTapDay: _showDay,
+                  onAddDay: (d) => openTaskEditor(context, null, initialDate: d),
                 ),
             ],
           );
@@ -191,6 +192,7 @@ class _WeekRow extends StatelessWidget {
     required this.visibleLanes,
     required this.isLastRow,
     required this.onTapDay,
+    required this.onAddDay,
   });
 
   final DateTime weekStart;
@@ -201,6 +203,7 @@ class _WeekRow extends StatelessWidget {
   final int visibleLanes;
   final bool isLastRow;
   final void Function(DateTime) onTapDay;
+  final void Function(DateTime) onAddDay;
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +232,8 @@ class _WeekRow extends StatelessWidget {
         width: span * colW - 4,
         top: _head + lane * _laneHeight,
         height: _barHeight,
-        child: _Bar(task: t, showTitle: !s.isBefore(weekStart)),
+        // Подпись на каждом сегменте — чтобы дело было видно и на след. неделе.
+        child: _Bar(task: t, showTitle: true),
       ));
     }
     if (hidden > 0) {
@@ -259,6 +263,7 @@ class _WeekRow extends StatelessWidget {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () => onTapDay(addDays(weekStart, i)),
+                    onLongPress: () => onAddDay(addDays(weekStart, i)),
                     child: _DayCell(
                       day: addDays(weekStart, i),
                       isToday: isSameDate(addDays(weekStart, i), today),

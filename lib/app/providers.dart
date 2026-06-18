@@ -77,7 +77,7 @@ final todayProvider = Provider<DateTime>((ref) => dateOnly(DateTime.now()));
 /// Режим темы из настроек.
 final themeModeProvider = Provider<ThemeMode>((ref) {
   final s = ref.watch(settingsProvider).value;
-  switch (s?.themeMode ?? 0) {
+  switch (s?.themeMode ?? 1) {
     case 1:
       return ThemeMode.light;
     case 2:

@@ -38,6 +38,9 @@ class TaskModel {
   /// Время срабатывания напоминания в минутах от полуночи (по умолчанию 09:00).
   final int reminderMinutes;
 
+  /// За сколько дней до даты напоминать (0 = в день, 1 = накануне, …).
+  final int reminderDaysBefore;
+
   final int colorId;
   final String note;
 
@@ -63,6 +66,7 @@ class TaskModel {
     this.reminderEnabled = false,
     this.reminderRule = ReminderRule.atStart,
     this.reminderMinutes = 540,
+    this.reminderDaysBefore = 0,
     this.colorId = 0,
     this.note = '',
     this.isDone = false,
@@ -89,6 +93,7 @@ class TaskModel {
     bool? reminderEnabled,
     ReminderRule? reminderRule,
     int? reminderMinutes,
+    int? reminderDaysBefore,
     int? colorId,
     String? note,
     bool? isDone,
@@ -114,6 +119,7 @@ class TaskModel {
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderRule: reminderRule ?? this.reminderRule,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
+      reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
       note: note ?? this.note,
       isDone: isDone ?? this.isDone,

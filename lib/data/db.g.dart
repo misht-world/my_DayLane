@@ -132,6 +132,17 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(540),
   );
+  static const VerificationMeta _reminderDaysBeforeMeta =
+      const VerificationMeta('reminderDaysBefore');
+  @override
+  late final GeneratedColumn<int> reminderDaysBefore = GeneratedColumn<int>(
+    'reminder_days_before',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   static const VerificationMeta _colorIdMeta = const VerificationMeta(
     'colorId',
   );
@@ -240,6 +251,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     reminderEnabled,
     reminderRule,
     reminderMinutes,
+    reminderDaysBefore,
     colorId,
     note,
     isDone,
@@ -330,6 +342,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         reminderMinutes.isAcceptableOrUnknown(
           data['reminder_minutes']!,
           _reminderMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('reminder_days_before')) {
+      context.handle(
+        _reminderDaysBeforeMeta,
+        reminderDaysBefore.isAcceptableOrUnknown(
+          data['reminder_days_before']!,
+          _reminderDaysBeforeMeta,
         ),
       );
     }
@@ -448,6 +469,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.int,
         data['${effectivePrefix}reminder_minutes'],
       )!,
+      reminderDaysBefore: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}reminder_days_before'],
+      )!,
       colorId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}color_id'],
@@ -506,6 +531,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final bool reminderEnabled;
   final ReminderRule reminderRule;
   final int reminderMinutes;
+
+  /// За сколько дней до даты напоминать (0 = в день, 1 = накануне, …).
+  final int reminderDaysBefore;
   final int colorId;
   final String note;
   final bool isDone;
@@ -526,6 +554,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     required this.reminderEnabled,
     required this.reminderRule,
     required this.reminderMinutes,
+    required this.reminderDaysBefore,
     required this.colorId,
     required this.note,
     required this.isDone,
@@ -559,6 +588,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       );
     }
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
+    map['reminder_days_before'] = Variable<int>(reminderDaysBefore);
     map['color_id'] = Variable<int>(colorId);
     map['note'] = Variable<String>(note);
     map['is_done'] = Variable<bool>(isDone);
@@ -589,6 +619,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       reminderEnabled: Value(reminderEnabled),
       reminderRule: Value(reminderRule),
       reminderMinutes: Value(reminderMinutes),
+      reminderDaysBefore: Value(reminderDaysBefore),
       colorId: Value(colorId),
       note: Value(note),
       isDone: Value(isDone),
@@ -623,6 +654,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
         serializer.fromJson<int>(json['reminderRule']),
       ),
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
+      reminderDaysBefore: serializer.fromJson<int>(json['reminderDaysBefore']),
       colorId: serializer.fromJson<int>(json['colorId']),
       note: serializer.fromJson<String>(json['note']),
       isDone: serializer.fromJson<bool>(json['isDone']),
@@ -650,6 +682,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
         $TasksTable.$converterreminderRule.toJson(reminderRule),
       ),
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
+      'reminderDaysBefore': serializer.toJson<int>(reminderDaysBefore),
       'colorId': serializer.toJson<int>(colorId),
       'note': serializer.toJson<String>(note),
       'isDone': serializer.toJson<bool>(isDone),
@@ -673,6 +706,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     bool? reminderEnabled,
     ReminderRule? reminderRule,
     int? reminderMinutes,
+    int? reminderDaysBefore,
     int? colorId,
     String? note,
     bool? isDone,
@@ -697,6 +731,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     reminderEnabled: reminderEnabled ?? this.reminderEnabled,
     reminderRule: reminderRule ?? this.reminderRule,
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
+    reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
     colorId: colorId ?? this.colorId,
     note: note ?? this.note,
     isDone: isDone ?? this.isDone,
@@ -731,6 +766,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       reminderMinutes: data.reminderMinutes.present
           ? data.reminderMinutes.value
           : this.reminderMinutes,
+      reminderDaysBefore: data.reminderDaysBefore.present
+          ? data.reminderDaysBefore.value
+          : this.reminderDaysBefore,
       colorId: data.colorId.present ? data.colorId.value : this.colorId,
       note: data.note.present ? data.note.value : this.note,
       isDone: data.isDone.present ? data.isDone.value : this.isDone,
@@ -760,6 +798,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('reminderEnabled: $reminderEnabled, ')
           ..write('reminderRule: $reminderRule, ')
           ..write('reminderMinutes: $reminderMinutes, ')
+          ..write('reminderDaysBefore: $reminderDaysBefore, ')
           ..write('colorId: $colorId, ')
           ..write('note: $note, ')
           ..write('isDone: $isDone, ')
@@ -785,6 +824,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     reminderEnabled,
     reminderRule,
     reminderMinutes,
+    reminderDaysBefore,
     colorId,
     note,
     isDone,
@@ -809,6 +849,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.reminderEnabled == this.reminderEnabled &&
           other.reminderRule == this.reminderRule &&
           other.reminderMinutes == this.reminderMinutes &&
+          other.reminderDaysBefore == this.reminderDaysBefore &&
           other.colorId == this.colorId &&
           other.note == this.note &&
           other.isDone == this.isDone &&
@@ -831,6 +872,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<bool> reminderEnabled;
   final Value<ReminderRule> reminderRule;
   final Value<int> reminderMinutes;
+  final Value<int> reminderDaysBefore;
   final Value<int> colorId;
   final Value<String> note;
   final Value<bool> isDone;
@@ -851,6 +893,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.reminderEnabled = const Value.absent(),
     this.reminderRule = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
+    this.reminderDaysBefore = const Value.absent(),
     this.colorId = const Value.absent(),
     this.note = const Value.absent(),
     this.isDone = const Value.absent(),
@@ -872,6 +915,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.reminderEnabled = const Value.absent(),
     this.reminderRule = const Value.absent(),
     this.reminderMinutes = const Value.absent(),
+    this.reminderDaysBefore = const Value.absent(),
     this.colorId = const Value.absent(),
     this.note = const Value.absent(),
     this.isDone = const Value.absent(),
@@ -898,6 +942,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<bool>? reminderEnabled,
     Expression<int>? reminderRule,
     Expression<int>? reminderMinutes,
+    Expression<int>? reminderDaysBefore,
     Expression<int>? colorId,
     Expression<String>? note,
     Expression<bool>? isDone,
@@ -919,6 +964,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
       if (reminderRule != null) 'reminder_rule': reminderRule,
       if (reminderMinutes != null) 'reminder_minutes': reminderMinutes,
+      if (reminderDaysBefore != null)
+        'reminder_days_before': reminderDaysBefore,
       if (colorId != null) 'color_id': colorId,
       if (note != null) 'note': note,
       if (isDone != null) 'is_done': isDone,
@@ -942,6 +989,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<bool>? reminderEnabled,
     Value<ReminderRule>? reminderRule,
     Value<int>? reminderMinutes,
+    Value<int>? reminderDaysBefore,
     Value<int>? colorId,
     Value<String>? note,
     Value<bool>? isDone,
@@ -963,6 +1011,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderRule: reminderRule ?? this.reminderRule,
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
+      reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
       note: note ?? this.note,
       isDone: isDone ?? this.isDone,
@@ -1012,6 +1061,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (reminderMinutes.present) {
       map['reminder_minutes'] = Variable<int>(reminderMinutes.value);
     }
+    if (reminderDaysBefore.present) {
+      map['reminder_days_before'] = Variable<int>(reminderDaysBefore.value);
+    }
     if (colorId.present) {
       map['color_id'] = Variable<int>(colorId.value);
     }
@@ -1053,6 +1105,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('reminderEnabled: $reminderEnabled, ')
           ..write('reminderRule: $reminderRule, ')
           ..write('reminderMinutes: $reminderMinutes, ')
+          ..write('reminderDaysBefore: $reminderDaysBefore, ')
           ..write('colorId: $colorId, ')
           ..write('note: $note, ')
           ..write('isDone: $isDone, ')
@@ -1449,7 +1502,7 @@ class $AppSettingsTable extends AppSettings
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultValue: const Constant(0),
+    defaultValue: const Constant(1),
   );
   static const VerificationMeta _firstWeekdayMeta = const VerificationMeta(
     'firstWeekday',
@@ -1544,7 +1597,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   final int id;
   final bool autoCarry;
 
-  /// 0 = система, 1 = светлая, 2 = тёмная.
+  /// 0 = система, 1 = светлая, 2 = тёмная. По умолчанию — светлая.
   final int themeMode;
 
   /// 1 = понедельник … 7 = воскресенье.
@@ -1759,6 +1812,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<bool> reminderEnabled,
       Value<ReminderRule> reminderRule,
       Value<int> reminderMinutes,
+      Value<int> reminderDaysBefore,
       Value<int> colorId,
       Value<String> note,
       Value<bool> isDone,
@@ -1781,6 +1835,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<bool> reminderEnabled,
       Value<ReminderRule> reminderRule,
       Value<int> reminderMinutes,
+      Value<int> reminderDaysBefore,
       Value<int> colorId,
       Value<String> note,
       Value<bool> isDone,
@@ -1876,6 +1931,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<int> get reminderMinutes => $composableBuilder(
     column: $table.reminderMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get reminderDaysBefore => $composableBuilder(
+    column: $table.reminderDaysBefore,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2009,6 +2069,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get reminderDaysBefore => $composableBuilder(
+    column: $table.reminderDaysBefore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get colorId => $composableBuilder(
     column: $table.colorId,
     builder: (column) => ColumnOrderings(column),
@@ -2105,6 +2170,11 @@ class $$TasksTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<int> get reminderDaysBefore => $composableBuilder(
+    column: $table.reminderDaysBefore,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<int> get colorId =>
       $composableBuilder(column: $table.colorId, builder: (column) => column);
 
@@ -2198,6 +2268,7 @@ class $$TasksTableTableManager
                 Value<bool> reminderEnabled = const Value.absent(),
                 Value<ReminderRule> reminderRule = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
+                Value<int> reminderDaysBefore = const Value.absent(),
                 Value<int> colorId = const Value.absent(),
                 Value<String> note = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
@@ -2218,6 +2289,7 @@ class $$TasksTableTableManager
                 reminderEnabled: reminderEnabled,
                 reminderRule: reminderRule,
                 reminderMinutes: reminderMinutes,
+                reminderDaysBefore: reminderDaysBefore,
                 colorId: colorId,
                 note: note,
                 isDone: isDone,
@@ -2240,6 +2312,7 @@ class $$TasksTableTableManager
                 Value<bool> reminderEnabled = const Value.absent(),
                 Value<ReminderRule> reminderRule = const Value.absent(),
                 Value<int> reminderMinutes = const Value.absent(),
+                Value<int> reminderDaysBefore = const Value.absent(),
                 Value<int> colorId = const Value.absent(),
                 Value<String> note = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
@@ -2260,6 +2333,7 @@ class $$TasksTableTableManager
                 reminderEnabled: reminderEnabled,
                 reminderRule: reminderRule,
                 reminderMinutes: reminderMinutes,
+                reminderDaysBefore: reminderDaysBefore,
                 colorId: colorId,
                 note: note,
                 isDone: isDone,

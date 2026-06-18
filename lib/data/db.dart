@@ -23,6 +23,10 @@ class Tasks extends Table {
   IntColumn get reminderRule =>
       intEnum<ReminderRule>().withDefault(const Constant(0))();
   IntColumn get reminderMinutes => integer().withDefault(const Constant(540))();
+
+  /// За сколько дней до даты напоминать (0 = в день, 1 = накануне, …).
+  IntColumn get reminderDaysBefore =>
+      integer().withDefault(const Constant(0))();
   IntColumn get colorId => integer().withDefault(const Constant(0))();
   TextColumn get note => text().withDefault(const Constant(''))();
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
@@ -51,8 +55,8 @@ class AppSettings extends Table {
   IntColumn get id => integer().withDefault(const Constant(1))();
   BoolColumn get autoCarry => boolean().withDefault(const Constant(false))();
 
-  /// 0 = система, 1 = светлая, 2 = тёмная.
-  IntColumn get themeMode => integer().withDefault(const Constant(0))();
+  /// 0 = система, 1 = светлая, 2 = тёмная. По умолчанию — светлая.
+  IntColumn get themeMode => integer().withDefault(const Constant(1))();
 
   /// 1 = понедельник … 7 = воскресенье.
   IntColumn get firstWeekday => integer().withDefault(const Constant(1))();
@@ -71,7 +75,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -81,6 +85,11 @@ class AppDatabase extends _$AppDatabase {
             const AppSettingsCompanion(id: Value(1)),
             mode: InsertMode.insertOrIgnore,
           );
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.addColumn(tasks, tasks.reminderDaysBefore);
+          }
         },
         beforeOpen: (details) async {
           await customStatement('PRAGMA foreign_keys = ON');
@@ -122,6 +131,7 @@ extension TaskRowMapper on TaskRow {
         reminderEnabled: reminderEnabled,
         reminderRule: reminderRule,
         reminderMinutes: reminderMinutes,
+        reminderDaysBefore: reminderDaysBefore,
         colorId: colorId,
         note: note,
         isDone: isDone,
@@ -157,6 +167,7 @@ extension TaskModelMapper on TaskModel {
         reminderEnabled: Value(reminderEnabled),
         reminderRule: Value(reminderRule),
         reminderMinutes: Value(reminderMinutes),
+        reminderDaysBefore: Value(reminderDaysBefore),
         colorId: Value(colorId),
         note: Value(note),
         isDone: Value(isDone),

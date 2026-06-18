@@ -49,6 +49,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   bool _reminderEnabled = false;
   ReminderRule _reminderRule = ReminderRule.atStart;
   int _reminderMinutes = kDefaultReminderMinutes;
+  int _reminderDaysBefore = 0;
   int _colorId = 0;
 
   final List<_SubItem> _subs = [];
@@ -72,6 +73,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _reminderEnabled = e?.reminderEnabled ?? false;
     _reminderRule = e?.reminderRule ?? ReminderRule.atStart;
     _reminderMinutes = e?.reminderMinutes ?? kDefaultReminderMinutes;
+    _reminderDaysBefore = e?.reminderDaysBefore ?? 0;
     _colorId = e?.colorId ?? 0;
 
     if (_editing) {
@@ -362,6 +364,27 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               if (picked != null) setState(() => _reminderMinutes = picked);
             }),
           ),
+          const SizedBox(height: 10),
+          _label('Когда напомнить'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            children: [
+              for (final opt in const [
+                (0, 'В день'),
+                (1, 'За день'),
+                (2, 'За 2 дня'),
+                (3, 'За 3 дня'),
+                (7, 'За неделю'),
+              ])
+                ChoiceChip(
+                  label: Text(opt.$2),
+                  selected: _reminderDaysBefore == opt.$1,
+                  onSelected: (_) =>
+                      setState(() => _reminderDaysBefore = opt.$1),
+                ),
+            ],
+          ),
         ],
       ],
     );
@@ -539,6 +562,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       reminderEnabled: _reminderEnabled,
       reminderRule: _reminderRule,
       reminderMinutes: _reminderMinutes,
+      reminderDaysBefore: _reminderDaysBefore,
       colorId: _colorId,
       note: _note.text.trim(),
       isDone: e?.isDone ?? false,
