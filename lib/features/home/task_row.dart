@@ -38,11 +38,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
   Widget build(BuildContext context) {
     final t = widget.task;
     final dl = context.dl;
-    final color = t.isRecurring
-        ? dl.taskRecurring
-        : t.isPeriod
-            ? dl.taskPeriod
-            : dl.taskSingle;
+    final color = context.taskColor(t);
     final today = ref.watch(todayProvider);
     final dones = ref.watch(donesMapProvider);
     final done = isTaskDoneOn(dones, t, widget.day);
@@ -143,9 +139,10 @@ class _TaskRowState extends ConsumerState<TaskRow> {
       chips.add(_chip(Icons.schedule, formatMinutesOfDay(t.timeOfDayMinutes!),
           dl.inkSoft, muted));
     }
+    final c = context.taskColor(t);
     if (t.isRecurring) {
-      chips.add(_chip(Icons.repeat, recurrenceSummary(t), dl.taskRecurring,
-          TextStyle(fontSize: 11, color: dl.taskRecurring)));
+      chips.add(_chip(Icons.repeat, recurrenceSummary(t), c,
+          TextStyle(fontSize: 11, color: c)));
     }
     if (t.isPeriod) {
       final n = dayNumberOf(t, widget.day);
@@ -154,7 +151,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
         style: context.serif.copyWith(
           fontSize: 11,
           fontStyle: FontStyle.italic,
-          color: dl.taskPeriod,
+          color: c,
         ),
       ));
     }

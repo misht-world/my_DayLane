@@ -281,6 +281,20 @@ class _WeekRow extends StatelessWidget {
             ],
           ),
           ...bars,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                painter: _ConnectorPainter(
+                  tasks: tasks,
+                  laneOf: laneOf,
+                  visibleLanes: visibleLanes,
+                  weekStart: weekStart,
+                  colW: colW,
+                  color: context.dl.ink,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -372,9 +386,8 @@ class _DayCell extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: (t.isRecurring
-                      ? context.dl.taskRecurring
-                      : context.dl.taskSingle)
+              color: context
+                  .taskColor(t)
                   .withValues(
                       alpha: isTaskDoneOn(dones, t, day) ? 0.35 : 1),
             ),
@@ -390,6 +403,84 @@ class _DayCell extends StatelessWidget {
   }
 }
 
+/// Чёрные соединители между связанными полосами (зависимости).
+class _ConnectorPainter extends CustomPainter {
+  _ConnectorPainter({
+    required this.tasks,
+    required this.laneOf,
+    required this.visibleLanes,
+    required this.weekStart,
+    required this.colW,
+    required this.color,
+  });
+
+  final List<TaskModel> tasks;
+  final Map<int?, int> laneOf;
+  final int visibleLanes;
+  final DateTime weekStart;
+  final double colW;
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final stroke = Paint()
+      ..color = color
+      ..strokeWidth = 1.6
+      ..style = PaintingStyle.stroke;
+    final fill = Paint()..color = color;
+    final weekEnd = addDays(weekStart, 6);
+    final byId = {for (final t in tasks) if (t.id != null) t.id!: t};
+    double laneY(int lane) => _head + lane * _laneHeight + _barHeight / 2;
+
+    for (final t in tasks) {
+      if (!t.isPeriod || t.dependsOnTaskId == null) continue;
+      final parent = byId[t.dependsOnTaskId];
+      if (parent == null || !parent.isPeriod) continue;
+      final cl = laneOf[t.id];
+      final pl = laneOf[parent.id];
+      if (cl == null || pl == null) continue;
+      if (cl >= visibleLanes || pl >= visibleLanes) continue;
+
+      final childStart = dateOnly(t.startDate);
+      final parentEnd = dateOnly(parent.endDate);
+      final cy = laneY(cl);
+      final py = laneY(pl);
+
+      // Ребёнок начинается на этой неделе.
+      if (!childStart.isBefore(weekStart) && !childStart.isAfter(weekEnd)) {
+        final col = daysBetween(weekStart, childStart);
+        final x = col * colW;
+        if (col >= 1 && !parentEnd.isBefore(weekStart)) {
+          // Родитель закончился в этой же неделе — вертикальный соединитель.
+          canvas.drawLine(Offset(x, py), Offset(x, cy), stroke);
+          canvas.drawCircle(Offset(x, cy), 2, fill);
+        } else {
+          // Родитель — на прошлой неделе: крючок у начала ребёнка.
+          canvas.drawLine(Offset(x, cy - 4), Offset(x, cy + 4), stroke);
+          canvas.drawLine(Offset(x, cy), Offset(x + 6, cy), stroke);
+        }
+      }
+
+      // Родитель заканчивается на этой неделе, а ребёнок — на следующей.
+      if (!parentEnd.isBefore(weekStart) &&
+          !parentEnd.isAfter(weekEnd) &&
+          childStart.isAfter(weekEnd)) {
+        final pcol = daysBetween(weekStart, parentEnd);
+        final px = (pcol + 1) * colW;
+        canvas.drawLine(Offset(px - 6, py), Offset(px, py), stroke);
+        canvas.drawLine(Offset(px, py - 4), Offset(px, py + 4), stroke);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ConnectorPainter old) =>
+      old.tasks != tasks ||
+      old.weekStart != weekStart ||
+      old.colW != colW ||
+      old.visibleLanes != visibleLanes;
+}
+
 class _Bar extends StatelessWidget {
   const _Bar({required this.task, required this.showTitle});
   final TaskModel task;
@@ -397,15 +488,15 @@ class _Bar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dl = context.dl;
-    final onColor = Theme.of(context).colorScheme.onPrimary;
+    final fill = context.taskColor(task);
+    final onColor = onColorFor(fill);
     return Opacity(
       opacity: task.isDone ? 0.45 : 1,
       child: GestureDetector(
         onTap: () => openTaskEditor(context, task),
         child: Container(
           decoration: BoxDecoration(
-            color: dl.taskPeriod,
+            color: fill,
             borderRadius: BorderRadius.circular(_barHeight / 2),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 9),
@@ -460,11 +551,7 @@ class _DaySheet extends StatelessWidget {
                     height: 12,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: t.isRecurring
-                          ? dl.taskRecurring
-                          : t.isPeriod
-                              ? dl.taskPeriod
-                              : dl.taskSingle,
+                      color: context.taskColor(t),
                     ),
                   ),
                   title: Text(t.title,

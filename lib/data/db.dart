@@ -27,7 +27,9 @@ class Tasks extends Table {
   /// За сколько дней до даты напоминать (0 = в день, 1 = накануне, …).
   IntColumn get reminderDaysBefore =>
       integer().withDefault(const Constant(0))();
-  IntColumn get colorId => integer().withDefault(const Constant(0))();
+  /// -1 = авто (по типу дела), иначе индекс палитры.
+  IntColumn get colorId => integer().withDefault(const Constant(-1))();
+  BoolColumn get deferred => boolean().withDefault(const Constant(false))();
   IntColumn get recurrenceType =>
       intEnum<RecurrenceType>().withDefault(const Constant(0))();
   IntColumn get recurrenceInterval =>
@@ -89,7 +91,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -109,6 +111,11 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(tasks, tasks.recurrenceInterval);
             await m.addColumn(tasks, tasks.recurrenceAnchor);
             await m.createTable(recurrenceDones);
+          }
+          if (from < 4) {
+            await m.addColumn(tasks, tasks.deferred);
+            // Сброс старых цветов: до v4 цвет не выбирался → авто (-1).
+            await customStatement('UPDATE tasks SET color_id = -1');
           }
         },
         beforeOpen: (details) async {
@@ -169,6 +176,7 @@ extension TaskRowMapper on TaskRow {
         reminderMinutes: reminderMinutes,
         reminderDaysBefore: reminderDaysBefore,
         colorId: colorId,
+        deferred: deferred,
         recurrenceType: recurrenceType,
         recurrenceInterval: recurrenceInterval,
         recurrenceAnchor: recurrenceAnchor,
@@ -208,6 +216,7 @@ extension TaskModelMapper on TaskModel {
         reminderMinutes: Value(reminderMinutes),
         reminderDaysBefore: Value(reminderDaysBefore),
         colorId: Value(colorId),
+        deferred: Value(deferred),
         recurrenceType: Value(recurrenceType),
         recurrenceInterval: Value(recurrenceInterval),
         recurrenceAnchor: Value(recurrenceAnchor),

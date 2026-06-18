@@ -26,6 +26,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showYesterday = false;
   bool _showTomorrow = false;
   bool _showToday = true;
+  bool _showDeferred = false;
 
   @override
   Widget build(BuildContext context) {
@@ -73,6 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     danger: false,
                     emptyText: 'на завтра пусто',
                   ),
+                  _deferredSection(context),
                   _calendarSection(context),
                 ],
               ),
@@ -379,6 +381,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// Секция «Отложенные» — дела без даты, с быстрым назначением даты.
+  Widget _deferredSection(BuildContext context) {
+    final dl = context.dl;
+    final tasks = ref.watch(deferredTasksProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          GestureDetector(
+            onTap: () => setState(() => _showDeferred = !_showDeferred),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
+              decoration: BoxDecoration(
+                color: dl.sunken.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined,
+                      size: 16, color: dl.inkSoft),
+                  const SizedBox(width: 9),
+                  Text('отложенные',
+                      style: context.serif.copyWith(
+                          fontStyle: FontStyle.italic,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: dl.ink)),
+                  const SizedBox(width: 8),
+                  Text('${tasks.length}',
+                      style: TextStyle(fontSize: 12, color: dl.inkFaint)),
+                  const Spacer(),
+                  _headerAction(
+                    icon: Icons.add,
+                    filled: true,
+                    tooltip: 'Добавить отложенное дело',
+                    onTap: () =>
+                        openTaskEditor(context, null, deferred: true),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(_showDeferred ? Icons.expand_less : Icons.expand_more,
+                      size: 18, color: dl.inkFaint),
+                ],
+              ),
+            ),
+          ),
+          if (_showDeferred)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
+              child: tasks.isEmpty
+                  ? Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Text('пусто — «ждут своего часа»',
+                          style: TextStyle(color: dl.inkFaint, fontSize: 14)),
+                    )
+                  : Column(
+                      children: [
+                        for (var i = 0; i < tasks.length; i++) ...[
+                          if (i > 0) Divider(height: 1, color: dl.line),
+                          _DeferredRow(task: tasks[i]),
+                        ],
+                      ],
+                    ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _calendarSection(BuildContext context) {
     final dl = context.dl;
     return Container(
@@ -388,6 +460,85 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         border: Border(top: BorderSide(color: dl.line)),
       ),
       child: const CalendarView(),
+    );
+  }
+}
+
+/// Строка отложенного дела с быстрым назначением даты.
+class _DeferredRow extends ConsumerWidget {
+  const _DeferredRow({required this.task});
+  final TaskModel task;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dl = context.dl;
+    final color = context.taskColor(task);
+    final repo = ref.read(repositoryProvider);
+    final today = ref.watch(todayProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () => repo.toggleDone(task),
+            behavior: HitTestBehavior.opaque,
+            child: Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: color, width: 1.6),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => openTaskEditor(context, task),
+              behavior: HitTestBehavior.opaque,
+              child: Text(task.title,
+                  style: context.serif.copyWith(fontSize: 16, color: dl.ink)),
+            ),
+          ),
+          _quick(context, 'сегодня', () => repo.scheduleDeferred(task, today)),
+          _quick(context, 'завтра',
+              () => repo.scheduleDeferred(task, addDays(today, 1))),
+          IconButton(
+            visualDensity: VisualDensity.compact,
+            icon: Icon(Icons.event, size: 18, color: dl.inkSoft),
+            tooltip: 'На дату',
+            onPressed: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: today,
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) repo.scheduleDeferred(task, picked);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quick(BuildContext context, String label, VoidCallback onTap) {
+    final dl = context.dl;
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: dl.accent),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(label,
+              style: TextStyle(fontSize: 11, color: dl.accent)),
+        ),
+      ),
     );
   }
 }

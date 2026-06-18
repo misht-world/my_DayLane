@@ -1,3 +1,4 @@
+import '../core/date_utils.dart';
 import '../domain/carry_over.dart';
 import '../domain/dependencies.dart';
 import '../domain/models.dart';
@@ -103,6 +104,13 @@ class TaskRepository {
   Future<void> toggleOccurrence(
       TaskModel task, DateTime day, bool done) async {
     await _db.setOccurrenceDone(task.id!, day, done);
+  }
+
+  /// Назначает дату отложенному делу (и снимает признак «отложено»).
+  Future<void> scheduleDeferred(TaskModel task, DateTime date) async {
+    final d = dateOnly(date);
+    final end = task.isPeriod ? addDays(d, task.durationDays - 1) : d;
+    await saveTask(task.copyWith(deferred: false, startDate: d, endDate: end));
   }
 
   /// Ручной перенос однодневного дела на сегодня.

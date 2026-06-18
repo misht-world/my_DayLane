@@ -53,7 +53,12 @@ class TaskModel {
   /// За сколько дней до даты напоминать (0 = в день, 1 = накануне, …).
   final int reminderDaysBefore;
 
+  /// Индекс цвета из палитры. -1 = авто (по типу дела).
   final int colorId;
+
+  /// Отложенное дело без даты («ждёт своего часа») — не присутствует ни в одном
+  /// дне, живёт в отдельной секции, пока ему не назначат дату.
+  final bool deferred;
 
   /// Повторение (для дел-«событий»: ДР, платежи, занятия).
   final RecurrenceType recurrenceType;
@@ -89,7 +94,8 @@ class TaskModel {
     this.reminderRule = ReminderRule.atStart,
     this.reminderMinutes = 540,
     this.reminderDaysBefore = 0,
-    this.colorId = 0,
+    this.colorId = -1,
+    this.deferred = false,
     this.recurrenceType = RecurrenceType.none,
     this.recurrenceInterval = 1,
     this.recurrenceAnchor = 0,
@@ -106,6 +112,7 @@ class TaskModel {
   bool get isSingle => kind == TaskKind.single;
   bool get isLinked => dependsOnTaskId != null;
   bool get isRecurring => recurrenceType != RecurrenceType.none;
+  bool get hasCustomColor => colorId >= 0;
 
   TaskModel copyWith({
     Object? id = _unset,
@@ -121,6 +128,7 @@ class TaskModel {
     int? reminderMinutes,
     int? reminderDaysBefore,
     int? colorId,
+    bool? deferred,
     RecurrenceType? recurrenceType,
     int? recurrenceInterval,
     int? recurrenceAnchor,
@@ -150,6 +158,7 @@ class TaskModel {
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
+      deferred: deferred ?? this.deferred,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,

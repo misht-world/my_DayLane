@@ -153,7 +153,22 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     false,
     type: DriftSqlType.int,
     requiredDuringInsert: false,
-    defaultValue: const Constant(0),
+    defaultValue: const Constant(-1),
+  );
+  static const VerificationMeta _deferredMeta = const VerificationMeta(
+    'deferred',
+  );
+  @override
+  late final GeneratedColumn<bool> deferred = GeneratedColumn<bool>(
+    'deferred',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deferred" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
   );
   @override
   late final GeneratedColumnWithTypeConverter<RecurrenceType, int>
@@ -286,6 +301,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     reminderMinutes,
     reminderDaysBefore,
     colorId,
+    deferred,
     recurrenceType,
     recurrenceInterval,
     recurrenceAnchor,
@@ -394,6 +410,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
       context.handle(
         _colorIdMeta,
         colorId.isAcceptableOrUnknown(data['color_id']!, _colorIdMeta),
+      );
+    }
+    if (data.containsKey('deferred')) {
+      context.handle(
+        _deferredMeta,
+        deferred.isAcceptableOrUnknown(data['deferred']!, _deferredMeta),
       );
     }
     if (data.containsKey('recurrence_interval')) {
@@ -531,6 +553,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.int,
         data['${effectivePrefix}color_id'],
       )!,
+      deferred: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deferred'],
+      )!,
       recurrenceType: $TasksTable.$converterrecurrenceType.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -604,7 +630,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
 
   /// За сколько дней до даты напоминать (0 = в день, 1 = накануне, …).
   final int reminderDaysBefore;
+
+  /// -1 = авто (по типу дела), иначе индекс палитры.
   final int colorId;
+  final bool deferred;
   final RecurrenceType recurrenceType;
   final int recurrenceInterval;
   final int recurrenceAnchor;
@@ -629,6 +658,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     required this.reminderMinutes,
     required this.reminderDaysBefore,
     required this.colorId,
+    required this.deferred,
     required this.recurrenceType,
     required this.recurrenceInterval,
     required this.recurrenceAnchor,
@@ -666,6 +696,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     map['reminder_minutes'] = Variable<int>(reminderMinutes);
     map['reminder_days_before'] = Variable<int>(reminderDaysBefore);
     map['color_id'] = Variable<int>(colorId);
+    map['deferred'] = Variable<bool>(deferred);
     {
       map['recurrence_type'] = Variable<int>(
         $TasksTable.$converterrecurrenceType.toSql(recurrenceType),
@@ -704,6 +735,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       reminderMinutes: Value(reminderMinutes),
       reminderDaysBefore: Value(reminderDaysBefore),
       colorId: Value(colorId),
+      deferred: Value(deferred),
       recurrenceType: Value(recurrenceType),
       recurrenceInterval: Value(recurrenceInterval),
       recurrenceAnchor: Value(recurrenceAnchor),
@@ -742,6 +774,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       reminderMinutes: serializer.fromJson<int>(json['reminderMinutes']),
       reminderDaysBefore: serializer.fromJson<int>(json['reminderDaysBefore']),
       colorId: serializer.fromJson<int>(json['colorId']),
+      deferred: serializer.fromJson<bool>(json['deferred']),
       recurrenceType: $TasksTable.$converterrecurrenceType.fromJson(
         serializer.fromJson<int>(json['recurrenceType']),
       ),
@@ -775,6 +808,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'reminderMinutes': serializer.toJson<int>(reminderMinutes),
       'reminderDaysBefore': serializer.toJson<int>(reminderDaysBefore),
       'colorId': serializer.toJson<int>(colorId),
+      'deferred': serializer.toJson<bool>(deferred),
       'recurrenceType': serializer.toJson<int>(
         $TasksTable.$converterrecurrenceType.toJson(recurrenceType),
       ),
@@ -804,6 +838,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     int? reminderMinutes,
     int? reminderDaysBefore,
     int? colorId,
+    bool? deferred,
     RecurrenceType? recurrenceType,
     int? recurrenceInterval,
     int? recurrenceAnchor,
@@ -832,6 +867,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     reminderMinutes: reminderMinutes ?? this.reminderMinutes,
     reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
     colorId: colorId ?? this.colorId,
+    deferred: deferred ?? this.deferred,
     recurrenceType: recurrenceType ?? this.recurrenceType,
     recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
     recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
@@ -872,6 +908,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ? data.reminderDaysBefore.value
           : this.reminderDaysBefore,
       colorId: data.colorId.present ? data.colorId.value : this.colorId,
+      deferred: data.deferred.present ? data.deferred.value : this.deferred,
       recurrenceType: data.recurrenceType.present
           ? data.recurrenceType.value
           : this.recurrenceType,
@@ -911,6 +948,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('reminderMinutes: $reminderMinutes, ')
           ..write('reminderDaysBefore: $reminderDaysBefore, ')
           ..write('colorId: $colorId, ')
+          ..write('deferred: $deferred, ')
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
@@ -940,6 +978,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     reminderMinutes,
     reminderDaysBefore,
     colorId,
+    deferred,
     recurrenceType,
     recurrenceInterval,
     recurrenceAnchor,
@@ -968,6 +1007,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.reminderMinutes == this.reminderMinutes &&
           other.reminderDaysBefore == this.reminderDaysBefore &&
           other.colorId == this.colorId &&
+          other.deferred == this.deferred &&
           other.recurrenceType == this.recurrenceType &&
           other.recurrenceInterval == this.recurrenceInterval &&
           other.recurrenceAnchor == this.recurrenceAnchor &&
@@ -994,6 +1034,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<int> reminderMinutes;
   final Value<int> reminderDaysBefore;
   final Value<int> colorId;
+  final Value<bool> deferred;
   final Value<RecurrenceType> recurrenceType;
   final Value<int> recurrenceInterval;
   final Value<int> recurrenceAnchor;
@@ -1018,6 +1059,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.reminderMinutes = const Value.absent(),
     this.reminderDaysBefore = const Value.absent(),
     this.colorId = const Value.absent(),
+    this.deferred = const Value.absent(),
     this.recurrenceType = const Value.absent(),
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
@@ -1043,6 +1085,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.reminderMinutes = const Value.absent(),
     this.reminderDaysBefore = const Value.absent(),
     this.colorId = const Value.absent(),
+    this.deferred = const Value.absent(),
     this.recurrenceType = const Value.absent(),
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
@@ -1073,6 +1116,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<int>? reminderMinutes,
     Expression<int>? reminderDaysBefore,
     Expression<int>? colorId,
+    Expression<bool>? deferred,
     Expression<int>? recurrenceType,
     Expression<int>? recurrenceInterval,
     Expression<int>? recurrenceAnchor,
@@ -1099,6 +1143,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (reminderDaysBefore != null)
         'reminder_days_before': reminderDaysBefore,
       if (colorId != null) 'color_id': colorId,
+      if (deferred != null) 'deferred': deferred,
       if (recurrenceType != null) 'recurrence_type': recurrenceType,
       if (recurrenceInterval != null) 'recurrence_interval': recurrenceInterval,
       if (recurrenceAnchor != null) 'recurrence_anchor': recurrenceAnchor,
@@ -1126,6 +1171,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<int>? reminderMinutes,
     Value<int>? reminderDaysBefore,
     Value<int>? colorId,
+    Value<bool>? deferred,
     Value<RecurrenceType>? recurrenceType,
     Value<int>? recurrenceInterval,
     Value<int>? recurrenceAnchor,
@@ -1151,6 +1197,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
+      deferred: deferred ?? this.deferred,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
@@ -1208,6 +1255,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (colorId.present) {
       map['color_id'] = Variable<int>(colorId.value);
     }
+    if (deferred.present) {
+      map['deferred'] = Variable<bool>(deferred.value);
+    }
     if (recurrenceType.present) {
       map['recurrence_type'] = Variable<int>(
         $TasksTable.$converterrecurrenceType.toSql(recurrenceType.value),
@@ -1259,6 +1309,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('reminderMinutes: $reminderMinutes, ')
           ..write('reminderDaysBefore: $reminderDaysBefore, ')
           ..write('colorId: $colorId, ')
+          ..write('deferred: $deferred, ')
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
@@ -2231,6 +2282,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<int> reminderMinutes,
       Value<int> reminderDaysBefore,
       Value<int> colorId,
+      Value<bool> deferred,
       Value<RecurrenceType> recurrenceType,
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
@@ -2257,6 +2309,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<int> reminderMinutes,
       Value<int> reminderDaysBefore,
       Value<int> colorId,
+      Value<bool> deferred,
       Value<RecurrenceType> recurrenceType,
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
@@ -2384,6 +2437,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<int> get colorId => $composableBuilder(
     column: $table.colorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deferred => $composableBuilder(
+    column: $table.deferred,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2563,6 +2621,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get deferred => $composableBuilder(
+    column: $table.deferred,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get recurrenceType => $composableBuilder(
     column: $table.recurrenceType,
     builder: (column) => ColumnOrderings(column),
@@ -2676,6 +2739,9 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<int> get colorId =>
       $composableBuilder(column: $table.colorId, builder: (column) => column);
+
+  GeneratedColumn<bool> get deferred =>
+      $composableBuilder(column: $table.deferred, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<RecurrenceType, int> get recurrenceType =>
       $composableBuilder(
@@ -2810,6 +2876,7 @@ class $$TasksTableTableManager
                 Value<int> reminderMinutes = const Value.absent(),
                 Value<int> reminderDaysBefore = const Value.absent(),
                 Value<int> colorId = const Value.absent(),
+                Value<bool> deferred = const Value.absent(),
                 Value<RecurrenceType> recurrenceType = const Value.absent(),
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
@@ -2834,6 +2901,7 @@ class $$TasksTableTableManager
                 reminderMinutes: reminderMinutes,
                 reminderDaysBefore: reminderDaysBefore,
                 colorId: colorId,
+                deferred: deferred,
                 recurrenceType: recurrenceType,
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,
@@ -2860,6 +2928,7 @@ class $$TasksTableTableManager
                 Value<int> reminderMinutes = const Value.absent(),
                 Value<int> reminderDaysBefore = const Value.absent(),
                 Value<int> colorId = const Value.absent(),
+                Value<bool> deferred = const Value.absent(),
                 Value<RecurrenceType> recurrenceType = const Value.absent(),
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
@@ -2884,6 +2953,7 @@ class $$TasksTableTableManager
                 reminderMinutes: reminderMinutes,
                 reminderDaysBefore: reminderDaysBefore,
                 colorId: colorId,
+                deferred: deferred,
                 recurrenceType: recurrenceType,
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,

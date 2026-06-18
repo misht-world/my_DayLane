@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'constants.dart';
+import '../domain/models.dart';
+
 /// Темы DayLane.
 ///
 /// Светлая — тёплый «ежедневник»: off-white бумага, янтарный акцент,
@@ -260,4 +263,19 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
 extension DayLaneColorsX on BuildContext {
   DayLaneColors get dl => Theme.of(this).extension<DayLaneColors>()!;
   TextStyle get serif => TextStyle(fontFamily: AppTheme.serifFamily);
+
+  /// Цвет дела: пользовательский (если задан), иначе авто по типу.
+  Color taskColor(TaskModel t) {
+    if (t.hasCustomColor) return TaskPalette.byId(t.colorId);
+    final c = dl;
+    return t.isRecurring
+        ? c.taskRecurring
+        : t.isPeriod
+            ? c.taskPeriod
+            : c.taskSingle;
+  }
 }
+
+/// Контрастный цвет текста (чёрный/белый) для заливки [bg].
+Color onColorFor(Color bg) =>
+    bg.computeLuminance() > 0.5 ? const Color(0xFF1A160F) : Colors.white;

@@ -97,6 +97,13 @@ final sectionsProvider = Provider<DaySections?>((ref) {
   );
 });
 
+/// Отложенные дела (без даты) — не выполненные.
+final deferredTasksProvider = Provider<List<TaskModel>>((ref) {
+  final tasks = ref.watch(tasksProvider).value ?? const [];
+  return tasks.where((t) => t.deferred && !t.isDone).toList()
+    ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+});
+
 /// Реальная сегодняшняя дата без времени (для просрочки и т.п.).
 final todayProvider = Provider<DateTime>((ref) => dateOnly(DateTime.now()));
 

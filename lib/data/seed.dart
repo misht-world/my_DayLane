@@ -102,9 +102,36 @@ Future<void> seedIfEmpty(AppDatabase db, TaskRepository repo) async {
   await repo.saveTask(
       recurring('Свести бюджет', 0, RecurrenceType.monthLastDay));
 
+  // ── Отложенные (без даты) ────────────────────────────────────────
+  TaskModel deferred(String title) => TaskModel(
+        title: title,
+        kind: TaskKind.single,
+        startDate: today,
+        endDate: today,
+        deferred: true,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+  await repo.saveTask(deferred('Прочитать книгу по Flutter'));
+  await repo.saveTask(deferred('Разобрать гараж'));
+
   // ── Периоды (полосы и дорожки; есть пересечение → 2 дорожки) ──────
   await repo.saveTask(period('Ремонт кухни', -1, 2, 1));
   await repo.saveTask(period('Командировка', 4, 8, 3));
   await repo.saveTask(period('Курс по дизайну', 6, 11, 4)); // пересекает командировку
   await repo.saveTask(period('Отпуск', 13, 18, 0));
+
+  // Зависимая цепочка (для соединителей в календаре).
+  final stage1 = await repo.saveTask(period('Проект: этап 1', 1, 3, 3));
+  await repo.saveTask(TaskModel(
+    title: 'Проект: этап 2',
+    kind: TaskKind.period,
+    startDate: addDays(today, 4),
+    endDate: addDays(today, 6),
+    durationDays: 3,
+    dependsOnTaskId: stage1,
+    colorId: 3,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ));
 }

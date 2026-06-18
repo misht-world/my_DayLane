@@ -6,6 +6,7 @@ import 'recurrence.dart';
 
 /// Дело «присутствует» в дне [day].
 bool isPresentOn(TaskModel t, DateTime day) {
+  if (t.deferred) return false;
   if (t.isRecurring) return occursOn(t, day);
   final d = dateOnly(day);
   if (t.isSingle) return isSameDate(t.startDate, d);

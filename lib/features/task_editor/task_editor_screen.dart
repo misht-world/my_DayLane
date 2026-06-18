@@ -12,11 +12,11 @@ import '../../domain/recurrence.dart';
 /// Открывает карточку дела. [existing] == null — создание;
 /// [initialDate] задаёт дату нового дела (по умолчанию — сегодня).
 void openTaskEditor(BuildContext context, TaskModel? existing,
-    {DateTime? initialDate}) {
+    {DateTime? initialDate, bool deferred = false}) {
   Navigator.of(context).push(MaterialPageRoute(
     fullscreenDialog: true,
-    builder: (_) =>
-        TaskEditorScreen(existing: existing, initialDate: initialDate),
+    builder: (_) => TaskEditorScreen(
+        existing: existing, initialDate: initialDate, deferred: deferred),
   ));
 }
 
@@ -28,9 +28,11 @@ class _SubItem {
 }
 
 class TaskEditorScreen extends ConsumerStatefulWidget {
-  const TaskEditorScreen({super.key, this.existing, this.initialDate});
+  const TaskEditorScreen(
+      {super.key, this.existing, this.initialDate, this.deferred = false});
   final TaskModel? existing;
   final DateTime? initialDate;
+  final bool deferred;
 
   @override
   ConsumerState<TaskEditorScreen> createState() => _TaskEditorScreenState();
@@ -56,6 +58,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   RecurrenceType _recurrence = RecurrenceType.none;
   int _recurInterval = 1;
   int _recurAnchor = 2; // K для monthBeforeEnd
+  bool _deferred = false;
 
   final List<_SubItem> _subs = [];
 
@@ -85,6 +88,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _recurAnchor = (e?.recurrenceType == RecurrenceType.monthBeforeEnd)
         ? (e?.recurrenceAnchor ?? 2)
         : 2;
+    _deferred = e?.deferred ?? widget.deferred;
 
     if (_editing) {
       ref
@@ -144,14 +148,30 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           ),
           const SizedBox(height: 8),
           _kindSegment(),
-          const SizedBox(height: 18),
-          if (_kind == TaskKind.single) ..._singleFields() else ..._periodFields(),
-          if (_kind == TaskKind.single) ...[
+          const SizedBox(height: 10),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Отложить (без даты)'),
+            subtitle: Text('дело попадёт в раздел «Отложенные»',
+                style: TextStyle(fontSize: 12, color: dl.inkFaint)),
+            value: _deferred,
+            onChanged: (v) => setState(() => _deferred = v),
+          ),
+          if (!_deferred) ...[
+            const SizedBox(height: 8),
+            if (_kind == TaskKind.single)
+              ..._singleFields()
+            else
+              ..._periodFields(),
+            if (_kind == TaskKind.single) ...[
+              const SizedBox(height: 18),
+              _recurrenceBlock(),
+            ],
             const SizedBox(height: 18),
-            _recurrenceBlock(),
+            _reminderBlock(),
           ],
           const SizedBox(height: 18),
-          _reminderBlock(),
+          _colorBlock(),
           const SizedBox(height: 18),
           _subtaskBlock(),
           const SizedBox(height: 18),
@@ -436,6 +456,63 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         _ => 'мес.',
       };
 
+  Widget _colorBlock() {
+    final dl = context.dl;
+    Widget dot({
+      required bool selected,
+      required VoidCallback onTap,
+      Color? color,
+      bool auto = false,
+    }) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color ?? Colors.transparent,
+            border: Border.all(
+              color: selected ? dl.ink : (auto ? dl.lineStrong : Colors.transparent),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: auto
+              ? Icon(Icons.brightness_auto,
+                  size: 17, color: selected ? dl.ink : dl.inkSoft)
+              : (selected
+                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                  : null),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label('Цвет в календаре'),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 12,
+          runSpacing: 10,
+          children: [
+            dot(
+              auto: true,
+              selected: _colorId < 0,
+              onTap: () => setState(() => _colorId = -1),
+            ),
+            for (var i = 0; i < TaskPalette.colors.length; i++)
+              dot(
+                color: TaskPalette.colors[i],
+                selected: _colorId == i,
+                onTap: () => setState(() => _colorId = i),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _reminderBlock() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -663,12 +740,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       durationDays: duration,
       dependsOnTaskId: _kind == TaskKind.period ? _dependsOn : null,
       timeOfDayMinutes: _kind == TaskKind.single ? _timeMinutes : null,
-      reminderEnabled: _reminderEnabled,
+      reminderEnabled: _deferred ? false : _reminderEnabled,
       reminderRule: _reminderRule,
       reminderMinutes: _reminderMinutes,
       reminderDaysBefore: _reminderDaysBefore,
       colorId: _colorId,
-      recurrenceType: _kind == TaskKind.single ? _recurrence : RecurrenceType.none,
+      deferred: _deferred,
+      recurrenceType: (_kind == TaskKind.single && !_deferred)
+          ? _recurrence
+          : RecurrenceType.none,
       recurrenceInterval: _recurInterval < 1 ? 1 : _recurInterval,
       recurrenceAnchor: _recurrence == RecurrenceType.monthBeforeEnd
           ? _recurAnchor
