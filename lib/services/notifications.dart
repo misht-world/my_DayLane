@@ -4,6 +4,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import '../core/date_utils.dart';
 import '../domain/models.dart';
+import '../domain/recurrence.dart';
 
 /// Локальные напоминания. По умолчанию у дел выключены.
 ///
@@ -104,6 +105,9 @@ class NotificationService {
   }
 
   List<DateTime> _reminderDates(TaskModel t) {
+    if (t.isRecurring) {
+      return nextOccurrences(t, dateOnly(DateTime.now()), 12);
+    }
     if (t.isSingle) return [t.startDate];
     switch (t.reminderRule) {
       case ReminderRule.atStart:

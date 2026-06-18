@@ -154,6 +154,9 @@ class AppTheme {
               ? const Color(0xFF2F6FED)
               : const Color(0xFF5AA2F0),
           taskPeriod: accent,
+          taskRecurring: brightness == Brightness.light
+              ? const Color(0xFF7048C2)
+              : const Color(0xFFB69BEE),
         ),
       ],
     );
@@ -180,6 +183,9 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
   /// Цвет многодневных дел (периодов).
   final Color taskPeriod;
 
+  /// Цвет повторяющихся дел.
+  final Color taskRecurring;
+
   const DayLaneColors({
     required this.page,
     required this.surface,
@@ -193,6 +199,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
     required this.danger,
     required this.taskSingle,
     required this.taskPeriod,
+    required this.taskRecurring,
   });
 
   @override
@@ -209,6 +216,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
     Color? danger,
     Color? taskSingle,
     Color? taskPeriod,
+    Color? taskRecurring,
   }) {
     return DayLaneColors(
       page: page ?? this.page,
@@ -223,6 +231,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
       danger: danger ?? this.danger,
       taskSingle: taskSingle ?? this.taskSingle,
       taskPeriod: taskPeriod ?? this.taskPeriod,
+      taskRecurring: taskRecurring ?? this.taskRecurring,
     );
   }
 
@@ -242,6 +251,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
       danger: Color.lerp(danger, other.danger, t)!,
       taskSingle: Color.lerp(taskSingle, other.taskSingle, t)!,
       taskPeriod: Color.lerp(taskPeriod, other.taskPeriod, t)!,
+      taskRecurring: Color.lerp(taskRecurring, other.taskRecurring, t)!,
     );
   }
 }

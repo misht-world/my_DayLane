@@ -64,11 +64,37 @@ class FocusedDateNotifier extends Notifier<DateTime> {
 final focusedDateProvider =
     NotifierProvider<FocusedDateNotifier, DateTime>(FocusedDateNotifier.new);
 
+/// Отметки выполнения вхождений: taskId → множество ключей дней (ГГГГММДД).
+final recurrenceDonesProvider =
+    StreamProvider<List<RecurrenceDoneRow>>(
+  (ref) => ref.watch(databaseProvider).watchRecurrenceDones(),
+);
+
+final donesMapProvider = Provider<Map<int, Set<int>>>((ref) {
+  final list = ref.watch(recurrenceDonesProvider).value ?? const [];
+  final map = <int, Set<int>>{};
+  for (final r in list) {
+    map.putIfAbsent(r.taskId, () => <int>{}).add(dayKey(r.date));
+  }
+  return map;
+});
+
+/// Выполнено ли дело в конкретный день (для повторяющихся — по вхождению).
+bool isTaskDoneOn(Map<int, Set<int>> dones, TaskModel t, DateTime day) {
+  if (!t.isRecurring) return t.isDone;
+  return dones[t.id]?.contains(dayKey(day)) ?? false;
+}
+
 /// Секции «Вчера/Сегодня/Завтра» относительно фокусной даты.
 final sectionsProvider = Provider<DaySections?>((ref) {
   final tasks = ref.watch(tasksProvider).value;
   if (tasks == null) return null;
-  return buildSections(tasks, ref.watch(focusedDateProvider));
+  final dones = ref.watch(donesMapProvider);
+  return buildSections(
+    tasks,
+    ref.watch(focusedDateProvider),
+    isDoneOn: (t, day) => isTaskDoneOn(dones, t, day),
+  );
 });
 
 /// Реальная сегодняшняя дата без времени (для просрочки и т.п.).

@@ -6,6 +6,18 @@ enum TaskKind { single, period }
 /// Правило напоминания (действует только при `reminderEnabled`).
 enum ReminderRule { atStart, eachDay, atEnd }
 
+/// Тип повторения дела. Якорь (день месяца, день недели, месяц/день года)
+/// берётся из `startDate` — это дата первого вхождения.
+enum RecurrenceType {
+  none,
+  days, // каждые N дней
+  weeks, // каждые N недель (по дню недели startDate)
+  months, // каждые N месяцев (число = startDate.day, с обрезкой)
+  years, // каждые N лет (месяц/день из startDate)
+  monthLastDay, // последний день месяца, каждые N месяцев
+  monthBeforeEnd, // за K дней до конца месяца (K = recurrenceAnchor)
+}
+
 /// Сентинел для copyWith — позволяет отличить «не передано» от «передано null».
 const Object _unset = Object();
 
@@ -42,6 +54,16 @@ class TaskModel {
   final int reminderDaysBefore;
 
   final int colorId;
+
+  /// Повторение (для дел-«событий»: ДР, платежи, занятия).
+  final RecurrenceType recurrenceType;
+
+  /// Интервал повторения N (каждые N дней/недель/месяцев/лет). ≥1.
+  final int recurrenceInterval;
+
+  /// Доп. параметр повторения: K для `monthBeforeEnd`.
+  final int recurrenceAnchor;
+
   final String note;
 
   final bool isDone;
@@ -68,6 +90,9 @@ class TaskModel {
     this.reminderMinutes = 540,
     this.reminderDaysBefore = 0,
     this.colorId = 0,
+    this.recurrenceType = RecurrenceType.none,
+    this.recurrenceInterval = 1,
+    this.recurrenceAnchor = 0,
     this.note = '',
     this.isDone = false,
     this.completedAt,
@@ -80,6 +105,7 @@ class TaskModel {
   bool get isPeriod => kind == TaskKind.period;
   bool get isSingle => kind == TaskKind.single;
   bool get isLinked => dependsOnTaskId != null;
+  bool get isRecurring => recurrenceType != RecurrenceType.none;
 
   TaskModel copyWith({
     Object? id = _unset,
@@ -95,6 +121,9 @@ class TaskModel {
     int? reminderMinutes,
     int? reminderDaysBefore,
     int? colorId,
+    RecurrenceType? recurrenceType,
+    int? recurrenceInterval,
+    int? recurrenceAnchor,
     String? note,
     bool? isDone,
     Object? completedAt = _unset,
@@ -121,6 +150,9 @@ class TaskModel {
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
+      recurrenceType: recurrenceType ?? this.recurrenceType,
+      recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
+      recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
       note: note ?? this.note,
       isDone: isDone ?? this.isDone,
       completedAt: identical(completedAt, _unset)

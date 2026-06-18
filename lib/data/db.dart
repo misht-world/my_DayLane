@@ -28,6 +28,11 @@ class Tasks extends Table {
   IntColumn get reminderDaysBefore =>
       integer().withDefault(const Constant(0))();
   IntColumn get colorId => integer().withDefault(const Constant(0))();
+  IntColumn get recurrenceType =>
+      intEnum<RecurrenceType>().withDefault(const Constant(0))();
+  IntColumn get recurrenceInterval =>
+      integer().withDefault(const Constant(1))();
+  IntColumn get recurrenceAnchor => integer().withDefault(const Constant(0))();
   TextColumn get note => text().withDefault(const Constant(''))();
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
   DateTimeColumn get completedAt => dateTime().nullable()();
@@ -49,6 +54,15 @@ class Subtasks extends Table {
   IntColumn get sortIndex => integer().withDefault(const Constant(0))();
 }
 
+/// Отметки выполнения конкретных вхождений повторяющихся дел (taskId + дата).
+@DataClassName('RecurrenceDoneRow')
+class RecurrenceDones extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get taskId =>
+      integer().references(Tasks, #id, onDelete: KeyAction.cascade)();
+  DateTimeColumn get date => dateTime()();
+}
+
 /// Настройки приложения (одна строка, id = 1).
 @DataClassName('SettingsRow')
 class AppSettings extends Table {
@@ -66,7 +80,7 @@ class AppSettings extends Table {
 }
 
 @DriftDatabase(
-  tables: [Tasks, Subtasks, AppSettings],
+  tables: [Tasks, Subtasks, AppSettings, RecurrenceDones],
   daos: [TaskDao, SubtaskDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -75,7 +89,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -89,6 +103,12 @@ class AppDatabase extends _$AppDatabase {
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.addColumn(tasks, tasks.reminderDaysBefore);
+          }
+          if (from < 3) {
+            await m.addColumn(tasks, tasks.recurrenceType);
+            await m.addColumn(tasks, tasks.recurrenceInterval);
+            await m.addColumn(tasks, tasks.recurrenceAnchor);
+            await m.createTable(recurrenceDones);
           }
         },
         beforeOpen: (details) async {
@@ -113,6 +133,22 @@ class AppDatabase extends _$AppDatabase {
         .write(patch);
   }
 
+  // ── Отметки вхождений повторяющихся дел ──────────────────────────
+  Stream<List<RecurrenceDoneRow>> watchRecurrenceDones() =>
+      select(recurrenceDones).watch();
+
+  Future<void> setOccurrenceDone(int taskId, DateTime date, bool done) async {
+    final d = DateTime(date.year, date.month, date.day);
+    if (done) {
+      await into(recurrenceDones)
+          .insert(RecurrenceDonesCompanion.insert(taskId: taskId, date: d));
+    } else {
+      await (delete(recurrenceDones)
+            ..where((r) => r.taskId.equals(taskId) & r.date.equals(d)))
+          .go();
+    }
+  }
+
   static QueryExecutor _open() =>
       driftDatabase(name: 'daylane');
 }
@@ -133,6 +169,9 @@ extension TaskRowMapper on TaskRow {
         reminderMinutes: reminderMinutes,
         reminderDaysBefore: reminderDaysBefore,
         colorId: colorId,
+        recurrenceType: recurrenceType,
+        recurrenceInterval: recurrenceInterval,
+        recurrenceAnchor: recurrenceAnchor,
         note: note,
         isDone: isDone,
         completedAt: completedAt,
@@ -169,6 +208,9 @@ extension TaskModelMapper on TaskModel {
         reminderMinutes: Value(reminderMinutes),
         reminderDaysBefore: Value(reminderDaysBefore),
         colorId: Value(colorId),
+        recurrenceType: Value(recurrenceType),
+        recurrenceInterval: Value(recurrenceInterval),
+        recurrenceAnchor: Value(recurrenceAnchor),
         note: Value(note),
         isDone: Value(isDone),
         completedAt: Value(completedAt),

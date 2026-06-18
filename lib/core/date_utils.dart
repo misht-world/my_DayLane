@@ -18,6 +18,9 @@ int daysBetween(DateTime a, DateTime b) =>
 /// Одна и та же календарная дата.
 bool isSameDate(DateTime a, DateTime b) => daysBetween(a, b) == 0;
 
+/// Числовой ключ календарного дня (для множеств/карт): ГГГГММДД.
+int dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
+
 /// Метка «день N из M».
 String dayOfPeriodLabel(int n, int m) => 'день $n из $m';
 

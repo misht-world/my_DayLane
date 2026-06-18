@@ -5,6 +5,7 @@ import '../../app/providers.dart';
 import '../../core/date_utils.dart';
 import '../../core/theme.dart';
 import '../../domain/models.dart';
+import '../../domain/recurrence.dart';
 import '../../domain/scheduling.dart';
 import '../task_editor/task_editor_screen.dart';
 
@@ -37,13 +38,21 @@ class _TaskRowState extends ConsumerState<TaskRow> {
   Widget build(BuildContext context) {
     final t = widget.task;
     final dl = context.dl;
-    final color = t.isPeriod ? dl.taskPeriod : dl.taskSingle;
+    final color = t.isRecurring
+        ? dl.taskRecurring
+        : t.isPeriod
+            ? dl.taskPeriod
+            : dl.taskSingle;
     final today = ref.watch(todayProvider);
-    final overdue = isOverdue(t, today);
+    final dones = ref.watch(donesMapProvider);
+    final done = isTaskDoneOn(dones, t, widget.day);
+    final overdue = t.isRecurring
+        ? (!done && dateOnly(widget.day).isBefore(today))
+        : isOverdue(t, today);
     final progress = ref.watch(subtaskProgressProvider)[t.id] ?? (0, 0);
     final hasSubs = progress.$2 > 0;
 
-    final titleColor = t.isDone
+    final titleColor = done
         ? dl.inkFaint
         : overdue
             ? dl.danger
@@ -59,9 +68,16 @@ class _TaskRowState extends ConsumerState<TaskRow> {
             child: Row(
               children: [
                 _Checkbox(
-                  done: t.isDone,
+                  done: done,
                   color: color,
-                  onTap: () => ref.read(repositoryProvider).toggleDone(t),
+                  onTap: () {
+                    final repo = ref.read(repositoryProvider);
+                    if (t.isRecurring) {
+                      repo.toggleOccurrence(t, widget.day, !done);
+                    } else {
+                      repo.toggleDone(t);
+                    }
+                  },
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -73,9 +89,8 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                         style: context.serif.copyWith(
                           fontSize: 16,
                           color: titleColor,
-                          decoration: t.isDone
-                              ? TextDecoration.lineThrough
-                              : null,
+                          decoration:
+                              done ? TextDecoration.lineThrough : null,
                         ),
                       ),
                       if (_metaChips(context).isNotEmpty)
@@ -124,9 +139,13 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     final chips = <Widget>[];
     final muted = TextStyle(fontSize: 12, color: dl.inkSoft);
 
-    if (t.isSingle && t.timeOfDayMinutes != null) {
+    if (!t.isPeriod && t.timeOfDayMinutes != null) {
       chips.add(_chip(Icons.schedule, formatMinutesOfDay(t.timeOfDayMinutes!),
           dl.inkSoft, muted));
+    }
+    if (t.isRecurring) {
+      chips.add(_chip(Icons.repeat, recurrenceSummary(t), dl.taskRecurring,
+          TextStyle(fontSize: 11, color: dl.taskRecurring)));
     }
     if (t.isPeriod) {
       final n = dayNumberOf(t, widget.day);

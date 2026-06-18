@@ -65,6 +65,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final totalLanes = laneCount(lanes);
     final visibleLanes =
         totalLanes < _mode.maxLanes ? totalLanes : _mode.maxLanes;
+    final dones = ref.watch(donesMapProvider);
 
     final weekdays = _orderedWeekdays(firstWeekday);
     final rows = (_mode.days / 7).ceil();
@@ -116,6 +117,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                   laneOf: laneOf,
                   visibleLanes: visibleLanes,
                   isLastRow: r == rows - 1,
+                  dones: dones,
                   onTapDay: _showDay,
                   onAddDay: (d) => openTaskEditor(context, null, initialDate: d),
                 ),
@@ -191,6 +193,7 @@ class _WeekRow extends StatelessWidget {
     required this.laneOf,
     required this.visibleLanes,
     required this.isLastRow,
+    required this.dones,
     required this.onTapDay,
     required this.onAddDay,
   });
@@ -202,6 +205,7 @@ class _WeekRow extends StatelessWidget {
   final Map<int?, int> laneOf;
   final int visibleLanes;
   final bool isLastRow;
+  final Map<int, Set<int>> dones;
   final void Function(DateTime) onTapDay;
   final void Function(DateTime) onAddDay;
 
@@ -269,6 +273,7 @@ class _WeekRow extends StatelessWidget {
                       isToday: isSameDate(addDays(weekStart, i), today),
                       height: rowHeight,
                       singles: _singlesFor(addDays(weekStart, i)),
+                      dones: dones,
                       showBottomRule: !isLastRow,
                     ),
                   ),
@@ -292,12 +297,14 @@ class _DayCell extends StatelessWidget {
     required this.isToday,
     required this.height,
     required this.singles,
+    required this.dones,
     required this.showBottomRule,
   });
   final DateTime day;
   final bool isToday;
   final double height;
   final List<TaskModel> singles;
+  final Map<int, Set<int>> dones;
   final bool showBottomRule;
 
   @override
@@ -365,8 +372,11 @@ class _DayCell extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 1.5),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: context.dl.taskSingle
-                  .withValues(alpha: t.isDone ? 0.35 : 1),
+              color: (t.isRecurring
+                      ? context.dl.taskRecurring
+                      : context.dl.taskSingle)
+                  .withValues(
+                      alpha: isTaskDoneOn(dones, t, day) ? 0.35 : 1),
             ),
           ),
         if (extra > 0)
@@ -450,7 +460,11 @@ class _DaySheet extends StatelessWidget {
                     height: 12,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: t.isPeriod ? dl.taskPeriod : dl.taskSingle,
+                      color: t.isRecurring
+                          ? dl.taskRecurring
+                          : t.isPeriod
+                              ? dl.taskPeriod
+                              : dl.taskSingle,
                     ),
                   ),
                   title: Text(t.title,

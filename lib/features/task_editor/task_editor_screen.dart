@@ -7,6 +7,7 @@ import '../../core/date_utils.dart';
 import '../../core/theme.dart';
 import '../../domain/dependencies.dart';
 import '../../domain/models.dart';
+import '../../domain/recurrence.dart';
 
 /// Открывает карточку дела. [existing] == null — создание;
 /// [initialDate] задаёт дату нового дела (по умолчанию — сегодня).
@@ -52,6 +53,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   int _reminderDaysBefore = 0;
   int _colorId = 0;
 
+  RecurrenceType _recurrence = RecurrenceType.none;
+  int _recurInterval = 1;
+  int _recurAnchor = 2; // K для monthBeforeEnd
+
   final List<_SubItem> _subs = [];
 
   bool get _editing => widget.existing != null;
@@ -75,6 +80,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _reminderMinutes = e?.reminderMinutes ?? kDefaultReminderMinutes;
     _reminderDaysBefore = e?.reminderDaysBefore ?? 0;
     _colorId = e?.colorId ?? 0;
+    _recurrence = e?.recurrenceType ?? RecurrenceType.none;
+    _recurInterval = e?.recurrenceInterval ?? 1;
+    _recurAnchor = (e?.recurrenceType == RecurrenceType.monthBeforeEnd)
+        ? (e?.recurrenceAnchor ?? 2)
+        : 2;
 
     if (_editing) {
       ref
@@ -136,6 +146,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           _kindSegment(),
           const SizedBox(height: 18),
           if (_kind == TaskKind.single) ..._singleFields() else ..._periodFields(),
+          if (_kind == TaskKind.single) ...[
+            const SizedBox(height: 18),
+            _recurrenceBlock(),
+          ],
           const SizedBox(height: 18),
           _reminderBlock(),
           const SizedBox(height: 18),
@@ -331,6 +345,96 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         ),
     ];
   }
+
+  Widget _recurrenceBlock() {
+    final dl = context.dl;
+    const labels = {
+      RecurrenceType.none: 'Без повторения',
+      RecurrenceType.days: 'Каждый день / N дней',
+      RecurrenceType.weeks: 'Каждую неделю / N недель',
+      RecurrenceType.months: 'Каждый месяц (по числу)',
+      RecurrenceType.years: 'Каждый год (по дате)',
+      RecurrenceType.monthLastDay: 'Последний день месяца',
+      RecurrenceType.monthBeforeEnd: 'За K дней до конца месяца',
+    };
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.repeat, size: 18, color: dl.taskRecurring),
+            const SizedBox(width: 8),
+            _label('Повторение'),
+          ],
+        ),
+        const SizedBox(height: 6),
+        DropdownButton<RecurrenceType>(
+          value: _recurrence,
+          isExpanded: true,
+          underline: Container(height: 1, color: dl.line),
+          items: [
+            for (final e in labels.entries)
+              DropdownMenuItem(value: e.key, child: Text(e.value)),
+          ],
+          onChanged: (v) =>
+              setState(() => _recurrence = v ?? RecurrenceType.none),
+        ),
+        if (_recurrence != RecurrenceType.none) ...[
+          const SizedBox(height: 10),
+          _row(
+            'Интервал',
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _stepBtn(Icons.remove, () {
+                  if (_recurInterval > 1) setState(() => _recurInterval--);
+                }),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text('каждые $_recurInterval ${_recurUnit()}',
+                      style: const TextStyle(fontSize: 15)),
+                ),
+                _stepBtn(Icons.add, () => setState(() => _recurInterval++)),
+              ],
+            ),
+          ),
+          if (_recurrence == RecurrenceType.monthBeforeEnd) ...[
+            const SizedBox(height: 10),
+            _row(
+              'Дней до конца',
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _stepBtn(Icons.remove, () {
+                    if (_recurAnchor > 0) setState(() => _recurAnchor--);
+                  }),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text('$_recurAnchor',
+                        style: const TextStyle(fontSize: 15)),
+                  ),
+                  _stepBtn(Icons.add, () => setState(() => _recurAnchor++)),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text(recurrenceSummary(_currentModel()),
+              style: context.serif.copyWith(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 13,
+                  color: dl.taskRecurring)),
+        ],
+      ],
+    );
+  }
+
+  String _recurUnit() => switch (_recurrence) {
+        RecurrenceType.days => 'дн.',
+        RecurrenceType.weeks => 'нед.',
+        RecurrenceType.years => 'г.',
+        _ => 'мес.',
+      };
 
   Widget _reminderBlock() {
     return Column(
@@ -564,6 +668,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       reminderMinutes: _reminderMinutes,
       reminderDaysBefore: _reminderDaysBefore,
       colorId: _colorId,
+      recurrenceType: _kind == TaskKind.single ? _recurrence : RecurrenceType.none,
+      recurrenceInterval: _recurInterval < 1 ? 1 : _recurInterval,
+      recurrenceAnchor: _recurrence == RecurrenceType.monthBeforeEnd
+          ? _recurAnchor
+          : 0,
       note: _note.text.trim(),
       isDone: e?.isDone ?? false,
       completedAt: e?.completedAt,

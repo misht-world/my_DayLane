@@ -70,6 +70,38 @@ Future<void> seedIfEmpty(AppDatabase db, TaskRepository repo) async {
   await repo.saveTask(single('Техосмотр авто', 7, colorId: 0));
   await repo.saveTask(single('Оплатить аренду', 9, colorId: 3));
 
+  // ── Повторяющиеся (события: ДР, платежи, занятия) ────────────────
+  TaskModel recurring(
+    String title,
+    int startOffset,
+    RecurrenceType type, {
+    int interval = 1,
+    int anchor = 0,
+    int? timeMinutes,
+  }) {
+    final d = addDays(today, startOffset);
+    return TaskModel(
+      title: title,
+      kind: TaskKind.single,
+      startDate: d,
+      endDate: d,
+      durationDays: 1,
+      recurrenceType: type,
+      recurrenceInterval: interval,
+      recurrenceAnchor: anchor,
+      timeOfDayMinutes: timeMinutes,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  await repo.saveTask(recurring('Оплата подписки', 0, RecurrenceType.months));
+  await repo.saveTask(recurring('Тренировка', 1, RecurrenceType.weeks,
+      timeMinutes: 19 * 60));
+  await repo.saveTask(recurring('День рождения друга', 4, RecurrenceType.years));
+  await repo.saveTask(
+      recurring('Свести бюджет', 0, RecurrenceType.monthLastDay));
+
   // ── Периоды (полосы и дорожки; есть пересечение → 2 дорожки) ──────
   await repo.saveTask(period('Ремонт кухни', -1, 2, 1));
   await repo.saveTask(period('Командировка', 4, 8, 3));

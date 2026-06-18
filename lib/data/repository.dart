@@ -99,6 +99,12 @@ class TaskRepository {
     }
   }
 
+  /// Отмечает/снимает выполнение конкретного вхождения повторяющегося дела.
+  Future<void> toggleOccurrence(
+      TaskModel task, DateTime day, bool done) async {
+    await _db.setOccurrenceDone(task.id!, day, done);
+  }
+
   /// Ручной перенос однодневного дела на сегодня.
   Future<void> carryToTodayTask(TaskModel task) async {
     if (task.isPeriod) return;
