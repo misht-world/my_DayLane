@@ -40,6 +40,25 @@ String formatDateRange(DateTime a, DateTime b) {
   return '${formatDayMonth(a)} – ${formatDayMonth(b)}';
 }
 
+/// «Июнь 2026» — месяц (именительный падеж) и год, с заглавной буквы.
+String formatMonthYear(DateTime d) {
+  final s = DateFormat('LLLL y', 'ru').format(d);
+  return s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
+
+/// Короткое название месяца: «июл». Для подписей в сетке календаря.
+String monthNameShort(int month) =>
+    DateFormat('LLL', 'ru').format(DateTime(2000, month)).replaceAll('.', '');
+
+/// Прибавляет [n] месяцев к дате, сохраняя день (с поправкой на длину месяца).
+DateTime addMonths(DateTime d, int n) {
+  final total = d.month - 1 + n; // индекс месяца от нуля
+  final year = d.year + (total / 12).floor();
+  final month = total % 12 + 1; // % в Dart неотрицателен для делителя 12
+  final lastDay = DateTime(year, month + 1, 0).day;
+  return DateTime(year, month, d.day > lastDay ? lastDay : d.day);
+}
+
 /// Время дня из минут от полуночи в «09:00».
 String formatMinutesOfDay(int minutes) {
   final h = (minutes ~/ 60).toString().padLeft(2, '0');

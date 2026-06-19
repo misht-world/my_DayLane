@@ -47,6 +47,10 @@ class CalendarView extends ConsumerStatefulWidget {
 class _CalendarViewState extends ConsumerState<CalendarView> {
   CalendarMode _mode = CalendarMode.month;
 
+  /// Якорная дата отображаемого периода (по умолчанию — сегодня).
+  /// Позволяет листать на любой месяц/год.
+  DateTime? _anchor;
+
   static const _weekdayShort = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 
   @override
@@ -57,7 +61,8 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final firstWeekday = settings?.firstWeekday ?? 1;
     final tasks = ref.watch(tasksProvider).value ?? const [];
 
-    final start = _startOfWeek(today, firstWeekday);
+    final anchor = _anchor ?? today;
+    final start = _startOfWeek(anchor, firstWeekday);
     final lanes = packLanes(
       tasks.where((t) => _intersectsRange(t, start, _mode.days)),
     );
@@ -69,17 +74,40 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
 
     final weekdays = _orderedWeekdays(firstWeekday);
     final rows = (_mode.days / 7).ceil();
+    final end = addDays(start, _mode.days - 1);
+    final showToday = today.isBefore(start) || today.isAfter(end);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 12),
+          padding: const EdgeInsets.fromLTRB(0, 0, 4, 12),
           child: Row(
             children: [
-              Text('Календарь',
-                  style: context.serif.copyWith(fontSize: 16, color: dl.ink)),
+              _navArrow(context, Icons.chevron_left, () => _shift(-1)),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => _pickMonth(context, anchor),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                  child: Text(formatMonthYear(anchor),
+                      style:
+                          context.serif.copyWith(fontSize: 16, color: dl.ink)),
+                ),
+              ),
+              _navArrow(context, Icons.chevron_right, () => _shift(1)),
               const Spacer(),
+              if (showToday)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() => _anchor = null),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    child: Text('↺ сегодня',
+                        style: TextStyle(fontSize: 12, color: dl.accent)),
+                  ),
+                ),
               _modeSwitcher(context),
             ],
           ),
@@ -112,6 +140,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                 _WeekRow(
                   weekStart: addDays(start, r * 7),
                   today: today,
+                  anchorMonth: anchor.month,
                   colW: colW,
                   tasks: tasks,
                   laneOf: laneOf,
@@ -126,6 +155,37 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         }),
       ],
     );
+  }
+
+  Widget _navArrow(BuildContext context, IconData icon, VoidCallback onTap) =>
+      InkResponse(
+        onTap: onTap,
+        radius: 20,
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Icon(icon, size: 22, color: context.dl.inkSoft),
+        ),
+      );
+
+  /// Листание на период вперёд/назад: неделя/две недели — по дням,
+  /// месяц — по календарным месяцам.
+  void _shift(int dir) {
+    final DateTime base = _anchor ?? ref.read(todayProvider);
+    setState(() {
+      _anchor = switch (_mode) {
+        CalendarMode.week => addDays(base, 7 * dir),
+        CalendarMode.twoWeeks => addDays(base, 14 * dir),
+        CalendarMode.month => addMonths(base, dir),
+      };
+    });
+  }
+
+  Future<void> _pickMonth(BuildContext context, DateTime anchor) async {
+    final picked = await showDialog<DateTime>(
+      context: context,
+      builder: (_) => _MonthYearPicker(initial: anchor),
+    );
+    if (picked != null) setState(() => _anchor = picked);
   }
 
   Widget _modeSwitcher(BuildContext context) {
@@ -188,6 +248,7 @@ class _WeekRow extends StatelessWidget {
   const _WeekRow({
     required this.weekStart,
     required this.today,
+    required this.anchorMonth,
     required this.colW,
     required this.tasks,
     required this.laneOf,
@@ -200,6 +261,7 @@ class _WeekRow extends StatelessWidget {
 
   final DateTime weekStart;
   final DateTime today;
+  final int anchorMonth;
   final double colW;
   final List<TaskModel> tasks;
   final Map<int?, int> laneOf;
@@ -271,6 +333,8 @@ class _WeekRow extends StatelessWidget {
                     child: _DayCell(
                       day: addDays(weekStart, i),
                       isToday: isSameDate(addDays(weekStart, i), today),
+                      inAnchorMonth:
+                          addDays(weekStart, i).month == anchorMonth,
                       height: rowHeight,
                       singles: _singlesFor(addDays(weekStart, i)),
                       dones: dones,
@@ -309,6 +373,7 @@ class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,
     required this.isToday,
+    required this.inAnchorMonth,
     required this.height,
     required this.singles,
     required this.dones,
@@ -316,6 +381,7 @@ class _DayCell extends StatelessWidget {
   });
   final DateTime day;
   final bool isToday;
+  final bool inAnchorMonth;
   final double height;
   final List<TaskModel> singles;
   final Map<int, Set<int>> dones;
@@ -326,11 +392,20 @@ class _DayCell extends StatelessWidget {
     final dl = context.dl;
     final weekend = day.weekday == DateTime.saturday ||
         day.weekday == DateTime.sunday;
+    // 1-е число месяца подписываем коротким названием — чтобы в сетке,
+    // охватывающей несколько месяцев, не запутаться.
+    final isMonthStart = day.day == 1;
+    final numColor = isToday
+        ? null
+        : (inAnchorMonth ? (weekend ? dl.inkFaint : dl.inkSoft) : dl.inkFaint)
+            .withValues(alpha: inAnchorMonth ? 1 : 0.5);
 
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: isToday ? dl.accent.withValues(alpha: 0.10) : null,
+        color: isToday
+            ? dl.accent.withValues(alpha: 0.10)
+            : (inAnchorMonth ? null : dl.sunken.withValues(alpha: 0.35)),
         border: Border(
           left: BorderSide(color: dl.line, width: 0.5),
           bottom: showBottomRule
@@ -356,10 +431,23 @@ class _DayCell extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: Theme.of(context).colorScheme.onPrimary)),
                     )
-                  : Text('${day.day}',
-                      style: TextStyle(
-                          fontSize: 12.5,
-                          color: weekend ? dl.inkFaint : dl.inkSoft)),
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        if (isMonthStart) ...[
+                          Text(monthNameShort(day.month),
+                              style: TextStyle(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w600,
+                                  color: dl.accent)),
+                          const SizedBox(width: 3),
+                        ],
+                        Text('${day.day}',
+                            style: TextStyle(fontSize: 12.5, color: numColor)),
+                      ],
+                    ),
             ),
           ),
           SizedBox(
@@ -573,6 +661,94 @@ class _DaySheet extends StatelessWidget {
                   },
                 ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Компактный выбор месяца и года: листание года стрелками + сетка 12 месяцев.
+class _MonthYearPicker extends StatefulWidget {
+  const _MonthYearPicker({required this.initial});
+  final DateTime initial;
+
+  @override
+  State<_MonthYearPicker> createState() => _MonthYearPickerState();
+}
+
+class _MonthYearPickerState extends State<_MonthYearPicker> {
+  late int _year = widget.initial.year;
+
+  @override
+  Widget build(BuildContext context) {
+    final dl = context.dl;
+    return Dialog(
+      backgroundColor: dl.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  color: dl.inkSoft,
+                  onPressed: () => setState(() => _year--),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text('$_year',
+                        style:
+                            context.serif.copyWith(fontSize: 18, color: dl.ink)),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  color: dl.inkSoft,
+                  onPressed: () => setState(() => _year++),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            GridView.count(
+              crossAxisCount: 3,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: 2.1,
+              children: [
+                for (var m = 1; m <= 12; m++)
+                  _monthCell(context, m, dl),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _monthCell(BuildContext context, int month, DayLaneColors dl) {
+    final selected =
+        month == widget.initial.month && _year == widget.initial.year;
+    return Material(
+      color: selected ? dl.accent : dl.sunken.withValues(alpha: 0.4),
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => Navigator.pop(context, DateTime(_year, month, 1)),
+        child: Center(
+          child: Text(
+            monthNameShort(month),
+            style: TextStyle(
+              fontSize: 13,
+              color: selected
+                  ? Theme.of(context).colorScheme.onPrimary
+                  : dl.inkSoft,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+            ),
+          ),
         ),
       ),
     );

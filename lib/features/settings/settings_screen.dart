@@ -1,6 +1,10 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart' show Value;
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../app/providers.dart';
 import '../../core/constants.dart';
@@ -74,6 +78,22 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () =>
                       NotificationService.instance.requestPermissions(),
                 ),
+                const Divider(height: 1),
+                _sectionLabel(context, 'Данные'),
+                ListTile(
+                  leading: Icon(Icons.ios_share, color: dl.inkSoft),
+                  title: const Text('Экспорт (резервная копия)'),
+                  subtitle: Text('Сохранить все дела в файл JSON',
+                      style: TextStyle(fontSize: 12, color: dl.inkFaint)),
+                  onTap: () => _export(context, ref),
+                ),
+                ListTile(
+                  leading: Icon(Icons.file_download_outlined, color: dl.inkSoft),
+                  title: const Text('Импорт из файла'),
+                  subtitle: Text('Заменить все данные из резервной копии',
+                      style: TextStyle(fontSize: 12, color: dl.inkFaint)),
+                  onTap: () => _import(context, ref),
+                ),
                 const SizedBox(height: 28),
                 Center(
                   child: Text('$kAppName · v$kAppVersion',
@@ -83,6 +103,56 @@ class SettingsScreen extends ConsumerWidget {
               ],
             ),
     );
+  }
+
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final file = await ref.read(backupServiceProvider).exportToFile();
+      await Share.shareXFiles([XFile(file.path)],
+          subject: 'DayLane — резервная копия');
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Не удалось: $e')));
+    }
+  }
+
+  Future<void> _import(BuildContext context, WidgetRef ref) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final res = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
+    final path = res?.files.single.path;
+    if (path == null) return;
+    if (!context.mounted) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Импортировать?'),
+        content: const Text(
+            'Все текущие дела будут заменены данными из файла. Действие нельзя отменить.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Отмена')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Заменить')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    try {
+      final content = await File(path).readAsString();
+      final n = await ref.read(backupServiceProvider).import(content);
+      await ref.read(repositoryProvider).rescheduleAll();
+      messenger.showSnackBar(
+          SnackBar(content: Text('Импортировано дел: $n')));
+    } catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text('Ошибка импорта: $e')));
+    }
   }
 
   Widget _sectionLabel(BuildContext context, String text) => Padding(

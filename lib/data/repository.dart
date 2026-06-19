@@ -106,6 +106,14 @@ class TaskRepository {
     await _db.setOccurrenceDone(task.id!, day, done);
   }
 
+  /// Пере-планирует напоминания для всех дел (после импорта/восстановления).
+  Future<void> rescheduleAll() async {
+    final all = await _tasks.getAll();
+    for (final t in all) {
+      await _notifications.reschedule(t);
+    }
+  }
+
   /// Назначает дату отложенному делу (и снимает признак «отложено»).
   Future<void> scheduleDeferred(TaskModel task, DateTime date) async {
     final d = dateOnly(date);

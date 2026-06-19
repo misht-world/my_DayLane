@@ -6,6 +6,7 @@ import '../data/db.dart';
 import '../data/repository.dart';
 import '../domain/models.dart';
 import '../domain/scheduling.dart';
+import '../services/backup.dart';
 
 /// Единая БД на время жизни приложения.
 final databaseProvider = Provider<AppDatabase>((ref) {
@@ -16,6 +17,10 @@ final databaseProvider = Provider<AppDatabase>((ref) {
 
 final repositoryProvider = Provider<TaskRepository>(
   (ref) => TaskRepository(ref.watch(databaseProvider)),
+);
+
+final backupServiceProvider = Provider<BackupService>(
+  (ref) => BackupService(ref.watch(databaseProvider)),
 );
 
 /// Настройки приложения (одна строка).

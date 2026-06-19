@@ -380,13 +380,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Icon(Icons.repeat, size: 18, color: dl.taskRecurring),
-            const SizedBox(width: 8),
-            _label('Повторение'),
-          ],
-        ),
+        _label('Повторение'),
         const SizedBox(height: 6),
         DropdownButton<RecurrenceType>(
           value: _recurrence,
