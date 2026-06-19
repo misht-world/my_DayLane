@@ -16,7 +16,7 @@ class AppTheme {
 
   static const String serifFamily = 'serif';
 
-  // ── Светлая палитра («Журнал») ──────────────────────────────────
+  // ── Светлая палитра («Ежедневник») ──────────────────────────────
   static const Color _lAccent = Color(0xFFB45309); // тёплый терракот-янтарь
   static const Color _lPage = Color(0xFFFBF9F4);
   static const Color _lSurface = Color(0xFFFFFFFF);
@@ -28,7 +28,7 @@ class AppTheme {
   static const Color _lLineStrong = Color(0xFFDDD7C8);
   static const Color _lDanger = Color(0xFFB0392B);
 
-  // ── Тёмная палитра («Журнал») ───────────────────────────────────
+  // ── Тёмная палитра («Ежедневник») ───────────────────────────────
   static const Color _dAccent = Color(0xFFE0A33A);
   static const Color _dPage = Color(0xFF100F0B);
   static const Color _dSurface = Color(0xFF16140F);

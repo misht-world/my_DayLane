@@ -13,7 +13,7 @@ import 'task_row.dart';
 
 enum _Horizon { yesterday, today, tomorrow }
 
-/// Главный экран в стиле «Журнал»: дата-герой с навигацией по дням и
+/// Главный экран в стиле «Ежедневник»: дата-герой с навигацией по дням и
 /// три выделенные сворачиваемые секции вчера/сегодня/завтра.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -44,7 +44,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _hero(context, focused),
                   _section(
                     kind: _Horizon.yesterday,
-                    label: 'вчера',
+                    label: 'Вчера',
                     day: addDays(focused, -1),
                     tasks: sections.yesterday,
                     expanded: _showYesterday,
@@ -55,7 +55,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   _section(
                     kind: _Horizon.today,
-                    label: 'сегодня',
+                    label: 'Сегодня',
                     day: focused,
                     tasks: sections.today,
                     expanded: _showToday,
@@ -65,7 +65,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                   _section(
                     kind: _Horizon.tomorrow,
-                    label: 'завтра',
+                    label: 'Завтра',
                     day: addDays(focused, 1),
                     tasks: sections.tomorrow,
                     expanded: _showTomorrow,
@@ -99,7 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const Spacer(),
           IconButton(
-            icon: Icon(Icons.settings_outlined, color: dl.inkFaint),
+            icon: Icon(Icons.settings_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
             ),
@@ -111,8 +111,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               height: 36,
               decoration: BoxDecoration(
                   shape: BoxShape.circle, color: dl.accent),
-              child: Icon(Icons.add,
-                  size: 20, color: Theme.of(context).colorScheme.onPrimary),
+              child: Icon(Icons.add_rounded,
+                  size: 22, color: Theme.of(context).colorScheme.onPrimary),
             ),
           ),
         ],
@@ -184,7 +184,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.restore, size: 14, color: dl.accent),
+                      Icon(Icons.restore_rounded, size: 15, color: dl.accent),
                       const SizedBox(width: 3),
                       Text('сегодня',
                           style: TextStyle(fontSize: 12, color: dl.accent)),
@@ -192,8 +192,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
-            _navBtn(context, Icons.chevron_left, () => shift(-1)),
-            _navBtn(context, Icons.chevron_right, () => shift(1)),
+            _navBtn(context, Icons.chevron_left_rounded, () => shift(-1)),
+            _navBtn(context, Icons.chevron_right_rounded, () => shift(1)),
           ],
         ),
       ),
@@ -224,14 +224,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     required String emptyText,
   }) {
     final dl = context.dl;
-    final isToday = kind == _Horizon.today;
     final isYesterday = kind == _Horizon.yesterday;
-    final countColor = danger ? dl.danger : dl.inkFaint;
-    final markerColor = isToday
-        ? dl.accent
-        : danger
-            ? dl.danger
-            : dl.lineStrong;
     final canCarry =
         isYesterday && tasks.any((t) => t.isSingle && !t.isDone);
 
@@ -240,59 +233,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Лента-заголовок.
-          GestureDetector(
-            onTap: onToggle,
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
-              decoration: BoxDecoration(
-                color: isToday ? dl.sunken : dl.sunken.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 4,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: markerColor,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
+          _bandHeader(
+            label: label,
+            count: tasks.length,
+            danger: danger,
+            expanded: expanded,
+            onToggle: onToggle,
+            addAction: isYesterday
+                ? null
+                : _headerAction(
+                    icon: Icons.add_rounded,
+                    filled: true,
+                    tooltip: 'Добавить дело',
+                    onTap: () =>
+                        openTaskEditor(context, null, initialDate: day),
                   ),
-                  const SizedBox(width: 10),
-                  Text(label,
-                      style: context.serif.copyWith(
-                          fontStyle: FontStyle.italic,
-                          fontSize: isToday ? 17 : 15,
-                          fontWeight: FontWeight.w500,
-                          color: dl.ink)),
-                  const SizedBox(width: 8),
-                  Text('${tasks.length}',
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: countColor,
-                          fontWeight:
-                              danger ? FontWeight.w500 : FontWeight.w400)),
-                  if (danger) ...[
-                    const SizedBox(width: 3),
-                    Icon(Icons.keyboard_return, size: 13, color: dl.danger),
-                  ],
-                  const Spacer(),
-                  if (kind != _Horizon.yesterday)
-                    _headerAction(
-                      icon: Icons.add,
-                      filled: true,
-                      tooltip: 'Добавить дело',
-                      onTap: () =>
-                          openTaskEditor(context, null, initialDate: day),
-                    ),
-                  const SizedBox(width: 4),
-                  Icon(expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 18, color: dl.inkFaint),
-                ],
-              ),
-            ),
           ),
           if (expanded)
             Padding(
@@ -325,25 +280,101 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       borderRadius: BorderRadius.circular(20)),
                                 ),
                                 icon: const Icon(
-                                    Icons.subdirectory_arrow_left, size: 16),
+                                    Icons.subdirectory_arrow_left_rounded,
+                                    size: 16),
                                 label: const Text('Перенести всё на сегодня',
                                     style: TextStyle(fontSize: 13)),
                               ),
                             ),
                           ),
                         for (var i = 0; i < tasks.length; i++) ...[
-                          if (i > 0) Divider(height: 1, color: dl.line),
+                          if (i > 0) _taskDivider(),
                           TaskRow(
                             task: tasks[i],
                             day: day,
                             showCarryToToday: isYesterday,
                           ),
                         ],
+                        // Линия под последним делом списка.
+                        _taskDivider(),
                       ],
                     ),
             ),
         ],
       ),
+    );
+  }
+
+  /// Единая лента-заголовок секций (вчера/сегодня/завтра/отложенные).
+  /// Свёрнуто — серая чёрточка слева; раскрыто — акцентная.
+  Widget _bandHeader({
+    required String label,
+    required int count,
+    required bool danger,
+    required bool expanded,
+    required VoidCallback onToggle,
+    Widget? addAction,
+  }) {
+    final dl = context.dl;
+    return GestureDetector(
+      onTap: onToggle,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 9, 8, 9),
+        decoration: BoxDecoration(
+          color: dl.sunken,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              height: 18,
+              decoration: BoxDecoration(
+                color: expanded ? dl.accent : dl.lineStrong,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(label,
+                style: context.serif.copyWith(
+                    fontStyle: FontStyle.italic,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w500,
+                    color: dl.ink)),
+            const SizedBox(width: 8),
+            Text('$count',
+                style: TextStyle(
+                    fontSize: 12,
+                    color: danger ? dl.danger : dl.inkFaint,
+                    fontWeight: danger ? FontWeight.w500 : FontWeight.w400)),
+            if (danger) ...[
+              const SizedBox(width: 3),
+              Icon(Icons.keyboard_return_rounded, size: 13, color: dl.danger),
+            ],
+            const Spacer(),
+            ?addAction,
+            const SizedBox(width: 4),
+            Icon(expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                size: 20, color: dl.inkFaint),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Разделитель между делами: чёрная линия с точкой-кружком в начале.
+  Widget _taskDivider() {
+    final dl = context.dl;
+    return Row(
+      children: [
+        Container(
+          width: 5,
+          height: 5,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: dl.ink),
+        ),
+        Expanded(child: Container(height: 1, color: dl.ink)),
+      ],
     );
   }
 
@@ -390,42 +421,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            onTap: () => setState(() => _showDeferred = !_showDeferred),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(10, 8, 8, 8),
-              decoration: BoxDecoration(
-                color: dl.sunken.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.inventory_2_outlined,
-                      size: 16, color: dl.inkSoft),
-                  const SizedBox(width: 9),
-                  Text('отложенные',
-                      style: context.serif.copyWith(
-                          fontStyle: FontStyle.italic,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: dl.ink)),
-                  const SizedBox(width: 8),
-                  Text('${tasks.length}',
-                      style: TextStyle(fontSize: 12, color: dl.inkFaint)),
-                  const Spacer(),
-                  _headerAction(
-                    icon: Icons.add,
-                    filled: true,
-                    tooltip: 'Добавить отложенное дело',
-                    onTap: () =>
-                        openTaskEditor(context, null, deferred: true),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(_showDeferred ? Icons.expand_less : Icons.expand_more,
-                      size: 18, color: dl.inkFaint),
-                ],
-              ),
+          _bandHeader(
+            label: 'Отложенные',
+            count: tasks.length,
+            danger: false,
+            expanded: _showDeferred,
+            onToggle: () => setState(() => _showDeferred = !_showDeferred),
+            addAction: _headerAction(
+              icon: Icons.add_rounded,
+              filled: true,
+              tooltip: 'Добавить отложенное дело',
+              onTap: () => openTaskEditor(context, null, deferred: true),
             ),
           ),
           if (_showDeferred)
@@ -440,9 +446,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : Column(
                       children: [
                         for (var i = 0; i < tasks.length; i++) ...[
-                          if (i > 0) Divider(height: 1, color: dl.line),
+                          if (i > 0) _taskDivider(),
                           _DeferredRow(task: tasks[i]),
                         ],
+                        _taskDivider(),
                       ],
                     ),
             ),
@@ -464,62 +471,104 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-/// Строка отложенного дела с быстрым назначением даты.
-class _DeferredRow extends ConsumerWidget {
+/// Строка отложенного дела с быстрым назначением даты и раскрытием подпунктов.
+class _DeferredRow extends ConsumerStatefulWidget {
   const _DeferredRow({required this.task});
   final TaskModel task;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DeferredRow> createState() => _DeferredRowState();
+}
+
+class _DeferredRowState extends ConsumerState<_DeferredRow> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final task = widget.task;
     final dl = context.dl;
     final color = context.taskColor(task);
     final repo = ref.read(repositoryProvider);
     final today = ref.watch(todayProvider);
+    final progress = ref.watch(subtaskProgressProvider)[task.id] ?? (0, 0);
+    final hasSubs = progress.$2 > 0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => repo.toggleDone(task),
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: color, width: 1.6),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+          child: Row(
+            children: [
+              GestureDetector(
+                onTap: () => repo.toggleDone(task),
+                behavior: HitTestBehavior.opaque,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: color, width: 1.6),
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => openTaskEditor(context, task),
+                  behavior: HitTestBehavior.opaque,
+                  child: Text(task.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          context.serif.copyWith(fontSize: 16, color: dl.ink)),
+                ),
+              ),
+              if (hasSubs)
+                GestureDetector(
+                  onTap: () => setState(() => _expanded = !_expanded),
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${progress.$1}/${progress.$2}',
+                            style:
+                                TextStyle(fontSize: 12, color: dl.inkSoft)),
+                        Icon(
+                            _expanded
+                                ? Icons.expand_less_rounded
+                                : Icons.expand_more_rounded,
+                            size: 20,
+                            color: dl.inkFaint),
+                      ],
+                    ),
+                  ),
+                ),
+              _quick(context, 'сегодня',
+                  () => repo.scheduleDeferred(task, today)),
+              _quick(context, 'завтра',
+                  () => repo.scheduleDeferred(task, addDays(today, 1))),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: Icon(Icons.event_rounded, size: 18, color: dl.inkSoft),
+                tooltip: 'На дату',
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: today,
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (picked != null) repo.scheduleDeferred(task, picked);
+                },
+              ),
+            ],
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => openTaskEditor(context, task),
-              behavior: HitTestBehavior.opaque,
-              child: Text(task.title,
-                  style: context.serif.copyWith(fontSize: 16, color: dl.ink)),
-            ),
-          ),
-          _quick(context, 'сегодня', () => repo.scheduleDeferred(task, today)),
-          _quick(context, 'завтра',
-              () => repo.scheduleDeferred(task, addDays(today, 1))),
-          IconButton(
-            visualDensity: VisualDensity.compact,
-            icon: Icon(Icons.event, size: 18, color: dl.inkSoft),
-            tooltip: 'На дату',
-            onPressed: () async {
-              final picked = await showDatePicker(
-                context: context,
-                initialDate: today,
-                firstDate: DateTime(2000),
-                lastDate: DateTime(2100),
-              );
-              if (picked != null) repo.scheduleDeferred(task, picked);
-            },
-          ),
-        ],
-      ),
+        ),
+        if (_expanded && hasSubs) SubtaskChecklist(taskId: task.id!),
+      ],
     );
   }
 

@@ -9,27 +9,14 @@ import '../../domain/models.dart';
 import '../../domain/scheduling.dart';
 import '../task_editor/task_editor_screen.dart';
 
-enum CalendarMode { week, twoWeeks, month }
+/// Окно календаря: 5 недель (35 дней). При листании на соседний месяц
+/// одна неделя остаётся внахлёст — для непрерывности.
+const int _gridDays = 35;
+const int _gridRows = 5;
+const int _stepDays = 28; // шаг листания = 4 недели (нахлёст в 1 неделю)
 
-extension on CalendarMode {
-  String get label => switch (this) {
-        CalendarMode.week => 'Неделя',
-        CalendarMode.twoWeeks => 'Две недели',
-        CalendarMode.month => 'Месяц',
-      };
-  int get days => switch (this) {
-        CalendarMode.week => 7,
-        CalendarMode.twoWeeks => 14,
-        CalendarMode.month => 35,
-      };
-
-  /// Максимум видимых дорожек; остальное сворачивается в «+N».
-  int get maxLanes => switch (this) {
-        CalendarMode.week => 5,
-        CalendarMode.twoWeeks => 4,
-        CalendarMode.month => 3,
-      };
-}
+/// Максимум видимых дорожек; остальное сворачивается в «+N».
+const int _maxLanes = 3;
 
 const double _numZone = 24;
 const double _dotsZone = 13;
@@ -45,8 +32,6 @@ class CalendarView extends ConsumerStatefulWidget {
 }
 
 class _CalendarViewState extends ConsumerState<CalendarView> {
-  CalendarMode _mode = CalendarMode.month;
-
   /// Якорная дата отображаемого периода (по умолчанию — сегодня).
   /// Позволяет листать на любой месяц/год.
   DateTime? _anchor;
@@ -64,17 +49,15 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final anchor = _anchor ?? today;
     final start = _startOfWeek(anchor, firstWeekday);
     final lanes = packLanes(
-      tasks.where((t) => _intersectsRange(t, start, _mode.days)),
+      tasks.where((t) => _intersectsRange(t, start, _gridDays)),
     );
     final laneOf = {for (final li in lanes) li.task.id: li.lane};
     final totalLanes = laneCount(lanes);
-    final visibleLanes =
-        totalLanes < _mode.maxLanes ? totalLanes : _mode.maxLanes;
+    final visibleLanes = totalLanes < _maxLanes ? totalLanes : _maxLanes;
     final dones = ref.watch(donesMapProvider);
 
     final weekdays = _orderedWeekdays(firstWeekday);
-    final rows = (_mode.days / 7).ceil();
-    final end = addDays(start, _mode.days - 1);
+    final end = addDays(start, _gridDays - 1);
     final showToday = today.isBefore(start) || today.isAfter(end);
 
     return Column(
@@ -84,7 +67,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           padding: const EdgeInsets.fromLTRB(0, 0, 4, 12),
           child: Row(
             children: [
-              _navArrow(context, Icons.chevron_left, () => _shift(-1)),
+              _navArrow(context, Icons.chevron_left_rounded, () => _shift(-1)),
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () => _pickMonth(context, anchor),
@@ -95,7 +78,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                           context.serif.copyWith(fontSize: 16, color: dl.ink)),
                 ),
               ),
-              _navArrow(context, Icons.chevron_right, () => _shift(1)),
+              _navArrow(context, Icons.chevron_right_rounded, () => _shift(1)),
               const Spacer(),
               if (showToday)
                 GestureDetector(
@@ -103,12 +86,18 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                   onTap: () => setState(() => _anchor = null),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    child: Text('↺ сегодня',
-                        style: TextStyle(fontSize: 12, color: dl.accent)),
+                        horizontal: 8, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.restore_rounded, size: 15, color: dl.accent),
+                        const SizedBox(width: 3),
+                        Text('сегодня',
+                            style: TextStyle(fontSize: 12, color: dl.accent)),
+                      ],
+                    ),
                   ),
                 ),
-              _modeSwitcher(context),
             ],
           ),
         ),
@@ -132,27 +121,37 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           ],
         ),
         const SizedBox(height: 4),
-        LayoutBuilder(builder: (context, c) {
-          final colW = c.maxWidth / 7;
-          return Column(
-            children: [
-              for (var r = 0; r < rows; r++)
-                _WeekRow(
-                  weekStart: addDays(start, r * 7),
-                  today: today,
-                  anchorMonth: anchor.month,
-                  colW: colW,
-                  tasks: tasks,
-                  laneOf: laneOf,
-                  visibleLanes: visibleLanes,
-                  isLastRow: r == rows - 1,
-                  dones: dones,
-                  onTapDay: _showDay,
-                  onAddDay: (d) => openTaskEditor(context, null, initialDate: d),
-                ),
-            ],
-          );
-        }),
+        // Свайп влево/вправо листает на соседний период (с нахлёстом в неделю).
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragEnd: (d) {
+            final v = d.primaryVelocity ?? 0;
+            if (v > 120) _shift(-1);
+            if (v < -120) _shift(1);
+          },
+          child: LayoutBuilder(builder: (context, c) {
+            final colW = c.maxWidth / 7;
+            return Column(
+              children: [
+                for (var r = 0; r < _gridRows; r++)
+                  _WeekRow(
+                    weekStart: addDays(start, r * 7),
+                    today: today,
+                    anchorMonth: anchor.month,
+                    colW: colW,
+                    tasks: tasks,
+                    laneOf: laneOf,
+                    visibleLanes: visibleLanes,
+                    isLastRow: r == _gridRows - 1,
+                    dones: dones,
+                    onTapDay: _showDay,
+                    onAddDay: (day) =>
+                        openTaskEditor(context, null, initialDate: day),
+                  ),
+              ],
+            );
+          }),
+        ),
       ],
     );
   }
@@ -163,21 +162,15 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         radius: 20,
         child: Padding(
           padding: const EdgeInsets.all(4),
-          child: Icon(icon, size: 22, color: context.dl.inkSoft),
+          child: Icon(icon, size: 24, color: context.dl.inkSoft),
         ),
       );
 
-  /// Листание на период вперёд/назад: неделя/две недели — по дням,
-  /// месяц — по календарным месяцам.
+  /// Листание на соседний период: шаг 4 недели, чтобы одна неделя осталась
+  /// внахлёст с предыдущим экраном.
   void _shift(int dir) {
     final DateTime base = _anchor ?? ref.read(todayProvider);
-    setState(() {
-      _anchor = switch (_mode) {
-        CalendarMode.week => addDays(base, 7 * dir),
-        CalendarMode.twoWeeks => addDays(base, 14 * dir),
-        CalendarMode.month => addMonths(base, dir),
-      };
-    });
+    setState(() => _anchor = addDays(base, _stepDays * dir));
   }
 
   Future<void> _pickMonth(BuildContext context, DateTime anchor) async {
@@ -186,34 +179,6 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
       builder: (_) => _MonthYearPicker(initial: anchor),
     );
     if (picked != null) setState(() => _anchor = picked);
-  }
-
-  Widget _modeSwitcher(BuildContext context) {
-    final dl = context.dl;
-    return PopupMenuButton<CalendarMode>(
-      initialValue: _mode,
-      onSelected: (m) => setState(() => _mode = m),
-      itemBuilder: (_) => [
-        for (final m in CalendarMode.values)
-          PopupMenuItem(value: m, child: Text(m.label)),
-      ],
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-        decoration: BoxDecoration(
-          border: Border.all(color: dl.lineStrong),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(_mode.label,
-                style: TextStyle(fontSize: 12, color: dl.inkSoft)),
-            const SizedBox(width: 4),
-            Icon(Icons.expand_more, size: 15, color: dl.inkSoft),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showDay(DateTime day) {

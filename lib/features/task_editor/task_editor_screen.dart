@@ -118,10 +118,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
+    final divider = Divider(height: 1, color: dl.line);
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close_rounded),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text('Дело', style: context.serif.copyWith(fontSize: 18)),
@@ -135,66 +136,150 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 32),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
         children: [
-          TextField(
-            controller: _title,
-            style: const TextStyle(fontSize: 18),
-            decoration: const InputDecoration(
-              hintText: 'Что нужно сделать?',
-              border: InputBorder.none,
-            ),
-            textCapitalization: TextCapitalization.sentences,
-          ),
-          const SizedBox(height: 8),
+          _titleField(),
+          const SizedBox(height: 14),
           _kindSegment(),
-          const SizedBox(height: 10),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Отложить (без даты)'),
-            subtitle: Text('дело попадёт в раздел «Отложенные»',
-                style: TextStyle(fontSize: 12, color: dl.inkFaint)),
-            value: _deferred,
-            onChanged: (v) => setState(() => _deferred = v),
-          ),
-          if (!_deferred) ...[
-            const SizedBox(height: 8),
-            if (_kind == TaskKind.single)
-              ..._singleFields()
-            else
-              ..._periodFields(),
-            if (_kind == TaskKind.single) ...[
-              const SizedBox(height: 18),
-              _recurrenceBlock(),
-            ],
-            const SizedBox(height: 18),
-            _reminderBlock(),
-          ],
-          const SizedBox(height: 18),
-          _colorBlock(),
-          const SizedBox(height: 18),
-          _subtaskBlock(),
-          const SizedBox(height: 18),
-          _label('Примечание'),
-          TextField(
-            controller: _note,
-            maxLines: null,
-            minLines: 2,
-            decoration: const InputDecoration(
-              hintText: 'Заметка к делу',
+          const SizedBox(height: 14),
+          // Карточка «Когда»: отложить, дата/период, повторение, напоминание.
+          _card(children: [
+            _switchTile(
+              Icons.bookmark_border_rounded,
+              'Отложить (без даты)',
+              'дело попадёт в раздел «Отложенные»',
+              _deferred,
+              (v) => setState(() => _deferred = v),
             ),
-          ),
+            if (!_deferred) ...[
+              divider,
+              if (_kind == TaskKind.single) ...[
+                ..._singleFields(),
+                divider,
+                _recurrenceBlock(),
+              ] else
+                ..._periodFields(),
+              divider,
+              _reminderBlock(),
+            ],
+          ]),
+          const SizedBox(height: 14),
+          _card(children: [_colorBlock()]),
+          const SizedBox(height: 14),
+          _card(children: [_subtaskBlock()]),
+          const SizedBox(height: 14),
+          _card(children: [
+            _label('Примечание'),
+            const SizedBox(height: 2),
+            TextField(
+              controller: _note,
+              maxLines: null,
+              minLines: 2,
+              decoration: const InputDecoration(
+                hintText: 'Заметка к делу',
+                border: InputBorder.none,
+                isDense: true,
+              ),
+            ),
+          ]),
           if (_editing) ...[
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             Center(
               child: TextButton.icon(
                 onPressed: _delete,
                 style: TextButton.styleFrom(foregroundColor: dl.danger),
-                icon: const Icon(Icons.delete_outline, size: 18),
+                icon: const Icon(Icons.delete_outline_rounded, size: 18),
                 label: const Text('Удалить дело'),
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  // ── Карточки и контейнеры ─────────────────────────────────────
+  Widget _card({required List<Widget> children}) {
+    final dl = context.dl;
+    return Container(
+      decoration: BoxDecoration(
+        color: dl.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: dl.line),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: children,
+      ),
+    );
+  }
+
+  Widget _titleField() {
+    final dl = context.dl;
+    return Container(
+      decoration: BoxDecoration(
+        color: dl.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: dl.line),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: TextField(
+        controller: _title,
+        style: context.serif
+            .copyWith(fontSize: 20, color: dl.ink, fontWeight: FontWeight.w500),
+        decoration: InputDecoration(
+          hintText: 'Что нужно сделать?',
+          hintStyle: context.serif.copyWith(fontSize: 20, color: dl.inkFaint),
+          border: InputBorder.none,
+        ),
+        textCapitalization: TextCapitalization.sentences,
+        minLines: 1,
+        maxLines: 3,
+      ),
+    );
+  }
+
+  /// Строка-переключатель с ведущей иконкой (для карточек).
+  Widget _switchTile(IconData icon, String title, String? subtitle, bool value,
+      ValueChanged<bool> onChanged) {
+    final dl = context.dl;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: dl.inkSoft),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: TextStyle(fontSize: 15, color: dl.ink)),
+                if (subtitle != null)
+                  Text(subtitle,
+                      style: TextStyle(fontSize: 12, color: dl.inkFaint)),
+              ],
+            ),
+          ),
+          Switch(value: value, onChanged: onChanged),
+        ],
+      ),
+    );
+  }
+
+  /// Строка с ведущей иконкой, подписью и трейлингом (Дата/Время и т.п.).
+  Widget _iconRow(IconData icon, String label, Widget trailing) {
+    final dl = context.dl;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: dl.inkSoft),
+          const SizedBox(width: 14),
+          Expanded(
+              child:
+                  Text(label, style: TextStyle(fontSize: 15, color: dl.ink))),
+          trailing,
         ],
       ),
     );
@@ -227,15 +312,17 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   List<Widget> _singleFields() {
     final dl = context.dl;
     return [
-      _row(
+      _iconRow(
+        Icons.event_rounded,
         'Дата',
         _pillButton(formatDayMonth(_start), () async {
           final picked = await _pickDate(_start);
           if (picked != null) setState(() => _start = _end = picked);
         }),
       ),
-      const SizedBox(height: 10),
-      _row(
+      Divider(height: 1, color: dl.line),
+      _iconRow(
+        Icons.schedule_rounded,
         'Время',
         Row(
           mainAxisSize: MainAxisSize.min,
@@ -246,7 +333,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ),
             if (_timeMinutes != null)
               IconButton(
-                icon: Icon(Icons.clear, size: 18, color: dl.inkFaint),
+                icon: Icon(Icons.clear_rounded, size: 18, color: dl.inkFaint),
                 onPressed: () => setState(() => _timeMinutes = null),
               ),
           ],
@@ -305,7 +392,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _stepBtn(Icons.remove, () {
+              _stepBtn(Icons.remove_rounded, () {
                 if (_duration > 1) setState(() => _duration--);
               }),
               Padding(
@@ -313,7 +400,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 child: Text('$_duration дн.',
                     style: const TextStyle(fontSize: 15)),
               ),
-              _stepBtn(Icons.add, () => setState(() => _duration++)),
+              _stepBtn(Icons.add_rounded, () => setState(() => _duration++)),
             ],
           ),
         ),
@@ -322,14 +409,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             Text(formatDayMonth(_end),
                 style: TextStyle(color: dl.inkSoft, fontSize: 14))),
       ],
-      const SizedBox(height: 14),
-      SwitchListTile(
-        contentPadding: EdgeInsets.zero,
-        title: const Text('Начать после дела'),
-        subtitle: Text('даты сдвигаются за родителем автоматически',
-            style: TextStyle(fontSize: 12, color: dl.inkFaint)),
-        value: _linked,
-        onChanged: (v) {
+      Divider(height: 1, color: dl.line),
+      _switchTile(
+        Icons.link_rounded,
+        'Начать после дела',
+        'даты сдвигаются за родителем автоматически',
+        _linked,
+        (v) {
           if (v) {
             _pickParent();
           } else {
@@ -357,7 +443,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               const SizedBox(width: 8),
               Expanded(child: Text(parent.title)),
               IconButton(
-                icon: Icon(Icons.close, size: 18, color: dl.inkFaint),
+                icon: Icon(Icons.close_rounded, size: 18, color: dl.inkFaint),
                 onPressed: () => setState(() => _dependsOn = null),
               ),
             ],
@@ -380,7 +466,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('Повторение'),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(Icons.repeat_rounded, size: 20, color: dl.inkSoft),
+            const SizedBox(width: 14),
+            Text('Повторение',
+                style: TextStyle(fontSize: 15, color: dl.ink)),
+          ],
+        ),
         const SizedBox(height: 6),
         DropdownButton<RecurrenceType>(
           value: _recurrence,
@@ -400,7 +494,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _stepBtn(Icons.remove, () {
+                _stepBtn(Icons.remove_rounded, () {
                   if (_recurInterval > 1) setState(() => _recurInterval--);
                 }),
                 Padding(
@@ -408,7 +502,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   child: Text('каждые $_recurInterval ${_recurUnit()}',
                       style: const TextStyle(fontSize: 15)),
                 ),
-                _stepBtn(Icons.add, () => setState(() => _recurInterval++)),
+                _stepBtn(
+                    Icons.add_rounded, () => setState(() => _recurInterval++)),
               ],
             ),
           ),
@@ -419,7 +514,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  _stepBtn(Icons.remove, () {
+                  _stepBtn(Icons.remove_rounded, () {
                     if (_recurAnchor > 0) setState(() => _recurAnchor--);
                   }),
                   Padding(
@@ -427,7 +522,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                     child: Text('$_recurAnchor',
                         style: const TextStyle(fontSize: 15)),
                   ),
-                  _stepBtn(Icons.add, () => setState(() => _recurAnchor++)),
+                  _stepBtn(
+                      Icons.add_rounded, () => setState(() => _recurAnchor++)),
                 ],
               ),
             ),
@@ -472,10 +568,11 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ),
           ),
           child: auto
-              ? Icon(Icons.brightness_auto,
+              ? Icon(Icons.brightness_auto_rounded,
                   size: 17, color: selected ? dl.ink : dl.inkSoft)
               : (selected
-                  ? const Icon(Icons.check, size: 16, color: Colors.white)
+                  ? const Icon(Icons.check_rounded,
+                      size: 16, color: Colors.white)
                   : null),
         ),
       );
@@ -511,11 +608,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Напоминание'),
-          value: _reminderEnabled,
-          onChanged: (v) => setState(() => _reminderEnabled = v),
+        _switchTile(
+          Icons.notifications_none_rounded,
+          'Напоминание',
+          null,
+          _reminderEnabled,
+          (v) => setState(() => _reminderEnabled = v),
         ),
         if (_reminderEnabled) ...[
           if (_kind == TaskKind.period)
@@ -575,10 +673,23 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         for (var i = 0; i < _subs.length; i++)
           Row(
             children: [
-              Checkbox(
-                value: _subs[i].isDone,
-                onChanged: (v) => setState(() => _subs[i].isDone = v ?? false),
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () =>
+                    setState(() => _subs[i].isDone = !_subs[i].isDone),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 4, vertical: 8),
+                  child: Icon(
+                    _subs[i].isDone
+                        ? Icons.check_circle_rounded
+                        : Icons.radio_button_unchecked_rounded,
+                    size: 20,
+                    color: _subs[i].isDone ? dl.accent : dl.inkFaint,
+                  ),
+                ),
               ),
+              const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: _subs[i].controller,
@@ -590,7 +701,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.close, size: 18, color: dl.inkFaint),
+                icon: Icon(Icons.close_rounded, size: 18, color: dl.inkFaint),
                 onPressed: () => setState(() => _subs.removeAt(i)),
               ),
             ],
@@ -600,7 +711,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               setState(() => _subs.add(_SubItem('', false))),
           style: TextButton.styleFrom(
               foregroundColor: dl.accent, padding: EdgeInsets.zero),
-          icon: const Icon(Icons.add, size: 18),
+          icon: const Icon(Icons.add_rounded, size: 18),
           label: const Text('Добавить пункт'),
         ),
       ],

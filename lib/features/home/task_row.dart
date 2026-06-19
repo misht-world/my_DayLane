@@ -109,8 +109,10 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: Icon(
-                      _expanded ? Icons.expand_less : Icons.expand_more,
-                      size: 18,
+                      _expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 20,
                       color: dl.inkFaint,
                     ),
                     onPressed: () => setState(() => _expanded = !_expanded),
@@ -124,7 +126,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
             ),
           ),
         ),
-        if (_expanded && hasSubs) _SubtaskList(taskId: t.id!),
+        if (_expanded && hasSubs) SubtaskChecklist(taskId: t.id!),
       ],
     );
   }
@@ -229,14 +231,15 @@ class _CarryButton extends StatelessWidget {
         visualDensity: VisualDensity.compact,
         padding: const EdgeInsets.symmetric(horizontal: 8),
       ),
-      icon: const Icon(Icons.east, size: 16),
+      icon: const Icon(Icons.east_rounded, size: 16),
       label: const Text('сегодня', style: TextStyle(fontSize: 13)),
     );
   }
 }
 
-class _SubtaskList extends ConsumerWidget {
-  const _SubtaskList({required this.taskId});
+/// Чек-лист подпунктов дела (раскрывается под строкой дела).
+class SubtaskChecklist extends ConsumerWidget {
+  const SubtaskChecklist({super.key, required this.taskId});
   final int taskId;
 
   @override
@@ -247,8 +250,19 @@ class _SubtaskList extends ConsumerWidget {
       padding: const EdgeInsets.only(left: 34, bottom: 6),
       child: Column(
         children: [
-          for (final s in subs)
-            InkWell(
+          for (var i = 0; i < subs.length; i++) ...[
+            // Линия между подпунктами: с отступом слева, без точек.
+            if (i > 0) Container(height: 1, color: dl.ink),
+            _subRow(context, ref, subs[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _subRow(BuildContext context, WidgetRef ref, SubtaskModel s) {
+    final dl = context.dl;
+    return InkWell(
               onTap: () => ref
                   .read(repositoryProvider)
                   .setSubtaskDone(s, !s.isDone),
@@ -258,9 +272,9 @@ class _SubtaskList extends ConsumerWidget {
                   children: [
                     Icon(
                       s.isDone
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      size: 17,
+                          ? Icons.check_circle_rounded
+                          : Icons.radio_button_unchecked_rounded,
+                      size: 18,
                       color: s.isDone ? dl.accent : dl.inkFaint,
                     ),
                     const SizedBox(width: 10),
@@ -278,9 +292,6 @@ class _SubtaskList extends ConsumerWidget {
                   ],
                 ),
               ),
-            ),
-        ],
-      ),
-    );
+            );
   }
 }

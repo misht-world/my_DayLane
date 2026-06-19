@@ -71,7 +71,8 @@ class SettingsScreen extends ConsumerWidget {
                 ),
                 const Divider(height: 1),
                 ListTile(
-                  leading: Icon(Icons.notifications_outlined, color: dl.inkSoft),
+                  leading:
+                      Icon(Icons.notifications_none_rounded, color: dl.inkSoft),
                   title: const Text('Разрешить уведомления'),
                   subtitle: Text('Нужно для напоминаний',
                       style: TextStyle(fontSize: 12, color: dl.inkFaint)),
@@ -81,14 +82,14 @@ class SettingsScreen extends ConsumerWidget {
                 const Divider(height: 1),
                 _sectionLabel(context, 'Данные'),
                 ListTile(
-                  leading: Icon(Icons.ios_share, color: dl.inkSoft),
+                  leading: Icon(Icons.ios_share_rounded, color: dl.inkSoft),
                   title: const Text('Экспорт (резервная копия)'),
                   subtitle: Text('Сохранить все дела в файл JSON',
                       style: TextStyle(fontSize: 12, color: dl.inkFaint)),
                   onTap: () => _export(context, ref),
                 ),
                 ListTile(
-                  leading: Icon(Icons.file_download_outlined, color: dl.inkSoft),
+                  leading: Icon(Icons.file_download_rounded, color: dl.inkSoft),
                   title: const Text('Импорт из файла'),
                   subtitle: Text('Заменить все данные из резервной копии',
                       style: TextStyle(fontSize: 12, color: dl.inkFaint)),

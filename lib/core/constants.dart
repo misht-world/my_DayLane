@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 const String kAppName = 'DayLane';
 
 /// Версия приложения (синхронизировать с `version:` в pubspec.yaml).
-const String kAppVersion = '1.4.0';
+const String kAppVersion = '1.5.0';
 
 /// Фиксированная палитра цветов дел. `colorId` — индекс в этом списке.
 /// Цвета подобраны так, чтобы читаться и в светлой, и в тёмной теме.
@@ -17,8 +17,17 @@ class TaskPalette {
   static const Color purple = Color(0xFF534AB7);
   static const Color pink = Color(0xFFD4537E);
   static const Color gray = Color(0xFF888780);
+  static const Color black = Color(0xFF2B2A28);
 
-  static const List<Color> colors = [blue, green, amber, purple, pink, gray];
+  static const List<Color> colors = [
+    blue,
+    green,
+    amber,
+    purple,
+    pink,
+    gray,
+    black,
+  ];
 
   static const List<String> names = [
     'Синий',
@@ -27,6 +36,7 @@ class TaskPalette {
     'Фиолетовый',
     'Розовый',
     'Серый',
+    'Чёрный',
   ];
 
   static const int defaultColorId = 0;
