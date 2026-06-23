@@ -22,9 +22,11 @@ void openTaskEditor(BuildContext context, TaskModel? existing,
 
 class _SubItem {
   final TextEditingController controller;
+  final FocusNode focus;
   bool isDone;
   _SubItem(String text, this.isDone)
-      : controller = TextEditingController(text: text);
+      : controller = TextEditingController(text: text),
+        focus = FocusNode();
 }
 
 class TaskEditorScreen extends ConsumerStatefulWidget {
@@ -111,6 +113,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _note.dispose();
     for (final s in _subs) {
       s.controller.dispose();
+      s.focus.dispose();
     }
     super.dispose();
   }
@@ -693,6 +696,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               Expanded(
                 child: TextField(
                   controller: _subs[i].controller,
+                  focusNode: _subs[i].focus,
                   decoration: const InputDecoration(
                     hintText: 'Пункт',
                     isDense: true,
@@ -707,8 +711,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ],
           ),
         TextButton.icon(
-          onPressed: () =>
-              setState(() => _subs.add(_SubItem('', false))),
+          onPressed: () {
+            final item = _SubItem('', false);
+            setState(() => _subs.add(item));
+            // Сразу ставим курсор в новый пункт.
+            WidgetsBinding.instance.addPostFrameCallback(
+                (_) => item.focus.requestFocus());
+          },
           style: TextButton.styleFrom(
               foregroundColor: dl.accent, padding: EdgeInsets.zero),
           icon: const Icon(Icons.add_rounded, size: 18),

@@ -1,4 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -28,10 +29,11 @@ class NotificationService {
     if (_ready) return;
     tzdata.initializeTimeZones();
     try {
-      // Локальная зона по умолчанию; на устройстве можно уточнить плагином.
-      tz.setLocalLocation(tz.getLocation(tz.local.name));
+      // Реальная зона устройства (иначе tz.local = UTC и время уедет).
+      final name = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(name));
     } catch (_) {
-      /* tz.local уже валиден */
+      /* оставляем tz.local как есть, если зону не удалось определить */
     }
 
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -58,6 +60,8 @@ class NotificationService {
         _plugin.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
     await android?.requestNotificationsPermission();
+    // На Android 13+ точные будильники требуют отдельного разрешения.
+    await android?.requestExactAlarmsPermission();
   }
 
   int _baseId(int taskId) => taskId * _slotsPerTask;
@@ -90,7 +94,7 @@ class NotificationService {
         body: _body(task, dates[i]),
         scheduledDate: when,
         notificationDetails: _details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
     }
   }

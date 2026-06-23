@@ -33,9 +33,6 @@ class CalendarView extends ConsumerStatefulWidget {
 
 class _CalendarViewState extends ConsumerState<CalendarView> {
   /// Якорная дата отображаемого периода (по умолчанию — сегодня).
-  /// Позволяет листать на любой месяц/год.
-  DateTime? _anchor;
-
   static const _weekdayShort = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 
   @override
@@ -46,7 +43,9 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final firstWeekday = settings?.firstWeekday ?? 1;
     final tasks = ref.watch(tasksProvider).value ?? const [];
 
-    final anchor = _anchor ?? today;
+    // Календарь следует за выбранной датой (шапка/секции и календарь — единое
+    // состояние). Якорь = фокусная дата.
+    final anchor = ref.watch(focusedDateProvider);
     final start = _startOfWeek(anchor, firstWeekday);
     final lanes = packLanes(
       tasks.where((t) => _intersectsRange(t, start, _gridDays)),
@@ -83,7 +82,8 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
               if (showToday)
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () => setState(() => _anchor = null),
+                  onTap: () =>
+                      ref.read(focusedDateProvider.notifier).set(today),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 6),
@@ -137,6 +137,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                   _WeekRow(
                     weekStart: addDays(start, r * 7),
                     today: today,
+                    focused: anchor,
                     anchorMonth: anchor.month,
                     colW: colW,
                     tasks: tasks,
@@ -167,18 +168,16 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
       );
 
   /// Листание на соседний период: шаг 4 недели, чтобы одна неделя осталась
-  /// внахлёст с предыдущим экраном.
-  void _shift(int dir) {
-    final DateTime base = _anchor ?? ref.read(todayProvider);
-    setState(() => _anchor = addDays(base, _stepDays * dir));
-  }
+  /// внахлёст с предыдущим экраном. Двигает фокусную дату (за ней — секции).
+  void _shift(int dir) =>
+      ref.read(focusedDateProvider.notifier).shift(_stepDays * dir);
 
   Future<void> _pickMonth(BuildContext context, DateTime anchor) async {
     final picked = await showDialog<DateTime>(
       context: context,
       builder: (_) => _MonthYearPicker(initial: anchor),
     );
-    if (picked != null) setState(() => _anchor = picked);
+    if (picked != null) ref.read(focusedDateProvider.notifier).set(picked);
   }
 
   void _showDay(DateTime day) {
@@ -213,6 +212,7 @@ class _WeekRow extends StatelessWidget {
   const _WeekRow({
     required this.weekStart,
     required this.today,
+    required this.focused,
     required this.anchorMonth,
     required this.colW,
     required this.tasks,
@@ -226,6 +226,7 @@ class _WeekRow extends StatelessWidget {
 
   final DateTime weekStart;
   final DateTime today;
+  final DateTime focused;
   final int anchorMonth;
   final double colW;
   final List<TaskModel> tasks;
@@ -298,6 +299,8 @@ class _WeekRow extends StatelessWidget {
                     child: _DayCell(
                       day: addDays(weekStart, i),
                       isToday: isSameDate(addDays(weekStart, i), today),
+                      isSelected:
+                          isSameDate(addDays(weekStart, i), focused),
                       inAnchorMonth:
                           addDays(weekStart, i).month == anchorMonth,
                       height: rowHeight,
@@ -338,6 +341,7 @@ class _DayCell extends StatelessWidget {
   const _DayCell({
     required this.day,
     required this.isToday,
+    required this.isSelected,
     required this.inAnchorMonth,
     required this.height,
     required this.singles,
@@ -346,6 +350,7 @@ class _DayCell extends StatelessWidget {
   });
   final DateTime day;
   final bool isToday;
+  final bool isSelected;
   final bool inAnchorMonth;
   final double height;
   final List<TaskModel> singles;
@@ -396,7 +401,23 @@ class _DayCell extends StatelessWidget {
                               fontWeight: FontWeight.w600,
                               color: Theme.of(context).colorScheme.onPrimary)),
                     )
-                  : Row(
+                  : isSelected
+                      // Выбранный день — кружок без заливки (контур).
+                      ? Container(
+                          width: 22,
+                          height: 22,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: dl.accent, width: 1.5),
+                          ),
+                          child: Text('${day.day}',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: inAnchorMonth ? dl.ink : dl.inkFaint)),
+                        )
+                      : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.baseline,
                       textBaseline: TextBaseline.alphabetic,

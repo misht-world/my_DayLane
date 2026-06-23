@@ -149,28 +149,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(
-              '${focused.day}',
-              style: context.serif.copyWith(
-                fontSize: 54,
-                height: 0.85,
-                fontWeight: FontWeight.w500,
-                color: dl.ink,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 5),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            // Тап по дате — выбор любого дня/месяца/года (календарь следует).
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => _pickHeroDate(focused),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(month,
-                      style: context.serif
-                          .copyWith(fontSize: 18, color: dl.ink, height: 1)),
-                  const SizedBox(height: 2),
-                  Text(weekday,
-                      style: TextStyle(
-                          fontSize: 10, letterSpacing: 2, color: dl.inkFaint)),
+                  Text(
+                    '${focused.day}',
+                    style: context.serif.copyWith(
+                      fontSize: 54,
+                      height: 0.85,
+                      fontWeight: FontWeight.w500,
+                      color: dl.ink,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(month,
+                            style: context.serif.copyWith(
+                                fontSize: 18, color: dl.ink, height: 1)),
+                        const SizedBox(height: 2),
+                        Text(weekday,
+                            style: TextStyle(
+                                fontSize: 10,
+                                letterSpacing: 2,
+                                color: dl.inkFaint)),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -210,6 +222,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: Icon(icon, size: 26, color: dl.inkSoft),
       ),
     );
+  }
+
+  /// Выбор произвольной даты по тапу на крупную дату в шапке.
+  Future<void> _pickHeroDate(DateTime focused) async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: focused,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      ref.read(focusedDateProvider.notifier).set(picked);
+    }
   }
 
   /// Сворачиваемая секция горизонта с выделенной лентой-заголовком.
