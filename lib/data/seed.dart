@@ -121,6 +121,40 @@ Future<void> seedIfEmpty(AppDatabase db, TaskRepository repo) async {
   await repo.saveTask(period('Курс по дизайну', 6, 11, 4)); // пересекает командировку
   await repo.saveTask(period('Отпуск', 13, 18, 0));
 
+  // ── Путешествие с этапами-подкарточками (дневник поездки) ─────────
+  final trip = await repo.saveTask(TaskModel(
+    title: 'Поездка в Питер',
+    kind: TaskKind.period,
+    isTrip: true,
+    startDate: addDays(today, 20),
+    endDate: addDays(today, 25),
+    durationDays: 6,
+    colorId: 1,
+    createdAt: DateTime.now(),
+    updatedAt: DateTime.now(),
+  ));
+  await repo.saveStage(TripStageModel(
+    taskId: trip,
+    title: 'Дорога и заселение',
+    startDate: addDays(today, 20),
+    endDate: addDays(today, 20),
+    placeName: 'Гостиница «Октябрьская»',
+    note: '',
+  ));
+  await repo.saveStage(TripStageModel(
+    taskId: trip,
+    title: 'Центр: Эрмитаж, Невский',
+    startDate: addDays(today, 21),
+    endDate: addDays(today, 22),
+    placeName: 'Эрмитаж',
+  ));
+  await repo.saveStage(TripStageModel(
+    taskId: trip,
+    title: 'Петергоф',
+    startDate: addDays(today, 23),
+    endDate: addDays(today, 23),
+  ));
+
   // Зависимая цепочка (для соединителей в календаре).
   final stage1 = await repo.saveTask(period('Проект: этап 1', 1, 3, 3));
   await repo.saveTask(TaskModel(

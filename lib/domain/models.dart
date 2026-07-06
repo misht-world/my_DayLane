@@ -60,6 +60,10 @@ class TaskModel {
   /// дне, живёт в отдельной секции, пока ему не назначат дату.
   final bool deferred;
 
+  /// Путешествие: дело-период с дневником — этапами по дням (места, заметки).
+  /// Планируется и рисуется как обычный период.
+  final bool isTrip;
+
   /// Повторение (для дел-«событий»: ДР, платежи, занятия).
   final RecurrenceType recurrenceType;
 
@@ -96,6 +100,7 @@ class TaskModel {
     this.reminderDaysBefore = 0,
     this.colorId = -1,
     this.deferred = false,
+    this.isTrip = false,
     this.recurrenceType = RecurrenceType.none,
     this.recurrenceInterval = 1,
     this.recurrenceAnchor = 0,
@@ -129,6 +134,7 @@ class TaskModel {
     int? reminderDaysBefore,
     int? colorId,
     bool? deferred,
+    bool? isTrip,
     RecurrenceType? recurrenceType,
     int? recurrenceInterval,
     int? recurrenceAnchor,
@@ -159,6 +165,7 @@ class TaskModel {
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
       deferred: deferred ?? this.deferred,
+      isTrip: isTrip ?? this.isTrip,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
@@ -177,6 +184,67 @@ class TaskModel {
   @override
   String toString() =>
       'TaskModel(id: $id, "$title", $kind, ${formatDateRange(startDate, endDate)})';
+}
+
+/// Этап путешествия — «подкарточка» на день или группу дней внутри поездки:
+/// куда едем, где живём (место + ссылка на карты), заметки по итогу.
+class TripStageModel {
+  final int? id;
+  final int taskId;
+  final String title;
+
+  /// Даты без времени, в пределах дат поездки. Один день ⇒ start == end.
+  final DateTime startDate;
+  final DateTime endDate;
+
+  /// Название места (гостиница, город, достопримечательность).
+  final String placeName;
+
+  /// Ссылка на место в картах (Google Maps share-link или geo:).
+  final String placeUrl;
+
+  /// Дневник по итогу этапа: как была гостиница, что посмотрели и пр.
+  final String note;
+
+  final int sortIndex;
+
+  const TripStageModel({
+    this.id,
+    required this.taskId,
+    required this.title,
+    required this.startDate,
+    required this.endDate,
+    this.placeName = '',
+    this.placeUrl = '',
+    this.note = '',
+    this.sortIndex = 0,
+  });
+
+  bool get hasPlace => placeName.isNotEmpty || placeUrl.isNotEmpty;
+
+  TripStageModel copyWith({
+    Object? id = _unset,
+    int? taskId,
+    String? title,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? placeName,
+    String? placeUrl,
+    String? note,
+    int? sortIndex,
+  }) {
+    return TripStageModel(
+      id: identical(id, _unset) ? this.id : id as int?,
+      taskId: taskId ?? this.taskId,
+      title: title ?? this.title,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      placeName: placeName ?? this.placeName,
+      placeUrl: placeUrl ?? this.placeUrl,
+      note: note ?? this.note,
+      sortIndex: sortIndex ?? this.sortIndex,
+    );
+  }
 }
 
 /// Подпункт дела.

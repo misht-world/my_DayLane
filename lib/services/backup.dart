@@ -19,6 +19,7 @@ class BackupService {
     final tasks = await _db.select(_db.tasks).get();
     final subs = await _db.select(_db.subtasks).get();
     final dones = await _db.select(_db.recurrenceDones).get();
+    final stages = await _db.select(_db.tripStages).get();
     final s = await _db.getSettings();
     int? ms(DateTime? d) => d?.millisecondsSinceEpoch;
 
@@ -44,6 +45,7 @@ class BackupService {
             'reminderDaysBefore': t.reminderDaysBefore,
             'colorId': t.colorId,
             'deferred': t.deferred,
+            'isTrip': t.isTrip,
             'recurrenceType': t.recurrenceType.index,
             'recurrenceInterval': t.recurrenceInterval,
             'recurrenceAnchor': t.recurrenceAnchor,
@@ -69,6 +71,20 @@ class BackupService {
       'recurrenceDones': [
         for (final x in dones)
           {'id': x.id, 'taskId': x.taskId, 'date': x.date.millisecondsSinceEpoch}
+      ],
+      'tripStages': [
+        for (final x in stages)
+          {
+            'id': x.id,
+            'taskId': x.taskId,
+            'title': x.title,
+            'startDate': x.startDate.millisecondsSinceEpoch,
+            'endDate': x.endDate.millisecondsSinceEpoch,
+            'placeName': x.placeName,
+            'placeUrl': x.placeUrl,
+            'note': x.note,
+            'sortIndex': x.sortIndex,
+          }
       ],
       'settings': {
         'autoCarry': s.autoCarry,
@@ -102,11 +118,14 @@ class BackupService {
         (data['subtasks'] as List? ?? const []).cast<Map<String, dynamic>>();
     final dones = (data['recurrenceDones'] as List? ?? const [])
         .cast<Map<String, dynamic>>();
+    final stages = (data['tripStages'] as List? ?? const [])
+        .cast<Map<String, dynamic>>();
     final settings = data['settings'] as Map<String, dynamic>?;
     DateTime dt(Object? v) =>
         DateTime.fromMillisecondsSinceEpoch((v as num).toInt());
 
     await _db.transaction(() async {
+      await _db.delete(_db.tripStages).go();
       await _db.delete(_db.recurrenceDones).go();
       await _db.delete(_db.subtasks).go();
       await _db.delete(_db.tasks).go();
@@ -127,6 +146,7 @@ class BackupService {
               reminderDaysBefore: Value(t['reminderDaysBefore'] as int? ?? 0),
               colorId: Value(t['colorId'] as int? ?? -1),
               deferred: Value(t['deferred'] as bool? ?? false),
+              isTrip: Value(t['isTrip'] as bool? ?? false),
               recurrenceType: Value(
                   RecurrenceType.values[t['recurrenceType'] as int? ?? 0]),
               recurrenceInterval: Value(t['recurrenceInterval'] as int? ?? 1),
@@ -155,6 +175,19 @@ class BackupService {
               id: Value(x['id'] as int),
               taskId: Value(x['taskId'] as int),
               date: Value(dt(x['date'])),
+            ));
+      }
+      for (final x in stages) {
+        await _db.into(_db.tripStages).insert(TripStagesCompanion(
+              id: Value(x['id'] as int),
+              taskId: Value(x['taskId'] as int),
+              title: Value(x['title'] as String),
+              startDate: Value(dt(x['startDate'])),
+              endDate: Value(dt(x['endDate'])),
+              placeName: Value(x['placeName'] as String? ?? ''),
+              placeUrl: Value(x['placeUrl'] as String? ?? ''),
+              note: Value(x['note'] as String? ?? ''),
+              sortIndex: Value(x['sortIndex'] as int? ?? 0),
             ));
       }
       if (settings != null) {

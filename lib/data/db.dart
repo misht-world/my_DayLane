@@ -30,6 +30,7 @@ class Tasks extends Table {
   /// -1 = авто (по типу дела), иначе индекс палитры.
   IntColumn get colorId => integer().withDefault(const Constant(-1))();
   BoolColumn get deferred => boolean().withDefault(const Constant(false))();
+  BoolColumn get isTrip => boolean().withDefault(const Constant(false))();
   IntColumn get recurrenceType =>
       intEnum<RecurrenceType>().withDefault(const Constant(0))();
   IntColumn get recurrenceInterval =>
@@ -53,6 +54,21 @@ class Subtasks extends Table {
       .references(Tasks, #id, onDelete: KeyAction.cascade)();
   TextColumn get title => text()();
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
+  IntColumn get sortIndex => integer().withDefault(const Constant(0))();
+}
+
+/// Этапы путешествий: подкарточки на день/группу дней (место, заметки).
+@DataClassName('TripStageRow')
+class TripStages extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get taskId =>
+      integer().references(Tasks, #id, onDelete: KeyAction.cascade)();
+  TextColumn get title => text()();
+  DateTimeColumn get startDate => dateTime()();
+  DateTimeColumn get endDate => dateTime()();
+  TextColumn get placeName => text().withDefault(const Constant(''))();
+  TextColumn get placeUrl => text().withDefault(const Constant(''))();
+  TextColumn get note => text().withDefault(const Constant(''))();
   IntColumn get sortIndex => integer().withDefault(const Constant(0))();
 }
 
@@ -82,7 +98,7 @@ class AppSettings extends Table {
 }
 
 @DriftDatabase(
-  tables: [Tasks, Subtasks, AppSettings, RecurrenceDones],
+  tables: [Tasks, Subtasks, AppSettings, RecurrenceDones, TripStages],
   daos: [TaskDao, SubtaskDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -91,7 +107,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -116,6 +132,10 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(tasks, tasks.deferred);
             // Сброс старых цветов: до v4 цвет не выбирался → авто (-1).
             await customStatement('UPDATE tasks SET color_id = -1');
+          }
+          if (from < 5) {
+            await m.addColumn(tasks, tasks.isTrip);
+            await m.createTable(tripStages);
           }
         },
         beforeOpen: (details) async {
@@ -144,6 +164,14 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<RecurrenceDoneRow>> watchRecurrenceDones() =>
       select(recurrenceDones).watch();
 
+  /// Даты выполненных вхождений дела (для восстановления при отмене удаления).
+  Future<List<DateTime>> getOccurrenceDates(int taskId) async {
+    final rows = await (select(recurrenceDones)
+          ..where((r) => r.taskId.equals(taskId)))
+        .get();
+    return rows.map((r) => r.date).toList();
+  }
+
   Future<void> setOccurrenceDone(int taskId, DateTime date, bool done) async {
     final d = DateTime(date.year, date.month, date.day);
     if (done) {
@@ -155,6 +183,39 @@ class AppDatabase extends _$AppDatabase {
           .go();
     }
   }
+
+  // ── Этапы путешествий ─────────────────────────────────────────
+  Stream<List<TripStageModel>> watchStages(int taskId) => (select(tripStages)
+        ..where((s) => s.taskId.equals(taskId))
+        ..orderBy([
+          (s) => OrderingTerm(expression: s.startDate),
+          (s) => OrderingTerm(expression: s.sortIndex),
+        ]))
+      .watch()
+      .map((rows) => rows.map((r) => r.toModel()).toList());
+
+  Future<List<TripStageModel>> getStages(int taskId) async {
+    final rows = await (select(tripStages)
+          ..where((s) => s.taskId.equals(taskId))
+          ..orderBy([
+            (s) => OrderingTerm(expression: s.startDate),
+            (s) => OrderingTerm(expression: s.sortIndex),
+          ]))
+        .get();
+    return rows.map((r) => r.toModel()).toList();
+  }
+
+  /// Число этапов по поездкам (для превью в списке путешествий).
+  Stream<List<TripStageRow>> watchAllStages() => select(tripStages).watch();
+
+  Future<int> insertStage(TripStageModel s) =>
+      into(tripStages).insert(s.toCompanion());
+
+  Future<void> updateStage(TripStageModel s) =>
+      update(tripStages).replace(s.toCompanion());
+
+  Future<void> deleteStage(int id) =>
+      (delete(tripStages)..where((s) => s.id.equals(id))).go();
 
   static QueryExecutor _open() =>
       driftDatabase(name: 'daylane');
@@ -177,6 +238,7 @@ extension TaskRowMapper on TaskRow {
         reminderDaysBefore: reminderDaysBefore,
         colorId: colorId,
         deferred: deferred,
+        isTrip: isTrip,
         recurrenceType: recurrenceType,
         recurrenceInterval: recurrenceInterval,
         recurrenceAnchor: recurrenceAnchor,
@@ -217,6 +279,7 @@ extension TaskModelMapper on TaskModel {
         reminderDaysBefore: Value(reminderDaysBefore),
         colorId: Value(colorId),
         deferred: Value(deferred),
+        isTrip: Value(isTrip),
         recurrenceType: Value(recurrenceType),
         recurrenceInterval: Value(recurrenceInterval),
         recurrenceAnchor: Value(recurrenceAnchor),
@@ -227,6 +290,34 @@ extension TaskModelMapper on TaskModel {
         sortIndex: Value(sortIndex),
         createdAt: Value(createdAt),
         updatedAt: Value(updatedAt),
+      );
+}
+
+extension TripStageRowMapper on TripStageRow {
+  TripStageModel toModel() => TripStageModel(
+        id: id,
+        taskId: taskId,
+        title: title,
+        startDate: startDate,
+        endDate: endDate,
+        placeName: placeName,
+        placeUrl: placeUrl,
+        note: note,
+        sortIndex: sortIndex,
+      );
+}
+
+extension TripStageModelMapper on TripStageModel {
+  TripStagesCompanion toCompanion() => TripStagesCompanion(
+        id: id == null ? const Value.absent() : Value(id!),
+        taskId: Value(taskId),
+        title: Value(title),
+        startDate: Value(startDate),
+        endDate: Value(endDate),
+        placeName: Value(placeName),
+        placeUrl: Value(placeUrl),
+        note: Value(note),
+        sortIndex: Value(sortIndex),
       );
 }
 

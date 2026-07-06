@@ -5,6 +5,9 @@ import '../domain/models.dart';
 import '../services/notifications.dart';
 import 'db.dart';
 
+/// Отмена последней операции (перенос/удаление/отложение).
+typedef UndoAction = Future<void> Function();
+
 /// Связывает DAO, доменную логику и уведомления в согласованные операции.
 class TaskRepository {
   TaskRepository(this._db, {NotificationService? notifications})
@@ -49,25 +52,89 @@ class TaskRepository {
   }
 
   /// Удаляет дело: отвязывает детей (фиксируя их даты), снимает напоминания,
-  /// удаляет строку (подпункты уходят каскадом).
-  Future<void> deleteTask(int id) async {
-    final all = await _tasks.getAll();
-    final detached = detachChildrenOf(all, id)
-        .where((t) => t.id != id && t.dependsOnTaskId == null)
-        .toList();
-    // Сохраняем только тех, у кого реально снялась привязка.
-    final changed = detached
-        .where((t) => all
-            .firstWhere((o) => o.id == t.id)
-            .dependsOnTaskId == id)
-        .toList();
-    if (changed.isNotEmpty) await _tasks.updateMany(changed);
+  /// удаляет строку (подпункты уходят каскадом). Возвращает отмену —
+  /// восстановление дела с подпунктами и отметками вхождений.
+  Future<UndoAction> deleteTask(int id) async {
+    final victim = await _tasks.getById(id);
+    final victimSubs = await _subtasks.getForTask(id);
+    final victimDones = await _db.getOccurrenceDates(id);
+    final victimStages = await _db.getStages(id);
 
-    await _notifications.cancelForTask(id);
-    await _tasks.deleteTask(id);
+    return _undoable(
+      () async {
+        final all = await _tasks.getAll();
+        final detached = detachChildrenOf(all, id)
+            .where((t) => t.id != id && t.dependsOnTaskId == null)
+            .toList();
+        // Сохраняем только тех, у кого реально снялась привязка.
+        final changed = detached
+            .where((t) =>
+                all.firstWhere((o) => o.id == t.id).dependsOnTaskId == id)
+            .toList();
+        if (changed.isNotEmpty) await _tasks.updateMany(changed);
 
-    await _recomputeAndSync(touchedIds: changed.map((t) => t.id!).toSet());
+        await _notifications.cancelForTask(id);
+        await _tasks.deleteTask(id);
+
+        await _recomputeAndSync(touchedIds: changed.map((t) => t.id!).toSet());
+      },
+      reinsert: victim,
+      reinsertSubs: victimSubs,
+      reinsertDones: victimDones,
+      reinsertStages: victimStages,
+    );
   }
+
+  /// Поля, которые меняют недо-/пере-носы и каскады — по ним ищем, что
+  /// восстанавливать при отмене.
+  static bool _differs(TaskModel a, TaskModel b) =>
+      a.startDate != b.startDate ||
+      a.endDate != b.endDate ||
+      a.deferred != b.deferred ||
+      a.carriedOver != b.carriedOver ||
+      a.dependsOnTaskId != b.dependsOnTaskId ||
+      a.isDone != b.isDone;
+
+  /// Выполняет [op], предварительно сняв снимок всех дел, и возвращает
+  /// отмену: вернуть изменившиеся строки к состоянию «до» (и, при удалении,
+  /// вставить дело обратно с тем же id).
+  Future<UndoAction> _undoable(
+    Future<void> Function() op, {
+    TaskModel? reinsert,
+    List<SubtaskModel> reinsertSubs = const [],
+    List<DateTime> reinsertDones = const [],
+    List<TripStageModel> reinsertStages = const [],
+  }) async {
+    final before = await _tasks.getAll();
+    await op();
+    return () async {
+      if (reinsert != null && reinsert.id != null) {
+        await _tasks.insertTask(reinsert);
+        await _subtasks.replaceForTask(reinsert.id!, reinsertSubs);
+        for (final d in reinsertDones) {
+          await _db.setOccurrenceDone(reinsert.id!, d, true);
+        }
+        for (final s in reinsertStages) {
+          await _db.insertStage(s.copyWith(id: null));
+        }
+      }
+      final after = await _tasks.getAll();
+      final afterById = {for (final t in after) if (t.id != null) t.id!: t};
+      final toRestore = <TaskModel>[
+        for (final b in before)
+          if (afterById[b.id] != null && _differs(afterById[b.id]!, b)) b,
+      ];
+      if (toRestore.isNotEmpty) await _tasks.updateMany(toRestore);
+      for (final t in [...toRestore, ?reinsert]) {
+        await _notifications.reschedule(t);
+      }
+    };
+  }
+
+  /// Возвращает дело с дня в «Отложенные» (снимает присутствие в днях).
+  Future<UndoAction> moveToDeferred(TaskModel task) => _undoable(() async {
+        await saveTask(task.copyWith(deferred: true, carriedOver: false));
+      });
 
   Future<void> toggleDone(TaskModel task) async {
     final now = DateTime.now();
@@ -106,6 +173,16 @@ class TaskRepository {
     await _db.setOccurrenceDone(task.id!, day, done);
   }
 
+  // ── Этапы путешествий ─────────────────────────────────────────
+  Stream<List<TripStageModel>> watchStages(int taskId) =>
+      _db.watchStages(taskId);
+
+  Future<void> saveStage(TripStageModel stage) => stage.id == null
+      ? _db.insertStage(stage)
+      : _db.updateStage(stage);
+
+  Future<void> deleteStage(int id) => _db.deleteStage(id);
+
   /// Пере-планирует напоминания для всех дел (после импорта/восстановления).
   Future<void> rescheduleAll() async {
     final all = await _tasks.getAll();
@@ -115,33 +192,37 @@ class TaskRepository {
   }
 
   /// Назначает дату отложенному делу (и снимает признак «отложено»).
-  Future<void> scheduleDeferred(TaskModel task, DateTime date) async {
-    final d = dateOnly(date);
-    final end = task.isPeriod ? addDays(d, task.durationDays - 1) : d;
-    await saveTask(task.copyWith(deferred: false, startDate: d, endDate: end));
-  }
+  Future<UndoAction> scheduleDeferred(TaskModel task, DateTime date) =>
+      _undoable(() async {
+        final d = dateOnly(date);
+        final end = task.isPeriod ? addDays(d, task.durationDays - 1) : d;
+        await saveTask(
+            task.copyWith(deferred: false, startDate: d, endDate: end));
+      });
 
   /// Ручной перенос однодневного дела на сегодня.
-  Future<void> carryToTodayTask(TaskModel task) async {
-    if (task.isPeriod) return;
-    final carried = carryToToday(task, DateTime.now());
-    await _tasks.updateTask(carried);
-    await _notifications.reschedule(carried);
-  }
+  Future<UndoAction> carryToTodayTask(TaskModel task) =>
+      _undoable(() async {
+        if (task.isPeriod) return;
+        final carried = carryToToday(task, DateTime.now());
+        await _tasks.updateTask(carried);
+        await _notifications.reschedule(carried);
+      });
 
   /// Перенести все вчерашние невыполненные однодневные на сегодня.
-  Future<void> carryAll(List<TaskModel> yesterdayTasks) async {
-    final now = DateTime.now();
-    final carried = yesterdayTasks
-        .where((t) => t.isSingle && !t.isDone)
-        .map((t) => carryToToday(t, now))
-        .toList();
-    if (carried.isEmpty) return;
-    await _tasks.updateMany(carried);
-    for (final t in carried) {
-      await _notifications.reschedule(t);
-    }
-  }
+  Future<UndoAction> carryAll(List<TaskModel> yesterdayTasks) =>
+      _undoable(() async {
+        final now = DateTime.now();
+        final carried = yesterdayTasks
+            .where((t) => t.isSingle && !t.isDone)
+            .map((t) => carryToToday(t, now))
+            .toList();
+        if (carried.isEmpty) return;
+        await _tasks.updateMany(carried);
+        for (final t in carried) {
+          await _notifications.reschedule(t);
+        }
+      });
 
   /// Обслуживание при старте: сброс устаревших меток «перенесено» и,
   /// если включён авто-перенос, перенос просроченных однодневных на сегодня.

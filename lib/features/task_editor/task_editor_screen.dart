@@ -5,18 +5,24 @@ import '../../app/providers.dart';
 import '../../core/constants.dart';
 import '../../core/date_utils.dart';
 import '../../core/theme.dart';
+import '../../core/undo_snack.dart';
 import '../../domain/dependencies.dart';
 import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
+import '../trips/trip_screen.dart';
 
 /// Открывает карточку дела. [existing] == null — создание;
-/// [initialDate] задаёт дату нового дела (по умолчанию — сегодня).
+/// [initialDate] задаёт дату нового дела (по умолчанию — сегодня);
+/// [trip] — сразу создать путешествие (период с дневником).
 void openTaskEditor(BuildContext context, TaskModel? existing,
-    {DateTime? initialDate, bool deferred = false}) {
+    {DateTime? initialDate, bool deferred = false, bool trip = false}) {
   Navigator.of(context).push(MaterialPageRoute(
     fullscreenDialog: true,
     builder: (_) => TaskEditorScreen(
-        existing: existing, initialDate: initialDate, deferred: deferred),
+        existing: existing,
+        initialDate: initialDate,
+        deferred: deferred,
+        trip: trip),
   ));
 }
 
@@ -31,10 +37,15 @@ class _SubItem {
 
 class TaskEditorScreen extends ConsumerStatefulWidget {
   const TaskEditorScreen(
-      {super.key, this.existing, this.initialDate, this.deferred = false});
+      {super.key,
+      this.existing,
+      this.initialDate,
+      this.deferred = false,
+      this.trip = false});
   final TaskModel? existing;
   final DateTime? initialDate;
   final bool deferred;
+  final bool trip;
 
   @override
   ConsumerState<TaskEditorScreen> createState() => _TaskEditorScreenState();
@@ -61,6 +72,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   int _recurInterval = 1;
   int _recurAnchor = 2; // K для monthBeforeEnd
   bool _deferred = false;
+  bool _isTrip = false;
 
   final List<_SubItem> _subs = [];
 
@@ -74,7 +86,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final today = dateOnly(widget.initialDate ?? DateTime.now());
     _title = TextEditingController(text: e?.title ?? '');
     _note = TextEditingController(text: e?.note ?? '');
-    _kind = e?.kind ?? TaskKind.single;
+    _isTrip = e?.isTrip ?? widget.trip;
+    _kind = e?.kind ?? (widget.trip ? TaskKind.period : TaskKind.single);
     _start = e?.startDate ?? today;
     _end = e?.endDate ?? today;
     _duration = e?.durationDays ?? 1;
@@ -289,15 +302,20 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }
 
   Widget _kindSegment() {
-    return SegmentedButton<TaskKind>(
+    // 0 — один день, 1 — период, 2 — путешествие (период с дневником).
+    final selected = _kind == TaskKind.single ? 0 : (_isTrip ? 2 : 1);
+    return SegmentedButton<int>(
       segments: const [
-        ButtonSegment(value: TaskKind.single, label: Text('Один день')),
-        ButtonSegment(value: TaskKind.period, label: Text('Период')),
+        ButtonSegment(value: 0, label: Text('Один день')),
+        ButtonSegment(value: 1, label: Text('Период')),
+        ButtonSegment(value: 2, label: Text('Путешествие')),
       ],
-      selected: {_kind},
+      selected: {selected},
       onSelectionChanged: (s) {
         setState(() {
-          _kind = s.first;
+          final v = s.first;
+          _isTrip = v == 2;
+          _kind = v == 0 ? TaskKind.single : TaskKind.period;
           if (_kind == TaskKind.single) {
             _end = _start;
             _duration = 1;
@@ -860,6 +878,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       reminderDaysBefore: _reminderDaysBefore,
       colorId: _colorId,
       deferred: _deferred,
+      isTrip: _kind == TaskKind.period && _isTrip,
       recurrenceType: (_kind == TaskKind.single && !_deferred)
           ? _recurrence
           : RecurrenceType.none,
@@ -894,30 +913,24 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             isDone: s.isDone,
           ),
     ];
-    await ref.read(repositoryProvider).saveTask(model, subtasks: subs);
-    if (mounted) Navigator.of(context).pop();
+    final id =
+        await ref.read(repositoryProvider).saveTask(model, subtasks: subs);
+    if (!mounted) return;
+    if (model.isTrip && !model.deferred && widget.existing == null) {
+      // Новую поездку сразу открываем дневником — добавлять этапы.
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (_) => TripScreen(taskId: id)));
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   Future<void> _delete() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Удалить дело?'),
-        content: const Text('Действие нельзя отменить.'),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Отмена')),
-          TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Удалить',
-                  style: TextStyle(color: context.dl.danger))),
-        ],
-      ),
-    );
-    if (ok == true) {
-      await ref.read(repositoryProvider).deleteTask(widget.existing!.id!);
-      if (mounted) Navigator.of(context).pop();
-    }
+    final undo =
+        await ref.read(repositoryProvider).deleteTask(widget.existing!.id!);
+    if (!mounted) return;
+    // Messenger общий на всё приложение — плашка переживёт закрытие карточки.
+    showUndoSnack(context, 'Дело удалено', undo);
+    Navigator.of(context).pop();
   }
 }

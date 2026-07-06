@@ -8,6 +8,17 @@ import '../../domain/lanes.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduling.dart';
 import '../task_editor/task_editor_screen.dart';
+import '../trips/trip_screen.dart';
+
+/// Открывает дело: путешествие — дневником, остальное — карточкой.
+void openTaskOrTrip(BuildContext context, TaskModel t) {
+  if (t.isTrip && t.id != null) {
+    Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => TripScreen(taskId: t.id!)));
+  } else {
+    openTaskEditor(context, t);
+  }
+}
 
 /// Окно календаря: 5 недель (35 дней). При листании на соседний месяц
 /// одна неделя остаётся внахлёст — для непрерывности.
@@ -567,7 +578,7 @@ class _Bar extends StatelessWidget {
     return Opacity(
       opacity: task.isDone ? 0.45 : 1,
       child: GestureDetector(
-        onTap: () => openTaskEditor(context, task),
+        onTap: () => openTaskOrTrip(context, task),
         child: Container(
           decoration: BoxDecoration(
             color: fill,
@@ -576,14 +587,24 @@ class _Bar extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 9),
           alignment: Alignment.centerLeft,
           child: showTitle
-              ? Text(
-                  task.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                      fontSize: 10.5,
-                      color: onColor,
-                      fontWeight: FontWeight.w500),
+              ? Row(
+                  children: [
+                    if (task.isTrip) ...[
+                      Icon(Icons.luggage_rounded, size: 10, color: onColor),
+                      const SizedBox(width: 3),
+                    ],
+                    Flexible(
+                      child: Text(
+                        task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                            fontSize: 10.5,
+                            color: onColor,
+                            fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
                 )
               : null,
         ),
@@ -643,7 +664,7 @@ class _DaySheet extends StatelessWidget {
                           : null),
                   onTap: () {
                     Navigator.of(context).pop();
-                    openTaskEditor(context, t);
+                    openTaskOrTrip(context, t);
                   },
                 ),
           ],

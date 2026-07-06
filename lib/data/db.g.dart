@@ -170,6 +170,19 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _isTripMeta = const VerificationMeta('isTrip');
+  @override
+  late final GeneratedColumn<bool> isTrip = GeneratedColumn<bool>(
+    'is_trip',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_trip" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   late final GeneratedColumnWithTypeConverter<RecurrenceType, int>
   recurrenceType = GeneratedColumn<int>(
@@ -302,6 +315,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     reminderDaysBefore,
     colorId,
     deferred,
+    isTrip,
     recurrenceType,
     recurrenceInterval,
     recurrenceAnchor,
@@ -416,6 +430,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
       context.handle(
         _deferredMeta,
         deferred.isAcceptableOrUnknown(data['deferred']!, _deferredMeta),
+      );
+    }
+    if (data.containsKey('is_trip')) {
+      context.handle(
+        _isTripMeta,
+        isTrip.isAcceptableOrUnknown(data['is_trip']!, _isTripMeta),
       );
     }
     if (data.containsKey('recurrence_interval')) {
@@ -557,6 +577,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}deferred'],
       )!,
+      isTrip: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_trip'],
+      )!,
       recurrenceType: $TasksTable.$converterrecurrenceType.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -634,6 +658,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   /// -1 = авто (по типу дела), иначе индекс палитры.
   final int colorId;
   final bool deferred;
+  final bool isTrip;
   final RecurrenceType recurrenceType;
   final int recurrenceInterval;
   final int recurrenceAnchor;
@@ -659,6 +684,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     required this.reminderDaysBefore,
     required this.colorId,
     required this.deferred,
+    required this.isTrip,
     required this.recurrenceType,
     required this.recurrenceInterval,
     required this.recurrenceAnchor,
@@ -697,6 +723,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     map['reminder_days_before'] = Variable<int>(reminderDaysBefore);
     map['color_id'] = Variable<int>(colorId);
     map['deferred'] = Variable<bool>(deferred);
+    map['is_trip'] = Variable<bool>(isTrip);
     {
       map['recurrence_type'] = Variable<int>(
         $TasksTable.$converterrecurrenceType.toSql(recurrenceType),
@@ -736,6 +763,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       reminderDaysBefore: Value(reminderDaysBefore),
       colorId: Value(colorId),
       deferred: Value(deferred),
+      isTrip: Value(isTrip),
       recurrenceType: Value(recurrenceType),
       recurrenceInterval: Value(recurrenceInterval),
       recurrenceAnchor: Value(recurrenceAnchor),
@@ -775,6 +803,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       reminderDaysBefore: serializer.fromJson<int>(json['reminderDaysBefore']),
       colorId: serializer.fromJson<int>(json['colorId']),
       deferred: serializer.fromJson<bool>(json['deferred']),
+      isTrip: serializer.fromJson<bool>(json['isTrip']),
       recurrenceType: $TasksTable.$converterrecurrenceType.fromJson(
         serializer.fromJson<int>(json['recurrenceType']),
       ),
@@ -809,6 +838,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'reminderDaysBefore': serializer.toJson<int>(reminderDaysBefore),
       'colorId': serializer.toJson<int>(colorId),
       'deferred': serializer.toJson<bool>(deferred),
+      'isTrip': serializer.toJson<bool>(isTrip),
       'recurrenceType': serializer.toJson<int>(
         $TasksTable.$converterrecurrenceType.toJson(recurrenceType),
       ),
@@ -839,6 +869,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     int? reminderDaysBefore,
     int? colorId,
     bool? deferred,
+    bool? isTrip,
     RecurrenceType? recurrenceType,
     int? recurrenceInterval,
     int? recurrenceAnchor,
@@ -868,6 +899,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
     colorId: colorId ?? this.colorId,
     deferred: deferred ?? this.deferred,
+    isTrip: isTrip ?? this.isTrip,
     recurrenceType: recurrenceType ?? this.recurrenceType,
     recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
     recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
@@ -909,6 +941,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           : this.reminderDaysBefore,
       colorId: data.colorId.present ? data.colorId.value : this.colorId,
       deferred: data.deferred.present ? data.deferred.value : this.deferred,
+      isTrip: data.isTrip.present ? data.isTrip.value : this.isTrip,
       recurrenceType: data.recurrenceType.present
           ? data.recurrenceType.value
           : this.recurrenceType,
@@ -949,6 +982,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('reminderDaysBefore: $reminderDaysBefore, ')
           ..write('colorId: $colorId, ')
           ..write('deferred: $deferred, ')
+          ..write('isTrip: $isTrip, ')
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
@@ -979,6 +1013,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     reminderDaysBefore,
     colorId,
     deferred,
+    isTrip,
     recurrenceType,
     recurrenceInterval,
     recurrenceAnchor,
@@ -1008,6 +1043,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.reminderDaysBefore == this.reminderDaysBefore &&
           other.colorId == this.colorId &&
           other.deferred == this.deferred &&
+          other.isTrip == this.isTrip &&
           other.recurrenceType == this.recurrenceType &&
           other.recurrenceInterval == this.recurrenceInterval &&
           other.recurrenceAnchor == this.recurrenceAnchor &&
@@ -1035,6 +1071,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<int> reminderDaysBefore;
   final Value<int> colorId;
   final Value<bool> deferred;
+  final Value<bool> isTrip;
   final Value<RecurrenceType> recurrenceType;
   final Value<int> recurrenceInterval;
   final Value<int> recurrenceAnchor;
@@ -1060,6 +1097,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.reminderDaysBefore = const Value.absent(),
     this.colorId = const Value.absent(),
     this.deferred = const Value.absent(),
+    this.isTrip = const Value.absent(),
     this.recurrenceType = const Value.absent(),
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
@@ -1086,6 +1124,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.reminderDaysBefore = const Value.absent(),
     this.colorId = const Value.absent(),
     this.deferred = const Value.absent(),
+    this.isTrip = const Value.absent(),
     this.recurrenceType = const Value.absent(),
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
@@ -1117,6 +1156,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<int>? reminderDaysBefore,
     Expression<int>? colorId,
     Expression<bool>? deferred,
+    Expression<bool>? isTrip,
     Expression<int>? recurrenceType,
     Expression<int>? recurrenceInterval,
     Expression<int>? recurrenceAnchor,
@@ -1144,6 +1184,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
         'reminder_days_before': reminderDaysBefore,
       if (colorId != null) 'color_id': colorId,
       if (deferred != null) 'deferred': deferred,
+      if (isTrip != null) 'is_trip': isTrip,
       if (recurrenceType != null) 'recurrence_type': recurrenceType,
       if (recurrenceInterval != null) 'recurrence_interval': recurrenceInterval,
       if (recurrenceAnchor != null) 'recurrence_anchor': recurrenceAnchor,
@@ -1172,6 +1213,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<int>? reminderDaysBefore,
     Value<int>? colorId,
     Value<bool>? deferred,
+    Value<bool>? isTrip,
     Value<RecurrenceType>? recurrenceType,
     Value<int>? recurrenceInterval,
     Value<int>? recurrenceAnchor,
@@ -1198,6 +1240,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
       deferred: deferred ?? this.deferred,
+      isTrip: isTrip ?? this.isTrip,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
@@ -1258,6 +1301,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (deferred.present) {
       map['deferred'] = Variable<bool>(deferred.value);
     }
+    if (isTrip.present) {
+      map['is_trip'] = Variable<bool>(isTrip.value);
+    }
     if (recurrenceType.present) {
       map['recurrence_type'] = Variable<int>(
         $TasksTable.$converterrecurrenceType.toSql(recurrenceType.value),
@@ -1310,6 +1356,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('reminderDaysBefore: $reminderDaysBefore, ')
           ..write('colorId: $colorId, ')
           ..write('deferred: $deferred, ')
+          ..write('isTrip: $isTrip, ')
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
@@ -2227,6 +2274,545 @@ class RecurrenceDonesCompanion extends UpdateCompanion<RecurrenceDoneRow> {
   }
 }
 
+class $TripStagesTable extends TripStages
+    with TableInfo<$TripStagesTable, TripStageRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TripStagesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _taskIdMeta = const VerificationMeta('taskId');
+  @override
+  late final GeneratedColumn<int> taskId = GeneratedColumn<int>(
+    'task_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES tasks (id) ON DELETE CASCADE',
+    ),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startDateMeta = const VerificationMeta(
+    'startDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startDate = GeneratedColumn<DateTime>(
+    'start_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _endDateMeta = const VerificationMeta(
+    'endDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> endDate = GeneratedColumn<DateTime>(
+    'end_date',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _placeNameMeta = const VerificationMeta(
+    'placeName',
+  );
+  @override
+  late final GeneratedColumn<String> placeName = GeneratedColumn<String>(
+    'place_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _placeUrlMeta = const VerificationMeta(
+    'placeUrl',
+  );
+  @override
+  late final GeneratedColumn<String> placeUrl = GeneratedColumn<String>(
+    'place_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _noteMeta = const VerificationMeta('note');
+  @override
+  late final GeneratedColumn<String> note = GeneratedColumn<String>(
+    'note',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _sortIndexMeta = const VerificationMeta(
+    'sortIndex',
+  );
+  @override
+  late final GeneratedColumn<int> sortIndex = GeneratedColumn<int>(
+    'sort_index',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    taskId,
+    title,
+    startDate,
+    endDate,
+    placeName,
+    placeUrl,
+    note,
+    sortIndex,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'trip_stages';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TripStageRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('task_id')) {
+      context.handle(
+        _taskIdMeta,
+        taskId.isAcceptableOrUnknown(data['task_id']!, _taskIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_taskIdMeta);
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('start_date')) {
+      context.handle(
+        _startDateMeta,
+        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startDateMeta);
+    }
+    if (data.containsKey('end_date')) {
+      context.handle(
+        _endDateMeta,
+        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_endDateMeta);
+    }
+    if (data.containsKey('place_name')) {
+      context.handle(
+        _placeNameMeta,
+        placeName.isAcceptableOrUnknown(data['place_name']!, _placeNameMeta),
+      );
+    }
+    if (data.containsKey('place_url')) {
+      context.handle(
+        _placeUrlMeta,
+        placeUrl.isAcceptableOrUnknown(data['place_url']!, _placeUrlMeta),
+      );
+    }
+    if (data.containsKey('note')) {
+      context.handle(
+        _noteMeta,
+        note.isAcceptableOrUnknown(data['note']!, _noteMeta),
+      );
+    }
+    if (data.containsKey('sort_index')) {
+      context.handle(
+        _sortIndexMeta,
+        sortIndex.isAcceptableOrUnknown(data['sort_index']!, _sortIndexMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  TripStageRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TripStageRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      taskId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}task_id'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      startDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}start_date'],
+      )!,
+      endDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}end_date'],
+      )!,
+      placeName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}place_name'],
+      )!,
+      placeUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}place_url'],
+      )!,
+      note: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note'],
+      )!,
+      sortIndex: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}sort_index'],
+      )!,
+    );
+  }
+
+  @override
+  $TripStagesTable createAlias(String alias) {
+    return $TripStagesTable(attachedDatabase, alias);
+  }
+}
+
+class TripStageRow extends DataClass implements Insertable<TripStageRow> {
+  final int id;
+  final int taskId;
+  final String title;
+  final DateTime startDate;
+  final DateTime endDate;
+  final String placeName;
+  final String placeUrl;
+  final String note;
+  final int sortIndex;
+  const TripStageRow({
+    required this.id,
+    required this.taskId,
+    required this.title,
+    required this.startDate,
+    required this.endDate,
+    required this.placeName,
+    required this.placeUrl,
+    required this.note,
+    required this.sortIndex,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['task_id'] = Variable<int>(taskId);
+    map['title'] = Variable<String>(title);
+    map['start_date'] = Variable<DateTime>(startDate);
+    map['end_date'] = Variable<DateTime>(endDate);
+    map['place_name'] = Variable<String>(placeName);
+    map['place_url'] = Variable<String>(placeUrl);
+    map['note'] = Variable<String>(note);
+    map['sort_index'] = Variable<int>(sortIndex);
+    return map;
+  }
+
+  TripStagesCompanion toCompanion(bool nullToAbsent) {
+    return TripStagesCompanion(
+      id: Value(id),
+      taskId: Value(taskId),
+      title: Value(title),
+      startDate: Value(startDate),
+      endDate: Value(endDate),
+      placeName: Value(placeName),
+      placeUrl: Value(placeUrl),
+      note: Value(note),
+      sortIndex: Value(sortIndex),
+    );
+  }
+
+  factory TripStageRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TripStageRow(
+      id: serializer.fromJson<int>(json['id']),
+      taskId: serializer.fromJson<int>(json['taskId']),
+      title: serializer.fromJson<String>(json['title']),
+      startDate: serializer.fromJson<DateTime>(json['startDate']),
+      endDate: serializer.fromJson<DateTime>(json['endDate']),
+      placeName: serializer.fromJson<String>(json['placeName']),
+      placeUrl: serializer.fromJson<String>(json['placeUrl']),
+      note: serializer.fromJson<String>(json['note']),
+      sortIndex: serializer.fromJson<int>(json['sortIndex']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'taskId': serializer.toJson<int>(taskId),
+      'title': serializer.toJson<String>(title),
+      'startDate': serializer.toJson<DateTime>(startDate),
+      'endDate': serializer.toJson<DateTime>(endDate),
+      'placeName': serializer.toJson<String>(placeName),
+      'placeUrl': serializer.toJson<String>(placeUrl),
+      'note': serializer.toJson<String>(note),
+      'sortIndex': serializer.toJson<int>(sortIndex),
+    };
+  }
+
+  TripStageRow copyWith({
+    int? id,
+    int? taskId,
+    String? title,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? placeName,
+    String? placeUrl,
+    String? note,
+    int? sortIndex,
+  }) => TripStageRow(
+    id: id ?? this.id,
+    taskId: taskId ?? this.taskId,
+    title: title ?? this.title,
+    startDate: startDate ?? this.startDate,
+    endDate: endDate ?? this.endDate,
+    placeName: placeName ?? this.placeName,
+    placeUrl: placeUrl ?? this.placeUrl,
+    note: note ?? this.note,
+    sortIndex: sortIndex ?? this.sortIndex,
+  );
+  TripStageRow copyWithCompanion(TripStagesCompanion data) {
+    return TripStageRow(
+      id: data.id.present ? data.id.value : this.id,
+      taskId: data.taskId.present ? data.taskId.value : this.taskId,
+      title: data.title.present ? data.title.value : this.title,
+      startDate: data.startDate.present ? data.startDate.value : this.startDate,
+      endDate: data.endDate.present ? data.endDate.value : this.endDate,
+      placeName: data.placeName.present ? data.placeName.value : this.placeName,
+      placeUrl: data.placeUrl.present ? data.placeUrl.value : this.placeUrl,
+      note: data.note.present ? data.note.value : this.note,
+      sortIndex: data.sortIndex.present ? data.sortIndex.value : this.sortIndex,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TripStageRow(')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('placeName: $placeName, ')
+          ..write('placeUrl: $placeUrl, ')
+          ..write('note: $note, ')
+          ..write('sortIndex: $sortIndex')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    taskId,
+    title,
+    startDate,
+    endDate,
+    placeName,
+    placeUrl,
+    note,
+    sortIndex,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TripStageRow &&
+          other.id == this.id &&
+          other.taskId == this.taskId &&
+          other.title == this.title &&
+          other.startDate == this.startDate &&
+          other.endDate == this.endDate &&
+          other.placeName == this.placeName &&
+          other.placeUrl == this.placeUrl &&
+          other.note == this.note &&
+          other.sortIndex == this.sortIndex);
+}
+
+class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
+  final Value<int> id;
+  final Value<int> taskId;
+  final Value<String> title;
+  final Value<DateTime> startDate;
+  final Value<DateTime> endDate;
+  final Value<String> placeName;
+  final Value<String> placeUrl;
+  final Value<String> note;
+  final Value<int> sortIndex;
+  const TripStagesCompanion({
+    this.id = const Value.absent(),
+    this.taskId = const Value.absent(),
+    this.title = const Value.absent(),
+    this.startDate = const Value.absent(),
+    this.endDate = const Value.absent(),
+    this.placeName = const Value.absent(),
+    this.placeUrl = const Value.absent(),
+    this.note = const Value.absent(),
+    this.sortIndex = const Value.absent(),
+  });
+  TripStagesCompanion.insert({
+    this.id = const Value.absent(),
+    required int taskId,
+    required String title,
+    required DateTime startDate,
+    required DateTime endDate,
+    this.placeName = const Value.absent(),
+    this.placeUrl = const Value.absent(),
+    this.note = const Value.absent(),
+    this.sortIndex = const Value.absent(),
+  }) : taskId = Value(taskId),
+       title = Value(title),
+       startDate = Value(startDate),
+       endDate = Value(endDate);
+  static Insertable<TripStageRow> custom({
+    Expression<int>? id,
+    Expression<int>? taskId,
+    Expression<String>? title,
+    Expression<DateTime>? startDate,
+    Expression<DateTime>? endDate,
+    Expression<String>? placeName,
+    Expression<String>? placeUrl,
+    Expression<String>? note,
+    Expression<int>? sortIndex,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (taskId != null) 'task_id': taskId,
+      if (title != null) 'title': title,
+      if (startDate != null) 'start_date': startDate,
+      if (endDate != null) 'end_date': endDate,
+      if (placeName != null) 'place_name': placeName,
+      if (placeUrl != null) 'place_url': placeUrl,
+      if (note != null) 'note': note,
+      if (sortIndex != null) 'sort_index': sortIndex,
+    });
+  }
+
+  TripStagesCompanion copyWith({
+    Value<int>? id,
+    Value<int>? taskId,
+    Value<String>? title,
+    Value<DateTime>? startDate,
+    Value<DateTime>? endDate,
+    Value<String>? placeName,
+    Value<String>? placeUrl,
+    Value<String>? note,
+    Value<int>? sortIndex,
+  }) {
+    return TripStagesCompanion(
+      id: id ?? this.id,
+      taskId: taskId ?? this.taskId,
+      title: title ?? this.title,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      placeName: placeName ?? this.placeName,
+      placeUrl: placeUrl ?? this.placeUrl,
+      note: note ?? this.note,
+      sortIndex: sortIndex ?? this.sortIndex,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (taskId.present) {
+      map['task_id'] = Variable<int>(taskId.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (startDate.present) {
+      map['start_date'] = Variable<DateTime>(startDate.value);
+    }
+    if (endDate.present) {
+      map['end_date'] = Variable<DateTime>(endDate.value);
+    }
+    if (placeName.present) {
+      map['place_name'] = Variable<String>(placeName.value);
+    }
+    if (placeUrl.present) {
+      map['place_url'] = Variable<String>(placeUrl.value);
+    }
+    if (note.present) {
+      map['note'] = Variable<String>(note.value);
+    }
+    if (sortIndex.present) {
+      map['sort_index'] = Variable<int>(sortIndex.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TripStagesCompanion(')
+          ..write('id: $id, ')
+          ..write('taskId: $taskId, ')
+          ..write('title: $title, ')
+          ..write('startDate: $startDate, ')
+          ..write('endDate: $endDate, ')
+          ..write('placeName: $placeName, ')
+          ..write('placeUrl: $placeUrl, ')
+          ..write('note: $note, ')
+          ..write('sortIndex: $sortIndex')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2236,6 +2822,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $RecurrenceDonesTable recurrenceDones = $RecurrenceDonesTable(
     this,
   );
+  late final $TripStagesTable tripStages = $TripStagesTable(this);
   late final TaskDao taskDao = TaskDao(this as AppDatabase);
   late final SubtaskDao subtaskDao = SubtaskDao(this as AppDatabase);
   @override
@@ -2247,6 +2834,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     subtasks,
     appSettings,
     recurrenceDones,
+    tripStages,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -2263,6 +2851,13 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         limitUpdateKind: UpdateKind.delete,
       ),
       result: [TableUpdate('recurrence_dones', kind: UpdateKind.delete)],
+    ),
+    WritePropagation(
+      on: TableUpdateQuery.onTableName(
+        'tasks',
+        limitUpdateKind: UpdateKind.delete,
+      ),
+      result: [TableUpdate('trip_stages', kind: UpdateKind.delete)],
     ),
   ]);
 }
@@ -2283,6 +2878,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<int> reminderDaysBefore,
       Value<int> colorId,
       Value<bool> deferred,
+      Value<bool> isTrip,
       Value<RecurrenceType> recurrenceType,
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
@@ -2310,6 +2906,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<int> reminderDaysBefore,
       Value<int> colorId,
       Value<bool> deferred,
+      Value<bool> isTrip,
       Value<RecurrenceType> recurrenceType,
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
@@ -2359,6 +2956,24 @@ final class $$TasksTableReferences
     final cache = $_typedResult.readTableOrNull(
       _recurrenceDonesRefsTable($_db),
     );
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
+
+  static MultiTypedResultKey<$TripStagesTable, List<TripStageRow>>
+  _tripStagesRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.tripStages,
+    aliasName: 'tasks__id__trip_stages__task_id',
+  );
+
+  $$TripStagesTableProcessedTableManager get tripStagesRefs {
+    final manager = $$TripStagesTableTableManager(
+      $_db,
+      $_db.tripStages,
+    ).filter((f) => f.taskId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_tripStagesRefsTable($_db));
     return ProcessedTableManager(
       manager.$state.copyWith(prefetchedData: cache),
     );
@@ -2442,6 +3057,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<bool> get deferred => $composableBuilder(
     column: $table.deferred,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isTrip => $composableBuilder(
+    column: $table.isTrip,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2545,6 +3165,31 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
     );
     return f(composer);
   }
+
+  Expression<bool> tripStagesRefs(
+    Expression<bool> Function($$TripStagesTableFilterComposer f) f,
+  ) {
+    final $$TripStagesTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripStages,
+      getReferencedColumn: (t) => t.taskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripStagesTableFilterComposer(
+            $db: $db,
+            $table: $db.tripStages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TasksTableOrderingComposer
@@ -2623,6 +3268,11 @@ class $$TasksTableOrderingComposer
 
   ColumnOrderings<bool> get deferred => $composableBuilder(
     column: $table.deferred,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isTrip => $composableBuilder(
+    column: $table.isTrip,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -2743,6 +3393,9 @@ class $$TasksTableAnnotationComposer
   GeneratedColumn<bool> get deferred =>
       $composableBuilder(column: $table.deferred, builder: (column) => column);
 
+  GeneratedColumn<bool> get isTrip =>
+      $composableBuilder(column: $table.isTrip, builder: (column) => column);
+
   GeneratedColumnWithTypeConverter<RecurrenceType, int> get recurrenceType =>
       $composableBuilder(
         column: $table.recurrenceType,
@@ -2833,6 +3486,31 @@ class $$TasksTableAnnotationComposer
     );
     return f(composer);
   }
+
+  Expression<T> tripStagesRefs<T extends Object>(
+    Expression<T> Function($$TripStagesTableAnnotationComposer a) f,
+  ) {
+    final $$TripStagesTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.tripStages,
+      getReferencedColumn: (t) => t.taskId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TripStagesTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tripStages,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$TasksTableTableManager
@@ -2848,7 +3526,11 @@ class $$TasksTableTableManager
           $$TasksTableUpdateCompanionBuilder,
           (TaskRow, $$TasksTableReferences),
           TaskRow,
-          PrefetchHooks Function({bool subtasksRefs, bool recurrenceDonesRefs})
+          PrefetchHooks Function({
+            bool subtasksRefs,
+            bool recurrenceDonesRefs,
+            bool tripStagesRefs,
+          })
         > {
   $$TasksTableTableManager(_$AppDatabase db, $TasksTable table)
     : super(
@@ -2877,6 +3559,7 @@ class $$TasksTableTableManager
                 Value<int> reminderDaysBefore = const Value.absent(),
                 Value<int> colorId = const Value.absent(),
                 Value<bool> deferred = const Value.absent(),
+                Value<bool> isTrip = const Value.absent(),
                 Value<RecurrenceType> recurrenceType = const Value.absent(),
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
@@ -2902,6 +3585,7 @@ class $$TasksTableTableManager
                 reminderDaysBefore: reminderDaysBefore,
                 colorId: colorId,
                 deferred: deferred,
+                isTrip: isTrip,
                 recurrenceType: recurrenceType,
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,
@@ -2929,6 +3613,7 @@ class $$TasksTableTableManager
                 Value<int> reminderDaysBefore = const Value.absent(),
                 Value<int> colorId = const Value.absent(),
                 Value<bool> deferred = const Value.absent(),
+                Value<bool> isTrip = const Value.absent(),
                 Value<RecurrenceType> recurrenceType = const Value.absent(),
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
@@ -2954,6 +3639,7 @@ class $$TasksTableTableManager
                 reminderDaysBefore: reminderDaysBefore,
                 colorId: colorId,
                 deferred: deferred,
+                isTrip: isTrip,
                 recurrenceType: recurrenceType,
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,
@@ -2972,12 +3658,17 @@ class $$TasksTableTableManager
               )
               .toList(),
           prefetchHooksCallback:
-              ({subtasksRefs = false, recurrenceDonesRefs = false}) {
+              ({
+                subtasksRefs = false,
+                recurrenceDonesRefs = false,
+                tripStagesRefs = false,
+              }) {
                 return PrefetchHooks(
                   db: db,
                   explicitlyWatchedTables: [
                     if (subtasksRefs) db.subtasks,
                     if (recurrenceDonesRefs) db.recurrenceDones,
+                    if (tripStagesRefs) db.tripStages,
                   ],
                   addJoins: null,
                   getPrefetchedDataCallback: (items) async {
@@ -3024,6 +3715,27 @@ class $$TasksTableTableManager
                               ),
                           typedResults: items,
                         ),
+                      if (tripStagesRefs)
+                        await $_getPrefetchedData<
+                          TaskRow,
+                          $TasksTable,
+                          TripStageRow
+                        >(
+                          currentTable: table,
+                          referencedTable: $$TasksTableReferences
+                              ._tripStagesRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$TasksTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).tripStagesRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.taskId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
                     ];
                   },
                 );
@@ -3044,7 +3756,11 @@ typedef $$TasksTableProcessedTableManager =
       $$TasksTableUpdateCompanionBuilder,
       (TaskRow, $$TasksTableReferences),
       TaskRow,
-      PrefetchHooks Function({bool subtasksRefs, bool recurrenceDonesRefs})
+      PrefetchHooks Function({
+        bool subtasksRefs,
+        bool recurrenceDonesRefs,
+        bool tripStagesRefs,
+      })
     >;
 typedef $$SubtasksTableCreateCompanionBuilder =
     SubtasksCompanion Function({
@@ -3817,6 +4533,393 @@ typedef $$RecurrenceDonesTableProcessedTableManager =
       RecurrenceDoneRow,
       PrefetchHooks Function({bool taskId})
     >;
+typedef $$TripStagesTableCreateCompanionBuilder =
+    TripStagesCompanion Function({
+      Value<int> id,
+      required int taskId,
+      required String title,
+      required DateTime startDate,
+      required DateTime endDate,
+      Value<String> placeName,
+      Value<String> placeUrl,
+      Value<String> note,
+      Value<int> sortIndex,
+    });
+typedef $$TripStagesTableUpdateCompanionBuilder =
+    TripStagesCompanion Function({
+      Value<int> id,
+      Value<int> taskId,
+      Value<String> title,
+      Value<DateTime> startDate,
+      Value<DateTime> endDate,
+      Value<String> placeName,
+      Value<String> placeUrl,
+      Value<String> note,
+      Value<int> sortIndex,
+    });
+
+final class $$TripStagesTableReferences
+    extends BaseReferences<_$AppDatabase, $TripStagesTable, TripStageRow> {
+  $$TripStagesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $TasksTable _taskIdTable(_$AppDatabase db) =>
+      db.tasks.createAlias('trip_stages__task_id__tasks__id');
+
+  $$TasksTableProcessedTableManager get taskId {
+    final $_column = $_itemColumn<int>('task_id')!;
+
+    final manager = $$TasksTableTableManager(
+      $_db,
+      $_db.tasks,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_taskIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$TripStagesTableFilterComposer
+    extends Composer<_$AppDatabase, $TripStagesTable> {
+  $$TripStagesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placeName => $composableBuilder(
+    column: $table.placeName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placeUrl => $composableBuilder(
+    column: $table.placeUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get sortIndex => $composableBuilder(
+    column: $table.sortIndex,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$TasksTableFilterComposer get taskId {
+    final $$TasksTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableFilterComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripStagesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TripStagesTable> {
+  $$TripStagesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startDate => $composableBuilder(
+    column: $table.startDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get endDate => $composableBuilder(
+    column: $table.endDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get placeName => $composableBuilder(
+    column: $table.placeName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get placeUrl => $composableBuilder(
+    column: $table.placeUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get note => $composableBuilder(
+    column: $table.note,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get sortIndex => $composableBuilder(
+    column: $table.sortIndex,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$TasksTableOrderingComposer get taskId {
+    final $$TasksTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableOrderingComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripStagesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TripStagesTable> {
+  $$TripStagesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startDate =>
+      $composableBuilder(column: $table.startDate, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get endDate =>
+      $composableBuilder(column: $table.endDate, builder: (column) => column);
+
+  GeneratedColumn<String> get placeName =>
+      $composableBuilder(column: $table.placeName, builder: (column) => column);
+
+  GeneratedColumn<String> get placeUrl =>
+      $composableBuilder(column: $table.placeUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get note =>
+      $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<int> get sortIndex =>
+      $composableBuilder(column: $table.sortIndex, builder: (column) => column);
+
+  $$TasksTableAnnotationComposer get taskId {
+    final $$TasksTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.taskId,
+      referencedTable: $db.tasks,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$TasksTableAnnotationComposer(
+            $db: $db,
+            $table: $db.tasks,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$TripStagesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TripStagesTable,
+          TripStageRow,
+          $$TripStagesTableFilterComposer,
+          $$TripStagesTableOrderingComposer,
+          $$TripStagesTableAnnotationComposer,
+          $$TripStagesTableCreateCompanionBuilder,
+          $$TripStagesTableUpdateCompanionBuilder,
+          (TripStageRow, $$TripStagesTableReferences),
+          TripStageRow,
+          PrefetchHooks Function({bool taskId})
+        > {
+  $$TripStagesTableTableManager(_$AppDatabase db, $TripStagesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TripStagesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TripStagesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TripStagesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> taskId = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<DateTime> startDate = const Value.absent(),
+                Value<DateTime> endDate = const Value.absent(),
+                Value<String> placeName = const Value.absent(),
+                Value<String> placeUrl = const Value.absent(),
+                Value<String> note = const Value.absent(),
+                Value<int> sortIndex = const Value.absent(),
+              }) => TripStagesCompanion(
+                id: id,
+                taskId: taskId,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                placeName: placeName,
+                placeUrl: placeUrl,
+                note: note,
+                sortIndex: sortIndex,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int taskId,
+                required String title,
+                required DateTime startDate,
+                required DateTime endDate,
+                Value<String> placeName = const Value.absent(),
+                Value<String> placeUrl = const Value.absent(),
+                Value<String> note = const Value.absent(),
+                Value<int> sortIndex = const Value.absent(),
+              }) => TripStagesCompanion.insert(
+                id: id,
+                taskId: taskId,
+                title: title,
+                startDate: startDate,
+                endDate: endDate,
+                placeName: placeName,
+                placeUrl: placeUrl,
+                note: note,
+                sortIndex: sortIndex,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$TripStagesTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({taskId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins:
+                  <
+                    T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic
+                    >
+                  >(state) {
+                    if (taskId) {
+                      state =
+                          state.withJoin(
+                                currentTable: table,
+                                currentColumn: table.taskId,
+                                referencedTable: $$TripStagesTableReferences
+                                    ._taskIdTable(db),
+                                referencedColumn: $$TripStagesTableReferences
+                                    ._taskIdTable(db)
+                                    .id,
+                              )
+                              as T;
+                    }
+
+                    return state;
+                  },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ),
+      );
+}
+
+typedef $$TripStagesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TripStagesTable,
+      TripStageRow,
+      $$TripStagesTableFilterComposer,
+      $$TripStagesTableOrderingComposer,
+      $$TripStagesTableAnnotationComposer,
+      $$TripStagesTableCreateCompanionBuilder,
+      $$TripStagesTableUpdateCompanionBuilder,
+      (TripStageRow, $$TripStagesTableReferences),
+      TripStageRow,
+      PrefetchHooks Function({bool taskId})
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3829,6 +4932,8 @@ class $AppDatabaseManager {
       $$AppSettingsTableTableManager(_db, _db.appSettings);
   $$RecurrenceDonesTableTableManager get recurrenceDones =>
       $$RecurrenceDonesTableTableManager(_db, _db.recurrenceDones);
+  $$TripStagesTableTableManager get tripStages =>
+      $$TripStagesTableTableManager(_db, _db.tripStages);
 }
 
 mixin _$TaskDaoMixin on DatabaseAccessor<AppDatabase> {

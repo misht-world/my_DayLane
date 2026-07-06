@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/date_utils.dart';
 import '../../core/theme.dart';
+import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
 import '../../domain/scheduling.dart';
 import '../task_editor/task_editor_screen.dart';
+import '../trips/trip_screen.dart';
 
 /// Строка дела на главном экране: круглый чекбокс под цвет дела, заголовок,
 /// мета-чипы (время, период, напоминание, прогресс подпунктов), раскрытие
@@ -59,6 +61,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
       children: [
         InkWell(
           onTap: () => _openEditor(context),
+          onLongPress: () => _showActions(context),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
             child: Row(
@@ -119,8 +122,14 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                   ),
                 if (widget.showCarryToToday && t.isSingle && !t.isDone)
                   _CarryButton(
-                    onTap: () =>
-                        ref.read(repositoryProvider).carryToTodayTask(t),
+                    onTap: () async {
+                      final messenger = ScaffoldMessenger.of(context);
+                      final undo = await ref
+                          .read(repositoryProvider)
+                          .carryToTodayTask(t);
+                      showUndoSnackOn(
+                          messenger, 'Перенесено на сегодня', undo);
+                    },
                   ),
               ],
             ),
@@ -179,7 +188,67 @@ class _TaskRowState extends ConsumerState<TaskRow> {
   }
 
   void _openEditor(BuildContext context) {
-    openTaskEditor(context, widget.task);
+    final t = widget.task;
+    if (t.isTrip && t.id != null) {
+      // Поездка открывается дневником; карточка — из него по кнопке «изменить».
+      Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => TripScreen(taskId: t.id!)));
+    } else {
+      openTaskEditor(context, t);
+    }
+  }
+
+  /// Долгий тап по строке — быстрые действия: в отложенные / удалить.
+  Future<void> _showActions(BuildContext context) async {
+    final t = widget.task;
+    final dl = context.dl;
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: dl.surface,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(t.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: context.serif.copyWith(fontSize: 17, color: dl.ink)),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.bookmark_border_rounded, color: dl.inkSoft),
+              title: const Text('В отложенные'),
+              subtitle: const Text('снять с дня, «ждёт своего часа»',
+                  style: TextStyle(fontSize: 12)),
+              onTap: () => Navigator.of(context).pop('defer'),
+            ),
+            ListTile(
+              leading: Icon(Icons.delete_outline_rounded, color: dl.danger),
+              title: Text('Удалить', style: TextStyle(color: dl.danger)),
+              onTap: () => Navigator.of(context).pop('delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!context.mounted) return;
+    // Messenger захватываем сейчас: после операции строка дела уже
+    // размонтирована (дело ушло из секции), context станет недоступен.
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = ref.read(repositoryProvider);
+    switch (action) {
+      case 'defer':
+        final undo = await repo.moveToDeferred(t);
+        showUndoSnackOn(messenger, 'Перенесено в «Отложенные»', undo);
+      case 'delete':
+        final undo = await repo.deleteTask(t.id!);
+        showUndoSnackOn(messenger, 'Дело удалено', undo);
+    }
   }
 }
 

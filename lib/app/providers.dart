@@ -109,6 +109,33 @@ final deferredTasksProvider = Provider<List<TaskModel>>((ref) {
     ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 });
 
+/// Путешествия (дела-периоды с дневником), ближайшие сверху.
+final tripsProvider = Provider<List<TaskModel>>((ref) {
+  final tasks = ref.watch(tasksProvider).value ?? const [];
+  return tasks.where((t) => t.isTrip && !t.deferred).toList()
+    ..sort((a, b) => b.startDate.compareTo(a.startDate));
+});
+
+/// Этапы конкретного путешествия (по датам).
+final stagesForTripProvider =
+    StreamProvider.family<List<TripStageModel>, int>(
+  (ref, taskId) => ref.watch(repositoryProvider).watchStages(taskId),
+);
+
+/// Число этапов по поездкам (для превью в списке путешествий).
+final stageCountProvider = Provider<Map<int, int>>((ref) {
+  final rows = ref.watch(_allStagesProvider).value ?? const [];
+  final map = <int, int>{};
+  for (final r in rows) {
+    map[r.taskId] = (map[r.taskId] ?? 0) + 1;
+  }
+  return map;
+});
+
+final _allStagesProvider = StreamProvider<List<TripStageRow>>(
+  (ref) => ref.watch(databaseProvider).watchAllStages(),
+);
+
 /// Реальная сегодняшняя дата без времени (для просрочки и т.п.).
 final todayProvider = Provider<DateTime>((ref) => dateOnly(DateTime.now()));
 

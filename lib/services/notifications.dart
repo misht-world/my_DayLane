@@ -79,7 +79,10 @@ class NotificationService {
   Future<void> reschedule(TaskModel task) async {
     await init();
     await cancelForTask(task.id);
-    if (task.id == null || !task.reminderEnabled || task.isDone) return;
+    if (task.id == null || !task.reminderEnabled || task.isDone ||
+        task.deferred) {
+      return;
+    }
 
     final base = _baseId(task.id!);
     final dates = _reminderDates(task);

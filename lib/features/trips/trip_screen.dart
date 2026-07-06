@@ -1,0 +1,532 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../app/providers.dart';
+import '../../core/date_utils.dart';
+import '../../core/theme.dart';
+import '../../domain/models.dart';
+import '../../services/maps.dart';
+import '../task_editor/task_editor_screen.dart';
+
+/// Дневник путешествия: шапка с датами, этапы-подкарточки по дням
+/// (место + заметки по итогу) и общие заметки поездки.
+class TripScreen extends ConsumerWidget {
+  const TripScreen({super.key, required this.taskId});
+  final int taskId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dl = context.dl;
+    final tasks = ref.watch(tasksProvider).value ?? const [];
+    final trip = tasks.where((t) => t.id == taskId).firstOrNull;
+    if (trip == null) {
+      // Поездку удалили, пока экран был открыт.
+      return const Scaffold(body: SizedBox.shrink());
+    }
+    final stages = ref.watch(stagesForTripProvider(taskId)).value ?? const [];
+    final color = context.taskColor(trip);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Путешествие', style: context.serif.copyWith(fontSize: 18)),
+        actions: [
+          IconButton(
+            tooltip: 'Показать в календаре',
+            icon: const Icon(Icons.event_rounded),
+            onPressed: () {
+              ref.read(focusedDateProvider.notifier).set(trip.startDate);
+              Navigator.of(context).popUntil((r) => r.isFirst);
+            },
+          ),
+          IconButton(
+            tooltip: 'Изменить дело',
+            icon: const Icon(Icons.edit_rounded),
+            onPressed: () => openTaskEditor(context, trip),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          _header(context, trip, color),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Text('Этапы',
+                  style: context.serif.copyWith(
+                      fontSize: 17,
+                      fontStyle: FontStyle.italic,
+                      color: dl.ink)),
+              const Spacer(),
+              TextButton.icon(
+                onPressed: () => _editStage(context, ref, trip, null),
+                style: TextButton.styleFrom(foregroundColor: dl.accent),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Добавить этап'),
+              ),
+            ],
+          ),
+          if (stages.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                'Разбейте поездку на этапы: день или группа дней — '
+                'город, гостиница, что посмотреть. После — заметки по итогу.',
+                style: TextStyle(color: dl.inkFaint, fontSize: 13),
+              ),
+            )
+          else
+            for (final s in stages)
+              _StageCard(
+                trip: trip,
+                stage: s,
+                color: color,
+                onTap: () => _editStage(context, ref, trip, s),
+              ),
+          if (trip.note.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            Text('Заметки поездки',
+                style: context.serif.copyWith(
+                    fontSize: 17, fontStyle: FontStyle.italic, color: dl.ink)),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: dl.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: dl.line),
+              ),
+              child: Text(trip.note,
+                  style: TextStyle(fontSize: 14, color: dl.ink, height: 1.4)),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _header(BuildContext context, TaskModel trip, Color color) {
+    final dl = context.dl;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: dl.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: dl.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.luggage_rounded, size: 20, color: color),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(trip.title,
+                    style: context.serif.copyWith(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w500,
+                        color: dl.ink)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${formatDateRange(trip.startDate, trip.endDate)}'
+            ' · ${trip.durationDays} дн.',
+            style: TextStyle(fontSize: 13, color: dl.inkSoft),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editStage(BuildContext context, WidgetRef ref, TaskModel trip,
+      TripStageModel? stage) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.dl.surface,
+      showDragHandle: true,
+      builder: (_) => Padding(
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+        child: StageSheet(trip: trip, existing: stage),
+      ),
+    );
+  }
+}
+
+/// Подкарточка этапа: даты («день N–M»), место, заметки.
+class _StageCard extends StatelessWidget {
+  const _StageCard({
+    required this.trip,
+    required this.stage,
+    required this.color,
+    required this.onTap,
+  });
+
+  final TaskModel trip;
+  final TripStageModel stage;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final dl = context.dl;
+    final d1 = daysBetween(trip.startDate, stage.startDate) + 1;
+    final d2 = daysBetween(trip.startDate, stage.endDate) + 1;
+    final dayLabel = d1 == d2 ? 'день $d1' : 'дни $d1–$d2';
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: dl.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: dl.line),
+          ),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(3)),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${formatDateRange(stage.startDate, stage.endDate)}'
+                          ' · $dayLabel',
+                          style: context.serif.copyWith(
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              color: color),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(stage.title,
+                            style: context.serif
+                                .copyWith(fontSize: 16, color: dl.ink)),
+                        if (stage.hasPlace)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => openInMaps(
+                                  url: stage.placeUrl,
+                                  query: stage.placeName),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.place_rounded,
+                                      size: 15, color: dl.accent),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      stage.placeName.isNotEmpty
+                                          ? stage.placeName
+                                          : 'место на карте',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                          fontSize: 13,
+                                          color: dl.accent,
+                                          decoration:
+                                              TextDecoration.underline,
+                                          decorationColor: dl.accent),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        if (stage.note.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(stage.note,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    color: dl.inkSoft,
+                                    height: 1.35)),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 6, top: 8),
+                  child: Icon(Icons.chevron_right_rounded,
+                      size: 20, color: dl.inkFaint),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Редактор этапа: название, дни, место (карты + вставка ссылки), заметки.
+class StageSheet extends ConsumerStatefulWidget {
+  const StageSheet({super.key, required this.trip, this.existing});
+  final TaskModel trip;
+  final TripStageModel? existing;
+
+  @override
+  ConsumerState<StageSheet> createState() => _StageSheetState();
+}
+
+class _StageSheetState extends ConsumerState<StageSheet> {
+  late final TextEditingController _title;
+  late final TextEditingController _place;
+  late final TextEditingController _note;
+  late DateTime _start;
+  late DateTime _end;
+  String _placeUrl = '';
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _title = TextEditingController(text: e?.title ?? '');
+    _place = TextEditingController(text: e?.placeName ?? '');
+    _note = TextEditingController(text: e?.note ?? '');
+    _start = e?.startDate ?? widget.trip.startDate;
+    _end = e?.endDate ?? _start;
+    _placeUrl = e?.placeUrl ?? '';
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _place.dispose();
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final dl = context.dl;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.existing == null ? 'Новый этап' : 'Этап',
+                style: context.serif.copyWith(fontSize: 18, color: dl.ink)),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _title,
+              autofocus: widget.existing == null,
+              style: context.serif.copyWith(fontSize: 17, color: dl.ink),
+              textCapitalization: TextCapitalization.sentences,
+              decoration: InputDecoration(
+                hintText: 'Город, район, что делаем…',
+                hintStyle:
+                    context.serif.copyWith(fontSize: 17, color: dl.inkFaint),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Text('Дни', style: TextStyle(fontSize: 14, color: dl.inkSoft)),
+                const Spacer(),
+                _datePill(_start, (d) {
+                  setState(() {
+                    _start = d;
+                    if (_end.isBefore(_start)) _end = _start;
+                  });
+                }),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Text('—',
+                      style: TextStyle(color: dl.inkFaint, fontSize: 14)),
+                ),
+                _datePill(_end, (d) {
+                  setState(() =>
+                      _end = d.isBefore(_start) ? _start : d);
+                }),
+              ],
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _place,
+              decoration: InputDecoration(
+                labelText: 'Место (гостиница, музей…)',
+                isDense: true,
+                suffixIcon: _placeUrl.isNotEmpty
+                    ? IconButton(
+                        tooltip: 'Убрать ссылку на карты',
+                        icon: Icon(Icons.link_off_rounded,
+                            size: 18, color: dl.inkFaint),
+                        onPressed: () => setState(() => _placeUrl = ''),
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => openInMaps(
+                      url: _placeUrl, query: _place.text),
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: dl.lineStrong),
+                    foregroundColor: dl.ink,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.map_rounded, size: 16),
+                  label: const Text('Открыть карты',
+                      style: TextStyle(fontSize: 13)),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _pasteLink,
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: dl.lineStrong),
+                    foregroundColor: dl.ink,
+                    visualDensity: VisualDensity.compact,
+                  ),
+                  icon: const Icon(Icons.content_paste_rounded, size: 16),
+                  label: const Text('Вставить ссылку',
+                      style: TextStyle(fontSize: 13)),
+                ),
+                if (_placeUrl.isNotEmpty)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.link_rounded, size: 14, color: dl.accent),
+                      const SizedBox(width: 3),
+                      Text('ссылка сохранена',
+                          style: TextStyle(fontSize: 12, color: dl.accent)),
+                    ],
+                  ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'В картах: выберите место → Поделиться → Копировать ссылку, '
+              'затем вернитесь и нажмите «Вставить ссылку».',
+              style: TextStyle(fontSize: 11.5, color: dl.inkFaint),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _note,
+              maxLines: 4,
+              minLines: 2,
+              textCapitalization: TextCapitalization.sentences,
+              decoration: const InputDecoration(
+                labelText: 'Заметки (по итогу: как было, что понравилось)',
+                alignLabelWithHint: true,
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                if (widget.existing != null)
+                  TextButton.icon(
+                    onPressed: _delete,
+                    style: TextButton.styleFrom(foregroundColor: dl.danger),
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18),
+                    label: const Text('Удалить'),
+                  ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: _save,
+                  style: FilledButton.styleFrom(
+                      backgroundColor: dl.accent,
+                      foregroundColor:
+                          Theme.of(context).colorScheme.onPrimary),
+                  child: const Text('Сохранить'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _datePill(DateTime value, ValueChanged<DateTime> onPicked) {
+    final dl = context.dl;
+    return OutlinedButton(
+      onPressed: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: value,
+          firstDate: widget.trip.startDate,
+          lastDate: widget.trip.endDate,
+        );
+        if (picked != null) onPicked(dateOnly(picked));
+      },
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(color: dl.lineStrong),
+        foregroundColor: dl.ink,
+        visualDensity: VisualDensity.compact,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      child: Text(formatDayMonth(value), style: const TextStyle(fontSize: 13)),
+    );
+  }
+
+  Future<void> _pasteLink() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (!mounted) return;
+    if (looksLikeMapsLink(text)) {
+      setState(() => _placeUrl = text);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('В буфере нет ссылки на карты. Скопируйте её '
+              'в приложении карт: Поделиться → Копировать ссылку.')));
+    }
+  }
+
+  Future<void> _save() async {
+    if (_title.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Назовите этап')));
+      return;
+    }
+    final stage = TripStageModel(
+      id: widget.existing?.id,
+      taskId: widget.trip.id!,
+      title: _title.text.trim(),
+      startDate: _start,
+      endDate: _end,
+      placeName: _place.text.trim(),
+      placeUrl: _placeUrl,
+      note: _note.text.trim(),
+      sortIndex: widget.existing?.sortIndex ?? 0,
+    );
+    await ref.read(repositoryProvider).saveStage(stage);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  Future<void> _delete() async {
+    await ref.read(repositoryProvider).deleteStage(widget.existing!.id!);
+    if (mounted) Navigator.of(context).pop();
+  }
+}

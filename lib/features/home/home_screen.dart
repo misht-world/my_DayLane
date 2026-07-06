@@ -5,10 +5,12 @@ import 'package:intl/intl.dart';
 import '../../app/providers.dart';
 import '../../core/date_utils.dart';
 import '../../core/theme.dart';
+import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../calendar/calendar_view.dart';
 import '../settings/settings_screen.dart';
 import '../task_editor/task_editor_screen.dart';
+import '../trips/trips_list_screen.dart';
 import 'task_row.dart';
 
 enum _Horizon { yesterday, today, tomorrow }
@@ -98,6 +100,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const Spacer(),
+          IconButton(
+            tooltip: 'Путешествия',
+            icon: Icon(Icons.luggage_rounded, color: dl.inkFaint),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TripsListScreen()),
+            ),
+          ),
           IconButton(
             icon: Icon(Icons.settings_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
@@ -292,9 +301,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             child: Align(
                               alignment: Alignment.centerLeft,
                               child: FilledButton.icon(
-                                onPressed: () => ref
-                                    .read(repositoryProvider)
-                                    .carryAll(tasks),
+                                onPressed: () async {
+                                  final undo = await ref
+                                      .read(repositoryProvider)
+                                      .carryAll(tasks);
+                                  if (!mounted) return;
+                                  showUndoSnack(context,
+                                      'Перенесено на сегодня', undo);
+                                },
                                 style: FilledButton.styleFrom(
                                   backgroundColor: dl.accent,
                                   foregroundColor: Theme.of(context)
@@ -571,10 +585,9 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                     ),
                   ),
                 ),
-              _quick(context, 'сегодня',
-                  () => repo.scheduleDeferred(task, today)),
+              _quick(context, 'сегодня', () => _schedule(task, today)),
               _quick(context, 'завтра',
-                  () => repo.scheduleDeferred(task, addDays(today, 1))),
+                  () => _schedule(task, addDays(today, 1))),
               IconButton(
                 visualDensity: VisualDensity.compact,
                 icon: Icon(Icons.event_rounded, size: 18, color: dl.inkSoft),
@@ -586,7 +599,7 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                     firstDate: DateTime(2000),
                     lastDate: DateTime(2100),
                   );
-                  if (picked != null) repo.scheduleDeferred(task, picked);
+                  if (picked != null) _schedule(task, picked);
                 },
               ),
             ],
@@ -595,6 +608,15 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
         if (_expanded && hasSubs) SubtaskChecklist(taskId: task.id!),
       ],
     );
+  }
+
+  /// Назначает дату отложенному делу с возможностью отмены.
+  Future<void> _schedule(TaskModel task, DateTime date) async {
+    // Строка уйдёт из «Отложенных» — messenger берём заранее.
+    final messenger = ScaffoldMessenger.of(context);
+    final undo =
+        await ref.read(repositoryProvider).scheduleDeferred(task, date);
+    showUndoSnackOn(messenger, 'Назначено на ${formatDayMonth(date)}', undo);
   }
 
   Widget _quick(BuildContext context, String label, VoidCallback onTap) {
