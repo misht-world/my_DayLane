@@ -377,31 +377,33 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
     return [
       if (!_linked) ...[
-        _row(
-          'Начало',
-          _pillButton(formatDayMonth(_start), () async {
-            final picked = await _pickDate(_start);
-            if (picked != null) {
-              setState(() {
-                _start = picked;
-                if (_end.isBefore(_start)) _end = _start;
-                _duration = daysBetween(_start, _end) + 1;
-              });
-            }
-          }),
-        ),
-        const SizedBox(height: 10),
-        _row(
-          'Конец',
-          _pillButton(formatDayMonth(_end), () async {
-            final picked = await _pickDate(_end, first: _start);
-            if (picked != null) {
-              setState(() {
-                _end = picked.isBefore(_start) ? _start : picked;
-                _duration = daysBetween(_start, _end) + 1;
-              });
-            }
-          }),
+        // Единый выбор диапазона на календаре: первый тап — начало,
+        // второй — конец; диапазон подсвечивается полосой.
+        InkWell(
+          onTap: _pickRange,
+          borderRadius: BorderRadius.circular(10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              children: [
+                Icon(Icons.date_range_rounded, size: 20, color: dl.inkSoft),
+                const SizedBox(width: 14),
+                Expanded(
+                    child: Text('Даты',
+                        style: TextStyle(fontSize: 15, color: dl.ink))),
+                Flexible(
+                  child: Text(
+                    '${formatDateRange(_start, _end)} · $_duration дн.',
+                    textAlign: TextAlign.right,
+                    style: TextStyle(fontSize: 14, color: dl.inkSoft),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Icon(Icons.chevron_right_rounded,
+                    size: 20, color: dl.inkFaint),
+              ],
+            ),
+          ),
         ),
       ] else ...[
         _row('Начало',
@@ -651,13 +653,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                     setState(() => _reminderRule = s.first),
               ),
             ),
-          _row(
-            'Время напоминания',
-            _pillButton(formatMinutesOfDay(_reminderMinutes), () async {
-              final picked = await _pickTimeOfDay(_reminderMinutes);
-              if (picked != null) setState(() => _reminderMinutes = picked);
-            }),
-          ),
+          if (_kind == TaskKind.single && _timeMinutes != null)
+            // Дело со временем — напоминание приходит в это же время.
+            _row(
+              'Время напоминания',
+              Text('в ${formatMinutesOfDay(_timeMinutes!)} · по времени дела',
+                  style: TextStyle(fontSize: 14, color: context.dl.inkSoft)),
+            )
+          else
+            _row(
+              'Время напоминания',
+              _pillButton(formatMinutesOfDay(_reminderMinutes), () async {
+                final picked = await _pickTimeOfDay(_reminderMinutes);
+                if (picked != null) setState(() => _reminderMinutes = picked);
+              }),
+            ),
           const SizedBox(height: 10),
           _label('Когда напомнить'),
           const SizedBox(height: 6),
@@ -790,6 +800,24 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }
 
   // ── Пикеры ────────────────────────────────────────────────────
+  /// Выбор диапазона дат периода на одном календаре (тап начало → тап конец).
+  Future<void> _pickRange() async {
+    final range = await showDateRangePicker(
+      context: context,
+      initialDateRange: DateTimeRange(start: _start, end: _end),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      helpText: 'Выберите период',
+    );
+    if (range != null) {
+      setState(() {
+        _start = dateOnly(range.start);
+        _end = dateOnly(range.end);
+        _duration = daysBetween(_start, _end) + 1;
+      });
+    }
+  }
+
   Future<DateTime?> _pickDate(DateTime initial, {DateTime? first}) {
     return showDatePicker(
       context: context,
@@ -801,7 +829,13 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   Future<void> _pickTime() async {
     final picked = await _pickTimeOfDay(_timeMinutes ?? 9 * 60);
-    if (picked != null) setState(() => _timeMinutes = picked);
+    if (picked != null) {
+      setState(() {
+        _timeMinutes = picked;
+        // Указано время — включаем напоминание (его можно выключить вручную).
+        _reminderEnabled = true;
+      });
+    }
   }
 
   Future<int?> _pickTimeOfDay(int initialMinutes) async {
@@ -874,7 +908,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       timeOfDayMinutes: _kind == TaskKind.single ? _timeMinutes : null,
       reminderEnabled: _deferred ? false : _reminderEnabled,
       reminderRule: _reminderRule,
-      reminderMinutes: _reminderMinutes,
+      // У однодневного дела со временем напоминание приходит в это же время.
+      reminderMinutes: (_kind == TaskKind.single && _timeMinutes != null)
+          ? _timeMinutes!
+          : _reminderMinutes,
       reminderDaysBefore: _reminderDaysBefore,
       colorId: _colorId,
       deferred: _deferred,
