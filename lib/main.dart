@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -10,6 +12,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru', null);
   Intl.defaultLocale = 'ru';
-  await NotificationService.instance.init();
+  // Запускаем UI сразу; уведомления инициализируем в фоне, чтобы их сбой
+  // не подвешивал старт (чёрный экран/логотип).
   runApp(const ProviderScope(child: DayLaneApp()));
+  unawaited(NotificationService.instance.init());
 }

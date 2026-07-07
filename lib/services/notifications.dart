@@ -17,7 +17,10 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
-  bool _ready = false;
+
+  /// Кэш инициализации — чтобы init() был идемпотентным и не запускался
+  /// параллельно из main(), requestPermissions() и reschedule().
+  Future<void>? _initFuture;
 
   static const _channelId = 'daylane_reminders';
   static const _channelName = 'Напоминания';
@@ -30,33 +33,39 @@ class NotificationService {
   /// Диапазон id, зарезервированный под одно дело (для правила eachDay).
   static const int _slotsPerTask = 64;
 
-  Future<void> init() async {
-    if (_ready) return;
-    tzdata.initializeTimeZones();
+  Future<void> init() => _initFuture ??= _init();
+
+  Future<void> _init() async {
+    // Всё в try/catch: сбой инициализации уведомлений НЕ должен ронять или
+    // подвешивать запуск приложения (init вызывается до первого кадра).
     try {
-      // Реальная зона устройства (иначе tz.local = UTC и время уедет).
-      final name = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(name));
+      tzdata.initializeTimeZones();
+      try {
+        // Реальная зона устройства (иначе tz.local = UTC и время уедет).
+        final name = await FlutterTimezone.getLocalTimezone();
+        tz.setLocalLocation(tz.getLocation(name));
+      } catch (_) {
+        /* оставляем tz.local как есть, если зону не удалось определить */
+      }
+
+      const android = AndroidInitializationSettings(_smallIcon);
+      const settings = InitializationSettings(android: android);
+      await _plugin.initialize(settings: settings);
+
+      await _plugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(
+        const AndroidNotificationChannel(
+          _channelId,
+          _channelName,
+          description: 'Напоминания о делах DayLane',
+          importance: Importance.high,
+        ),
+      );
     } catch (_) {
-      /* оставляем tz.local как есть, если зону не удалось определить */
+      /* Уведомления недоступны — приложение всё равно должно работать. */
     }
-
-    const android = AndroidInitializationSettings(_smallIcon);
-    const settings = InitializationSettings(android: android);
-    await _plugin.initialize(settings: settings);
-
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(
-      const AndroidNotificationChannel(
-        _channelId,
-        _channelName,
-        description: 'Напоминания о делах DayLane',
-        importance: Importance.high,
-      ),
-    );
-    _ready = true;
   }
 
   Future<void> requestPermissions() async {

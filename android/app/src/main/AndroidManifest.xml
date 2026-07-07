@@ -30,6 +30,14 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Иконка уведомления по умолчанию. Ссылка @drawable/... из манифеста
+             ОБЯЗАТЕЛЬНА: иначе в release-сборке ресурс, используемый только по
+             строковому имени, вырезается (resource shrinking) и уведомления
+             падают с invalid_icon, подвешивая запуск. -->
+        <meta-data
+            android:name="com.dexterous.flutterlocalnotifications.default_notification_icon"
+            android:resource="@drawable/ic_stat_daylane" />
+
         <!-- flutter_local_notifications (v18+): приёмники нужно объявлять вручную,
              иначе запланированный будильник срабатывает, но уведомление не
              показывается (broadcast некому принять). -->
