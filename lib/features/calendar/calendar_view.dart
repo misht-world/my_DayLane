@@ -65,6 +65,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final totalLanes = laneCount(lanes);
     final visibleLanes = totalLanes < _maxLanes ? totalLanes : _maxLanes;
     final dones = ref.watch(donesMapProvider);
+    final stageDays = ref.watch(tripStageDaysProvider);
 
     final weekdays = _orderedWeekdays(firstWeekday);
     final end = addDays(start, _gridDays - 1);
@@ -156,6 +157,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                     visibleLanes: visibleLanes,
                     isLastRow: r == _gridRows - 1,
                     dones: dones,
+                    stageDays: stageDays,
                     onTapDay: _showDay,
                     onAddDay: (day) =>
                         openTaskEditor(context, null, initialDate: day),
@@ -231,6 +233,7 @@ class _WeekRow extends StatelessWidget {
     required this.visibleLanes,
     required this.isLastRow,
     required this.dones,
+    required this.stageDays,
     required this.onTapDay,
     required this.onAddDay,
   });
@@ -245,6 +248,9 @@ class _WeekRow extends StatelessWidget {
   final int visibleLanes;
   final bool isLastRow;
   final Map<int, Set<int>> dones;
+
+  /// Дни, покрытые этапами поездок: taskId → ключи дней.
+  final Map<int, Set<int>> stageDays;
   final void Function(DateTime) onTapDay;
   final void Function(DateTime) onAddDay;
 
@@ -278,6 +284,29 @@ class _WeekRow extends StatelessWidget {
         // Подпись на каждом сегменте — чтобы дело было видно и на след. неделе.
         child: _Bar(task: t, showTitle: true),
       ));
+
+      // Под полосой поездки — отметки распланированных этапами дней.
+      if (t.isTrip) {
+        final cover = stageDays[t.id] ?? const <int>{};
+        final markColor = context.taskColor(t);
+        for (var i = 0; i < span; i++) {
+          final day = addDays(segStart, i);
+          if (!cover.contains(dayKey(day))) continue;
+          final dcol = daysBetween(weekStart, day);
+          bars.add(Positioned(
+            left: dcol * colW + 3,
+            width: colW - 6,
+            top: _head + lane * _laneHeight + _barHeight + 1,
+            height: 3,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: markColor,
+                borderRadius: BorderRadius.circular(1.5),
+              ),
+            ),
+          ));
+        }
+      }
     }
     if (hidden > 0) {
       bars.add(Positioned(

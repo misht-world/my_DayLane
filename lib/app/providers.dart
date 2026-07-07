@@ -136,6 +136,21 @@ final _allStagesProvider = StreamProvider<List<TripStageRow>>(
   (ref) => ref.watch(databaseProvider).watchAllStages(),
 );
 
+/// Дни, покрытые этапами, по поездкам: taskId → множество ключей дней.
+/// Для календаря — показать, какая часть путешествия распланирована.
+final tripStageDaysProvider = Provider<Map<int, Set<int>>>((ref) {
+  final rows = ref.watch(_allStagesProvider).value ?? const [];
+  final map = <int, Set<int>>{};
+  for (final r in rows) {
+    for (var d = dateOnly(r.startDate);
+        !d.isAfter(dateOnly(r.endDate));
+        d = addDays(d, 1)) {
+      map.putIfAbsent(r.taskId, () => <int>{}).add(dayKey(d));
+    }
+  }
+  return map;
+});
+
 /// Реальная сегодняшняя дата без времени (для просрочки и т.п.).
 final todayProvider = Provider<DateTime>((ref) => dateOnly(DateTime.now()));
 

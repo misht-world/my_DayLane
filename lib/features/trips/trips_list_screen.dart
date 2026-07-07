@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
 import '../../core/date_utils.dart';
+import '../../core/marker_label.dart';
 import '../../core/theme.dart';
 import '../../domain/models.dart';
 import '../task_editor/task_editor_screen.dart';
@@ -85,12 +86,11 @@ class TripsListScreen extends ConsumerWidget {
   }
 
   Widget _groupLabel(BuildContext context, String text) => Padding(
-        padding: const EdgeInsets.fromLTRB(2, 12, 2, 6),
-        child: Text(text,
-            style: context.serif.copyWith(
-                fontSize: 15,
-                fontStyle: FontStyle.italic,
-                color: context.dl.inkSoft)),
+        padding: const EdgeInsets.fromLTRB(2, 14, 2, 8),
+        // Row даёт метке свободную ширину — маркер обнимает только слово.
+        child: Row(
+          children: [MarkerLabel(text: text, fontSize: 18, alpha: 0.5)],
+        ),
       );
 }
 

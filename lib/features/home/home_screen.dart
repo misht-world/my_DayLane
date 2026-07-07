@@ -4,12 +4,14 @@ import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
 import '../../core/date_utils.dart';
+import '../../core/marker_label.dart';
 import '../../core/theme.dart';
 import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../calendar/calendar_view.dart';
 import '../settings/settings_screen.dart';
 import '../task_editor/task_editor_screen.dart';
+import '../tasks/tasks_list_screen.dart';
 import '../trips/trips_list_screen.dart';
 import 'task_row.dart';
 
@@ -100,6 +102,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const Spacer(),
+          IconButton(
+            tooltip: 'Все дела',
+            icon: Icon(Icons.checklist_rounded, color: dl.inkFaint),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const TasksListScreen()),
+            ),
+          ),
           IconButton(
             tooltip: 'Путешествия',
             icon: Icon(Icons.luggage_rounded, color: dl.inkFaint),
@@ -344,8 +353,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Единая лента-заголовок секций (вчера/сегодня/завтра/отложенные).
-  /// Свёрнуто — серая чёрточка слева; раскрыто — акцентная.
+  /// Единая лента-заголовок секций (вчера/сегодня/завтра/отложенные)
+  /// в стиле «ежедневника»: название подсвечено маркером-текстовыделителем,
+  /// раскрытая секция — насыщеннее, свёрнутая — бледнее.
   Widget _bandHeader({
     required String label,
     required int count,
@@ -355,49 +365,51 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Widget? addAction,
   }) {
     final dl = context.dl;
+    // Цвет маркера: у «горящего» вчера — розово-коралловый, иначе — жёлтый.
+    final marker = danger ? dl.danger : dl.marker;
+
     return GestureDetector(
       onTap: onToggle,
       behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 9, 8, 9),
-        decoration: BoxDecoration(
-          color: dl.sunken,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 4,
-              height: 18,
-              decoration: BoxDecoration(
-                color: expanded ? dl.accent : dl.lineStrong,
-                borderRadius: BorderRadius.circular(2),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(4, 10, 6, 8),
+        child: LayoutBuilder(builder: (context, c) {
+          // Раскрыто — длинный штрих от начала строки почти до «+» (справа
+          // резервируем место под «+» и шеврон). Свёрнуто — мазок по слову.
+          const reserve = 92.0;
+          final stretch = expanded
+              ? (c.maxWidth - reserve).clamp(80.0, c.maxWidth)
+              : null;
+          return Row(
+            children: [
+              MarkerLabel(
+                text: label,
+                markerColor: marker,
+                alpha: expanded ? 0.55 : 0.26,
+                stretchWidth: stretch,
               ),
-            ),
-            const SizedBox(width: 10),
-            Text(label,
-                style: context.serif.copyWith(
-                    fontStyle: FontStyle.italic,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w500,
-                    color: dl.ink)),
-            const SizedBox(width: 8),
-            Text('$count',
-                style: TextStyle(
-                    fontSize: 12,
-                    color: danger ? dl.danger : dl.inkFaint,
-                    fontWeight: danger ? FontWeight.w500 : FontWeight.w400)),
-            if (danger) ...[
-              const SizedBox(width: 3),
-              Icon(Icons.keyboard_return_rounded, size: 13, color: dl.danger),
+              const SizedBox(width: 10),
+              Text('$count',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: danger ? dl.danger : dl.inkFaint,
+                      fontWeight: danger ? FontWeight.w600 : FontWeight.w400)),
+              if (danger) ...[
+                const SizedBox(width: 3),
+                Icon(Icons.keyboard_return_rounded, size: 13, color: dl.danger),
+              ],
+              const Spacer(),
+              ?addAction,
+              const SizedBox(width: 4),
+              Icon(
+                  expanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  size: 22,
+                  color: dl.inkFaint),
             ],
-            const Spacer(),
-            ?addAction,
-            const SizedBox(width: 4),
-            Icon(expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                size: 20, color: dl.inkFaint),
-          ],
-        ),
+          );
+        }),
       ),
     );
   }

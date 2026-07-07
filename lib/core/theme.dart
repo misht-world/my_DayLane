@@ -27,6 +27,8 @@ class AppTheme {
   static const Color _lLine = Color(0xFFEBE6DA);
   static const Color _lLineStrong = Color(0xFFDDD7C8);
   static const Color _lDanger = Color(0xFFB0392B);
+  // Жёлтый текстовыделитель (как в бумажном ежедневнике).
+  static const Color _lMarker = Color(0xFFF2D64B);
 
   // ── Тёмная палитра («Ежедневник») ───────────────────────────────
   static const Color _dAccent = Color(0xFFE0A33A);
@@ -39,6 +41,7 @@ class AppTheme {
   static const Color _dLine = Color(0xFF262219);
   static const Color _dLineStrong = Color(0xFF34301F);
   static const Color _dDanger = Color(0xFFF09B8C);
+  static const Color _dMarker = Color(0xFFD9B93F);
 
   static ThemeData get light => _build(
         brightness: Brightness.light,
@@ -53,6 +56,7 @@ class AppTheme {
         line: _lLine,
         lineStrong: _lLineStrong,
         danger: _lDanger,
+        marker: _lMarker,
       );
 
   static ThemeData get dark => _build(
@@ -68,6 +72,7 @@ class AppTheme {
         line: _dLine,
         lineStrong: _dLineStrong,
         danger: _dDanger,
+        marker: _dMarker,
       );
 
   static ThemeData _build({
@@ -83,6 +88,7 @@ class AppTheme {
     required Color line,
     required Color lineStrong,
     required Color danger,
+    required Color marker,
   }) {
     final scheme = ColorScheme(
       brightness: brightness,
@@ -152,6 +158,7 @@ class AppTheme {
           lineStrong: lineStrong,
           accent: accent,
           danger: danger,
+          marker: marker,
           // Две задачные краски: однодневные — синий, многодневные — янтарь.
           taskSingle: brightness == Brightness.light
               ? const Color(0xFF2F6FED)
@@ -180,6 +187,9 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
   final Color accent;
   final Color danger;
 
+  /// Жёлтый текстовыделитель для заголовков-маркеров.
+  final Color marker;
+
   /// Цвет однодневных дел.
   final Color taskSingle;
 
@@ -200,6 +210,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
     required this.lineStrong,
     required this.accent,
     required this.danger,
+    required this.marker,
     required this.taskSingle,
     required this.taskPeriod,
     required this.taskRecurring,
@@ -217,6 +228,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
     Color? lineStrong,
     Color? accent,
     Color? danger,
+    Color? marker,
     Color? taskSingle,
     Color? taskPeriod,
     Color? taskRecurring,
@@ -232,6 +244,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
       lineStrong: lineStrong ?? this.lineStrong,
       accent: accent ?? this.accent,
       danger: danger ?? this.danger,
+      marker: marker ?? this.marker,
       taskSingle: taskSingle ?? this.taskSingle,
       taskPeriod: taskPeriod ?? this.taskPeriod,
       taskRecurring: taskRecurring ?? this.taskRecurring,
@@ -252,6 +265,7 @@ class DayLaneColors extends ThemeExtension<DayLaneColors> {
       lineStrong: Color.lerp(lineStrong, other.lineStrong, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       danger: Color.lerp(danger, other.danger, t)!,
+      marker: Color.lerp(marker, other.marker, t)!,
       taskSingle: Color.lerp(taskSingle, other.taskSingle, t)!,
       taskPeriod: Color.lerp(taskPeriod, other.taskPeriod, t)!,
       taskRecurring: Color.lerp(taskRecurring, other.taskRecurring, t)!,
