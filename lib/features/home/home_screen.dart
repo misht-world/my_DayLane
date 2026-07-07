@@ -385,7 +385,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               MarkerLabel(
                 text: label,
                 markerColor: marker,
-                alpha: expanded ? 0.55 : 0.26,
+                // Раскрытый штрих — того же цвета, что короткий (та же насыщенность).
+                alpha: 0.26,
                 stretchWidth: stretch,
               ),
               const SizedBox(width: 10),

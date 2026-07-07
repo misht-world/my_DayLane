@@ -22,6 +22,11 @@ class NotificationService {
   static const _channelId = 'daylane_reminders';
   static const _channelName = 'Напоминания';
 
+  /// Монохромная иконка статус-бара. НЕЛЬЗЯ использовать @mipmap/ic_launcher —
+  /// на Android 8+ это адаптивная иконка, недопустимая как small icon, и
+  /// система молча роняет уведомление (ничего не появляется).
+  static const _smallIcon = 'ic_stat_daylane';
+
   /// Диапазон id, зарезервированный под одно дело (для правила eachDay).
   static const int _slotsPerTask = 64;
 
@@ -36,7 +41,7 @@ class NotificationService {
       /* оставляем tz.local как есть, если зону не удалось определить */
     }
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const android = AndroidInitializationSettings(_smallIcon);
     const settings = InitializationSettings(android: android);
     await _plugin.initialize(settings: settings);
 
@@ -70,6 +75,7 @@ class NotificationService {
         android: AndroidNotificationDetails(
           _channelId,
           _channelName,
+          icon: _smallIcon,
           importance: Importance.high,
           priority: Priority.high,
         ),
@@ -91,14 +97,31 @@ class NotificationService {
       final fireDate = addDays(dates[i], -task.reminderDaysBefore);
       final when = _atTime(fireDate, task.reminderMinutes);
       if (when.isBefore(tz.TZDateTime.now(tz.local))) continue;
-      await _plugin.zonedSchedule(
-        id: base + i,
-        title: task.title,
-        body: _body(task, dates[i]),
-        scheduledDate: when,
-        notificationDetails: _details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      );
+      await _scheduleAt(base + i, task.title, _body(task, dates[i]), when);
+    }
+  }
+
+  /// Планирует одно уведомление. Если точные будильники недоступны
+  /// (нет разрешения на некоторых прошивках) — не падаем, а ставим неточное.
+  Future<void> _scheduleAt(
+      int id, String title, String body, tz.TZDateTime when) async {
+    for (final mode in const [
+      AndroidScheduleMode.exactAllowWhileIdle,
+      AndroidScheduleMode.inexactAllowWhileIdle,
+    ]) {
+      try {
+        await _plugin.zonedSchedule(
+          id: id,
+          title: title,
+          body: body,
+          scheduledDate: when,
+          notificationDetails: _details,
+          androidScheduleMode: mode,
+        );
+        return;
+      } catch (_) {
+        // Пробуем следующий режим (обычно — неточный будильник).
+      }
     }
   }
 
