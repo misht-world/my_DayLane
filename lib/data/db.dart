@@ -64,6 +64,10 @@ class TripStages extends Table {
   IntColumn get taskId =>
       integer().references(Tasks, #id, onDelete: KeyAction.cascade)();
   TextColumn get title => text()();
+
+  /// 0 = жильё (по ночам), 1 = место/активность. Старые этапы → место.
+  IntColumn get kind =>
+      intEnum<TripStageKind>().withDefault(const Constant(1))();
   DateTimeColumn get startDate => dateTime()();
   DateTimeColumn get endDate => dateTime()();
   TextColumn get placeName => text().withDefault(const Constant(''))();
@@ -107,7 +111,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -136,6 +140,11 @@ class AppDatabase extends _$AppDatabase {
           if (from < 5) {
             await m.addColumn(tasks, tasks.isTrip);
             await m.createTable(tripStages);
+          }
+          if (from < 6) {
+            // Существующие этапы становятся «местами»: они задавались днями,
+            // а жильё теперь считается по ночам — молча менять смысл нельзя.
+            await m.addColumn(tripStages, tripStages.kind);
           }
         },
         beforeOpen: (details) async {
@@ -298,6 +307,7 @@ extension TripStageRowMapper on TripStageRow {
         id: id,
         taskId: taskId,
         title: title,
+        kind: kind,
         startDate: startDate,
         endDate: endDate,
         placeName: placeName,
@@ -312,6 +322,7 @@ extension TripStageModelMapper on TripStageModel {
         id: id == null ? const Value.absent() : Value(id!),
         taskId: Value(taskId),
         title: Value(title),
+        kind: Value(kind),
         startDate: Value(startDate),
         endDate: Value(endDate),
         placeName: Value(placeName),

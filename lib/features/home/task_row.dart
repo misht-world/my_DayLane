@@ -120,7 +120,10 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                     ),
                     onPressed: () => setState(() => _expanded = !_expanded),
                   ),
-                if (widget.showCarryToToday && t.isSingle && !t.isDone)
+                if (widget.showCarryToToday &&
+                    t.isSingle &&
+                    !t.isRecurring &&
+                    !t.isDone)
                   _CarryButton(
                     onTap: () async {
                       final messenger = ScaffoldMessenger.of(context);

@@ -65,7 +65,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final totalLanes = laneCount(lanes);
     final visibleLanes = totalLanes < _maxLanes ? totalLanes : _maxLanes;
     final dones = ref.watch(donesMapProvider);
-    final stageDays = ref.watch(tripStageDaysProvider);
+    final stayRanges = ref.watch(tripStayRangesProvider);
 
     final weekdays = _orderedWeekdays(firstWeekday);
     final end = addDays(start, _gridDays - 1);
@@ -157,7 +157,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                     visibleLanes: visibleLanes,
                     isLastRow: r == _gridRows - 1,
                     dones: dones,
-                    stageDays: stageDays,
+                    stayRanges: stayRanges,
                     onTapDay: _showDay,
                     onAddDay: (day) =>
                         openTaskEditor(context, null, initialDate: day),
@@ -233,7 +233,7 @@ class _WeekRow extends StatelessWidget {
     required this.visibleLanes,
     required this.isLastRow,
     required this.dones,
-    required this.stageDays,
+    required this.stayRanges,
     required this.onTapDay,
     required this.onAddDay,
   });
@@ -249,8 +249,8 @@ class _WeekRow extends StatelessWidget {
   final bool isLastRow;
   final Map<int, Set<int>> dones;
 
-  /// Дни, покрытые этапами поездок: taskId → ключи дней.
-  final Map<int, Set<int>> stageDays;
+  /// Отрезки жилья по поездкам: taskId → (заезд, выезд).
+  final Map<int, List<({DateTime checkIn, DateTime checkOut})>> stayRanges;
   final void Function(DateTime) onTapDay;
   final void Function(DateTime) onAddDay;
 
@@ -285,18 +285,25 @@ class _WeekRow extends StatelessWidget {
         child: _Bar(task: t, showTitle: true),
       ));
 
-      // Под полосой поездки — отметки распланированных этапами дней.
+      // Под полосой поездки — полоса проживания: от середины дня заезда до
+      // середины дня выезда. Переезд в один день стыкуется встык, а не
+      // закрытая ночь остаётся видимым пропуском.
       if (t.isTrip) {
-        final cover = stageDays[t.id] ?? const <int>{};
+        final stays = stayRanges[t.id] ?? const [];
         final markColor = context.taskColor(t);
-        for (var i = 0; i < span; i++) {
-          final day = addDays(segStart, i);
-          if (!cover.contains(dayKey(day))) continue;
-          final dcol = daysBetween(weekStart, day);
+        final stayTop = _head + lane * _laneHeight + _barHeight + 1;
+        for (final stay in stays) {
+          // Середины дней в координатах колонок недели.
+          final from = daysBetween(weekStart, stay.checkIn) + 0.5;
+          final to = daysBetween(weekStart, stay.checkOut) + 0.5;
+          // Обрезаем по видимой неделе.
+          final l = from.clamp(0.0, 7.0);
+          final r = to.clamp(0.0, 7.0);
+          if (r <= l) continue;
           bars.add(Positioned(
-            left: dcol * colW + 3,
-            width: colW - 6,
-            top: _head + lane * _laneHeight + _barHeight + 1,
+            left: l * colW,
+            width: (r - l) * colW,
+            top: stayTop,
             height: 3,
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -305,6 +312,28 @@ class _WeekRow extends StatelessWidget {
               ),
             ),
           ));
+        }
+        // Чёрная точка-стык там, где выезд из одного жилья совпадает
+        // с заездом в другое в тот же день — смена места видна сразу
+        // (тот же приём, что у соединителей зависимых дел).
+        for (final a in stays) {
+          for (final b in stays) {
+            if (isSameDate(a.checkOut, b.checkIn) &&
+                a.checkOut != b.checkOut) {
+              final x = (daysBetween(weekStart, a.checkOut) + 0.5) * colW;
+              if (x < 0 || x > 7 * colW) continue;
+              bars.add(Positioned(
+                left: x - 3,
+                top: stayTop + 1.5 - 3,
+                width: 6,
+                height: 6,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: context.dl.ink),
+                ),
+              ));
+            }
+          }
         }
       }
     }

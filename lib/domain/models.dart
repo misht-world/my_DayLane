@@ -186,14 +186,24 @@ class TaskModel {
       'TaskModel(id: $id, "$title", $kind, ${formatDateRange(startDate, endDate)})';
 }
 
-/// Этап путешествия — «подкарточка» на день или группу дней внутри поездки:
-/// куда едем, где живём (место + ссылка на карты), заметки по итогу.
+/// Тип этапа путешествия.
+/// `stay` — жильё: считается ПО НОЧАМ, `startDate` = заезд, `endDate` = выезд
+/// (выезд не ночуем), поэтому ночи = [startDate, endDate-1]. День переезда
+/// закрывается встык: выезд из одного и заезд в другое в тот же день.
+/// `place` — место/активность (кафе, музей): обычные дни [startDate, endDate].
+enum TripStageKind { stay, place }
+
+/// Этап путешествия — «подкарточка» внутри поездки: где живём (жильё) или
+/// куда идём (место), плюс ссылка на карты и заметки по итогу.
 class TripStageModel {
   final int? id;
   final int taskId;
   final String title;
 
-  /// Даты без времени, в пределах дат поездки. Один день ⇒ start == end.
+  final TripStageKind kind;
+
+  /// Даты без времени, в пределах дат поездки.
+  /// Для `stay` — заезд/выезд; для `place` — первый/последний день (обычно равны).
   final DateTime startDate;
   final DateTime endDate;
 
@@ -212,6 +222,7 @@ class TripStageModel {
     this.id,
     required this.taskId,
     required this.title,
+    this.kind = TripStageKind.place,
     required this.startDate,
     required this.endDate,
     this.placeName = '',
@@ -221,11 +232,16 @@ class TripStageModel {
   });
 
   bool get hasPlace => placeName.isNotEmpty || placeUrl.isNotEmpty;
+  bool get isStay => kind == TripStageKind.stay;
+
+  /// Число ночей у жилья (заезд→выезд). Для места — 0.
+  int get nights => isStay ? daysBetween(startDate, endDate) : 0;
 
   TripStageModel copyWith({
     Object? id = _unset,
     int? taskId,
     String? title,
+    TripStageKind? kind,
     DateTime? startDate,
     DateTime? endDate,
     String? placeName,
@@ -237,6 +253,7 @@ class TripStageModel {
       id: identical(id, _unset) ? this.id : id as int?,
       taskId: taskId ?? this.taskId,
       title: title ?? this.title,
+      kind: kind ?? this.kind,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       placeName: placeName ?? this.placeName,

@@ -3,11 +3,16 @@ import 'models.dart';
 
 /// Перенос невыполненного на сегодня — ручной и автоматический.
 
+/// Можно ли переносить дело: только обычное однодневное. Многодневные
+/// продолжаются по периоду; повторяющиеся живут по своим вхождениям, и сдвиг
+/// их `startDate` сломал бы якорь повтора (напр. годовщина «переехала» бы
+/// на другое число).
+bool _carryable(TaskModel t) => t.isSingle && !t.isRecurring;
+
 /// Переносит однодневное дело на сегодня и помечает «перенесено».
-/// Многодневные дела не переносятся (естественно продолжаются по периоду) —
-/// для них возвращается дело без изменений.
+/// Для непереносимых (период/повтор) возвращает дело без изменений.
 TaskModel carryToToday(TaskModel t, DateTime now) {
-  if (t.isPeriod) return t;
+  if (!_carryable(t)) return t;
   final today = dateOnly(now);
   return t.copyWith(
     startDate: today,
@@ -17,12 +22,13 @@ TaskModel carryToToday(TaskModel t, DateTime now) {
   );
 }
 
-/// Кандидаты на (авто)перенос: однодневные, не выполненные, с датой в прошлом.
+/// Кандидаты на (авто)перенос: обычные однодневные, не выполненные,
+/// с датой в прошлом.
 List<TaskModel> carryCandidates(List<TaskModel> tasks, DateTime now) {
   final today = dateOnly(now);
   return tasks
       .where((t) =>
-          t.isSingle &&
+          _carryable(t) &&
           !t.isDone &&
           dateOnly(t.startDate).isBefore(today))
       .toList();
@@ -33,7 +39,7 @@ List<TaskModel> applyAutoCarry(List<TaskModel> tasks, DateTime now) {
   final today = dateOnly(now);
   return [
     for (final t in tasks)
-      if (t.isSingle && !t.isDone && dateOnly(t.startDate).isBefore(today))
+      if (_carryable(t) && !t.isDone && dateOnly(t.startDate).isBefore(today))
         carryToToday(t, now)
       else
         t,

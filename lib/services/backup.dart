@@ -78,6 +78,7 @@ class BackupService {
             'id': x.id,
             'taskId': x.taskId,
             'title': x.title,
+            'kind': x.kind.index,
             'startDate': x.startDate.millisecondsSinceEpoch,
             'endDate': x.endDate.millisecondsSinceEpoch,
             'placeName': x.placeName,
@@ -182,6 +183,8 @@ class BackupService {
               id: Value(x['id'] as int),
               taskId: Value(x['taskId'] as int),
               title: Value(x['title'] as String),
+              kind: Value(
+                  TripStageKind.values[x['kind'] as int? ?? 1]),
               startDate: Value(dt(x['startDate'])),
               endDate: Value(dt(x['endDate'])),
               placeName: Value(x['placeName'] as String? ?? ''),

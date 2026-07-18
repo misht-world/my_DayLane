@@ -133,19 +133,29 @@ Future<void> seedIfEmpty(AppDatabase db, TaskRepository repo) async {
     createdAt: DateTime.now(),
     updatedAt: DateTime.now(),
   ));
+  // Жильё считается по ночам: выезд 23-го и заезд 23-го стыкуются встык,
+  // все ночи поездки (+20…+24) закрыты.
   await repo.saveStage(TripStageModel(
     taskId: trip,
-    title: 'Дорога и заселение',
+    title: 'Гостиница «Октябрьская»',
+    kind: TripStageKind.stay,
     startDate: addDays(today, 20),
-    endDate: addDays(today, 20),
+    endDate: addDays(today, 23),
     placeName: 'Гостиница «Октябрьская»',
-    note: '',
   ));
   await repo.saveStage(TripStageModel(
     taskId: trip,
-    title: 'Центр: Эрмитаж, Невский',
+    title: 'Апартаменты на Невском',
+    kind: TripStageKind.stay,
+    startDate: addDays(today, 23),
+    endDate: addDays(today, 25),
+    placeName: 'Невский проспект',
+  ));
+  await repo.saveStage(TripStageModel(
+    taskId: trip,
+    title: 'Эрмитаж',
     startDate: addDays(today, 21),
-    endDate: addDays(today, 22),
+    endDate: addDays(today, 21),
     placeName: 'Эрмитаж',
   ));
   await repo.saveStage(TripStageModel(

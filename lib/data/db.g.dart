@@ -2314,6 +2314,16 @@ class $TripStagesTable extends TripStages
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  @override
+  late final GeneratedColumnWithTypeConverter<TripStageKind, int> kind =
+      GeneratedColumn<int>(
+        'kind',
+        aliasedName,
+        false,
+        type: DriftSqlType.int,
+        requiredDuringInsert: false,
+        defaultValue: const Constant(1),
+      ).withConverter<TripStageKind>($TripStagesTable.$converterkind);
   static const VerificationMeta _startDateMeta = const VerificationMeta(
     'startDate',
   );
@@ -2387,6 +2397,7 @@ class $TripStagesTable extends TripStages
     id,
     taskId,
     title,
+    kind,
     startDate,
     endDate,
     placeName,
@@ -2486,6 +2497,12 @@ class $TripStagesTable extends TripStages
         DriftSqlType.string,
         data['${effectivePrefix}title'],
       )!,
+      kind: $TripStagesTable.$converterkind.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}kind'],
+        )!,
+      ),
       startDate: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}start_date'],
@@ -2517,12 +2534,18 @@ class $TripStagesTable extends TripStages
   $TripStagesTable createAlias(String alias) {
     return $TripStagesTable(attachedDatabase, alias);
   }
+
+  static JsonTypeConverter2<TripStageKind, int, int> $converterkind =
+      const EnumIndexConverter<TripStageKind>(TripStageKind.values);
 }
 
 class TripStageRow extends DataClass implements Insertable<TripStageRow> {
   final int id;
   final int taskId;
   final String title;
+
+  /// 0 = жильё (по ночам), 1 = место/активность. Старые этапы → место.
+  final TripStageKind kind;
   final DateTime startDate;
   final DateTime endDate;
   final String placeName;
@@ -2533,6 +2556,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     required this.id,
     required this.taskId,
     required this.title,
+    required this.kind,
     required this.startDate,
     required this.endDate,
     required this.placeName,
@@ -2546,6 +2570,9 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     map['id'] = Variable<int>(id);
     map['task_id'] = Variable<int>(taskId);
     map['title'] = Variable<String>(title);
+    {
+      map['kind'] = Variable<int>($TripStagesTable.$converterkind.toSql(kind));
+    }
     map['start_date'] = Variable<DateTime>(startDate);
     map['end_date'] = Variable<DateTime>(endDate);
     map['place_name'] = Variable<String>(placeName);
@@ -2560,6 +2587,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       id: Value(id),
       taskId: Value(taskId),
       title: Value(title),
+      kind: Value(kind),
       startDate: Value(startDate),
       endDate: Value(endDate),
       placeName: Value(placeName),
@@ -2578,6 +2606,9 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       id: serializer.fromJson<int>(json['id']),
       taskId: serializer.fromJson<int>(json['taskId']),
       title: serializer.fromJson<String>(json['title']),
+      kind: $TripStagesTable.$converterkind.fromJson(
+        serializer.fromJson<int>(json['kind']),
+      ),
       startDate: serializer.fromJson<DateTime>(json['startDate']),
       endDate: serializer.fromJson<DateTime>(json['endDate']),
       placeName: serializer.fromJson<String>(json['placeName']),
@@ -2593,6 +2624,9 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       'id': serializer.toJson<int>(id),
       'taskId': serializer.toJson<int>(taskId),
       'title': serializer.toJson<String>(title),
+      'kind': serializer.toJson<int>(
+        $TripStagesTable.$converterkind.toJson(kind),
+      ),
       'startDate': serializer.toJson<DateTime>(startDate),
       'endDate': serializer.toJson<DateTime>(endDate),
       'placeName': serializer.toJson<String>(placeName),
@@ -2606,6 +2640,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     int? id,
     int? taskId,
     String? title,
+    TripStageKind? kind,
     DateTime? startDate,
     DateTime? endDate,
     String? placeName,
@@ -2616,6 +2651,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     id: id ?? this.id,
     taskId: taskId ?? this.taskId,
     title: title ?? this.title,
+    kind: kind ?? this.kind,
     startDate: startDate ?? this.startDate,
     endDate: endDate ?? this.endDate,
     placeName: placeName ?? this.placeName,
@@ -2628,6 +2664,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       id: data.id.present ? data.id.value : this.id,
       taskId: data.taskId.present ? data.taskId.value : this.taskId,
       title: data.title.present ? data.title.value : this.title,
+      kind: data.kind.present ? data.kind.value : this.kind,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       placeName: data.placeName.present ? data.placeName.value : this.placeName,
@@ -2643,6 +2680,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           ..write('id: $id, ')
           ..write('taskId: $taskId, ')
           ..write('title: $title, ')
+          ..write('kind: $kind, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('placeName: $placeName, ')
@@ -2658,6 +2696,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     id,
     taskId,
     title,
+    kind,
     startDate,
     endDate,
     placeName,
@@ -2672,6 +2711,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           other.id == this.id &&
           other.taskId == this.taskId &&
           other.title == this.title &&
+          other.kind == this.kind &&
           other.startDate == this.startDate &&
           other.endDate == this.endDate &&
           other.placeName == this.placeName &&
@@ -2684,6 +2724,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
   final Value<int> id;
   final Value<int> taskId;
   final Value<String> title;
+  final Value<TripStageKind> kind;
   final Value<DateTime> startDate;
   final Value<DateTime> endDate;
   final Value<String> placeName;
@@ -2694,6 +2735,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     this.id = const Value.absent(),
     this.taskId = const Value.absent(),
     this.title = const Value.absent(),
+    this.kind = const Value.absent(),
     this.startDate = const Value.absent(),
     this.endDate = const Value.absent(),
     this.placeName = const Value.absent(),
@@ -2705,6 +2747,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     this.id = const Value.absent(),
     required int taskId,
     required String title,
+    this.kind = const Value.absent(),
     required DateTime startDate,
     required DateTime endDate,
     this.placeName = const Value.absent(),
@@ -2719,6 +2762,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     Expression<int>? id,
     Expression<int>? taskId,
     Expression<String>? title,
+    Expression<int>? kind,
     Expression<DateTime>? startDate,
     Expression<DateTime>? endDate,
     Expression<String>? placeName,
@@ -2730,6 +2774,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
       if (id != null) 'id': id,
       if (taskId != null) 'task_id': taskId,
       if (title != null) 'title': title,
+      if (kind != null) 'kind': kind,
       if (startDate != null) 'start_date': startDate,
       if (endDate != null) 'end_date': endDate,
       if (placeName != null) 'place_name': placeName,
@@ -2743,6 +2788,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     Value<int>? id,
     Value<int>? taskId,
     Value<String>? title,
+    Value<TripStageKind>? kind,
     Value<DateTime>? startDate,
     Value<DateTime>? endDate,
     Value<String>? placeName,
@@ -2754,6 +2800,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
       id: id ?? this.id,
       taskId: taskId ?? this.taskId,
       title: title ?? this.title,
+      kind: kind ?? this.kind,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       placeName: placeName ?? this.placeName,
@@ -2774,6 +2821,11 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
+    }
+    if (kind.present) {
+      map['kind'] = Variable<int>(
+        $TripStagesTable.$converterkind.toSql(kind.value),
+      );
     }
     if (startDate.present) {
       map['start_date'] = Variable<DateTime>(startDate.value);
@@ -2802,6 +2854,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
           ..write('id: $id, ')
           ..write('taskId: $taskId, ')
           ..write('title: $title, ')
+          ..write('kind: $kind, ')
           ..write('startDate: $startDate, ')
           ..write('endDate: $endDate, ')
           ..write('placeName: $placeName, ')
@@ -4538,6 +4591,7 @@ typedef $$TripStagesTableCreateCompanionBuilder =
       Value<int> id,
       required int taskId,
       required String title,
+      Value<TripStageKind> kind,
       required DateTime startDate,
       required DateTime endDate,
       Value<String> placeName,
@@ -4550,6 +4604,7 @@ typedef $$TripStagesTableUpdateCompanionBuilder =
       Value<int> id,
       Value<int> taskId,
       Value<String> title,
+      Value<TripStageKind> kind,
       Value<DateTime> startDate,
       Value<DateTime> endDate,
       Value<String> placeName,
@@ -4598,6 +4653,12 @@ class $$TripStagesTableFilterComposer
     column: $table.title,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnWithTypeConverterFilters<TripStageKind, TripStageKind, int> get kind =>
+      $composableBuilder(
+        column: $table.kind,
+        builder: (column) => ColumnWithTypeConverterFilters(column),
+      );
 
   ColumnFilters<DateTime> get startDate => $composableBuilder(
     column: $table.startDate,
@@ -4672,6 +4733,11 @@ class $$TripStagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get kind => $composableBuilder(
+    column: $table.kind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get startDate => $composableBuilder(
     column: $table.startDate,
     builder: (column) => ColumnOrderings(column),
@@ -4740,6 +4806,9 @@ class $$TripStagesTableAnnotationComposer
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<TripStageKind, int> get kind =>
+      $composableBuilder(column: $table.kind, builder: (column) => column);
 
   GeneratedColumn<DateTime> get startDate =>
       $composableBuilder(column: $table.startDate, builder: (column) => column);
@@ -4814,6 +4883,7 @@ class $$TripStagesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> taskId = const Value.absent(),
                 Value<String> title = const Value.absent(),
+                Value<TripStageKind> kind = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
                 Value<DateTime> endDate = const Value.absent(),
                 Value<String> placeName = const Value.absent(),
@@ -4824,6 +4894,7 @@ class $$TripStagesTableTableManager
                 id: id,
                 taskId: taskId,
                 title: title,
+                kind: kind,
                 startDate: startDate,
                 endDate: endDate,
                 placeName: placeName,
@@ -4836,6 +4907,7 @@ class $$TripStagesTableTableManager
                 Value<int> id = const Value.absent(),
                 required int taskId,
                 required String title,
+                Value<TripStageKind> kind = const Value.absent(),
                 required DateTime startDate,
                 required DateTime endDate,
                 Value<String> placeName = const Value.absent(),
@@ -4846,6 +4918,7 @@ class $$TripStagesTableTableManager
                 id: id,
                 taskId: taskId,
                 title: title,
+                kind: kind,
                 startDate: startDate,
                 endDate: endDate,
                 placeName: placeName,

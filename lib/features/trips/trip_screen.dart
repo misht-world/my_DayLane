@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/date_utils.dart';
 import '../../core/theme.dart';
 import '../../domain/models.dart';
+import '../../domain/trip_stays.dart';
 import '../../services/maps.dart';
 import '../task_editor/task_editor_screen.dart';
 
@@ -50,6 +51,7 @@ class TripScreen extends ConsumerWidget {
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
         children: [
           _header(context, trip, color),
+          _staysBanner(context, trip, stages),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -71,8 +73,9 @@ class TripScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'Разбейте поездку на этапы: день или группа дней — '
-                'город, гостиница, что посмотреть. После — заметки по итогу.',
+                'Разбейте поездку на этапы: «Жильё» — где ночуем (считается '
+                'по ночам, заезд→выезд), «Место» — куда идём. После — заметки '
+                'по итогу.',
                 style: TextStyle(color: dl.inkFaint, fontSize: 13),
               ),
             )
@@ -103,6 +106,45 @@ class TripScreen extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// Проверка «есть ли где ночевать каждую ночь»: зелёная плашка, если все
+  /// ночи закрыты, иначе — перечисление незакрытых.
+  Widget _staysBanner(
+      BuildContext context, TaskModel trip, List<TripStageModel> stages) {
+    final dl = context.dl;
+    final nights = tripNights(trip);
+    if (nights.isEmpty) return const SizedBox.shrink();
+    final gaps = uncoveredNights(trip, stages);
+    final ok = gaps.isEmpty;
+    final text = ok
+        ? 'Жильё на все ночи (${nights.length}) выбрано'
+        : 'Нет жилья: ${groupConsecutive(gaps).map((g) => g.from == g.to ? formatDayMonth(g.from) : formatDateRange(g.from, g.to)).join(', ')}';
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: (ok ? dl.accent : dl.danger).withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+              color: (ok ? dl.accent : dl.danger).withValues(alpha: 0.35)),
+        ),
+        child: Row(
+          children: [
+            Icon(ok ? Icons.hotel_rounded : Icons.error_outline_rounded,
+                size: 18, color: ok ? dl.accent : dl.danger),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(text,
+                  style: TextStyle(
+                      fontSize: 13, color: ok ? dl.inkSoft : dl.danger)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -176,9 +218,18 @@ class _StageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
-    final d1 = daysBetween(trip.startDate, stage.startDate) + 1;
-    final d2 = daysBetween(trip.startDate, stage.endDate) + 1;
-    final dayLabel = d1 == d2 ? 'день $d1' : 'дни $d1–$d2';
+    final String meta;
+    if (stage.isStay) {
+      // Жильё — заезд→выезд и число ночей.
+      meta = 'заезд ${formatDayMonth(stage.startDate)} → выезд '
+          '${formatDayMonth(stage.endDate)} · '
+          '${_StageSheetState._nightsLabel(stage.nights)}';
+    } else {
+      final d1 = daysBetween(trip.startDate, stage.startDate) + 1;
+      final d2 = daysBetween(trip.startDate, stage.endDate) + 1;
+      final dayLabel = d1 == d2 ? 'день $d1' : 'дни $d1–$d2';
+      meta = '${formatDateRange(stage.startDate, stage.endDate)} · $dayLabel';
+    }
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -211,17 +262,29 @@ class _StageCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${formatDateRange(stage.startDate, stage.endDate)}'
-                          ' · $dayLabel',
+                          meta,
                           style: context.serif.copyWith(
                               fontSize: 12,
                               fontStyle: FontStyle.italic,
                               color: color),
                         ),
                         const SizedBox(height: 2),
-                        Text(stage.title,
-                            style: context.serif
-                                .copyWith(fontSize: 16, color: dl.ink)),
+                        Row(
+                          children: [
+                            Icon(
+                                stage.isStay
+                                    ? Icons.hotel_rounded
+                                    : Icons.place_rounded,
+                                size: 15,
+                                color: dl.inkSoft),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(stage.title,
+                                  style: context.serif
+                                      .copyWith(fontSize: 16, color: dl.ink)),
+                            ),
+                          ],
+                        ),
                         if (stage.hasPlace)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
@@ -299,7 +362,10 @@ class _StageSheetState extends ConsumerState<StageSheet> {
   late final TextEditingController _note;
   late DateTime _start;
   late DateTime _end;
+  late TripStageKind _kind;
   String _placeUrl = '';
+
+  bool get _isStay => _kind == TripStageKind.stay;
 
   @override
   void initState() {
@@ -308,8 +374,10 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     _title = TextEditingController(text: e?.title ?? '');
     _place = TextEditingController(text: e?.placeName ?? '');
     _note = TextEditingController(text: e?.note ?? '');
+    _kind = e?.kind ?? TripStageKind.place;
     _start = e?.startDate ?? widget.trip.startDate;
-    _end = e?.endDate ?? _start;
+    // У жилья endDate — день выезда (минимум одна ночь).
+    _end = e?.endDate ?? (_isStay ? addDays(_start, 1) : _start);
     _placeUrl = e?.placeUrl ?? '';
   }
 
@@ -340,34 +408,83 @@ class _StageSheetState extends ConsumerState<StageSheet> {
               style: context.serif.copyWith(fontSize: 17, color: dl.ink),
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                hintText: 'Город, район, что делаем…',
+                hintText: _isStay
+                    ? 'Гостиница, квартира…'
+                    : 'Куда идём: кафе, музей…',
                 hintStyle:
                     context.serif.copyWith(fontSize: 17, color: dl.inkFaint),
                 isDense: true,
               ),
             ),
             const SizedBox(height: 12),
+            SegmentedButton<TripStageKind>(
+              segments: const [
+                ButtonSegment(
+                    value: TripStageKind.stay,
+                    icon: Icon(Icons.hotel_rounded, size: 16),
+                    label: Text('Жильё')),
+                ButtonSegment(
+                    value: TripStageKind.place,
+                    icon: Icon(Icons.place_rounded, size: 16),
+                    label: Text('Место')),
+              ],
+              selected: {_kind},
+              onSelectionChanged: (s) => setState(() {
+                _kind = s.first;
+                // Жильё — минимум одна ночь; место — обычно один день.
+                if (_isStay && !_end.isAfter(_start)) {
+                  _end = addDays(_start, 1);
+                } else if (!_isStay && _end.isAfter(_start)) {
+                  _end = _start;
+                }
+              }),
+            ),
+            const SizedBox(height: 12),
+            Text(_isStay ? 'Заезд — выезд' : 'Дни',
+                style: TextStyle(fontSize: 14, color: dl.inkSoft)),
+            const SizedBox(height: 6),
             Row(
               children: [
-                Text('Дни', style: TextStyle(fontSize: 14, color: dl.inkSoft)),
-                const Spacer(),
-                _datePill(_start, (d) {
-                  setState(() {
-                    _start = d;
-                    if (_end.isBefore(_start)) _end = _start;
-                  });
-                }),
+                Expanded(
+                  child: _datePill(_start, (d) {
+                    setState(() {
+                      _start = d;
+                      // У жилья выезд строго позже заезда (минимум ночь).
+                      if (_isStay && !_end.isAfter(_start)) {
+                        _end = addDays(_start, 1);
+                      } else if (!_isStay && _end.isBefore(_start)) {
+                        _end = _start;
+                      }
+                    });
+                  }),
+                ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text('—',
                       style: TextStyle(color: dl.inkFaint, fontSize: 14)),
                 ),
-                _datePill(_end, (d) {
-                  setState(() =>
-                      _end = d.isBefore(_start) ? _start : d);
-                }),
+                Expanded(
+                  child: _datePill(_end, (d) {
+                    setState(() {
+                      if (_isStay) {
+                        _end = d.isAfter(_start) ? d : addDays(_start, 1);
+                      } else {
+                        _end = d.isBefore(_start) ? _start : d;
+                      }
+                    });
+                  }),
+                ),
               ],
             ),
+            if (_isStay)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '${_nightsLabel(daysBetween(_start, _end))} · в ночь выезда '
+                  'уже не ночуем — поэтому переезд в один день стыкуется',
+                  style: TextStyle(fontSize: 11.5, color: dl.inkFaint),
+                ),
+              ),
             const SizedBox(height: 12),
             TextField(
               controller: _place,
@@ -469,6 +586,17 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     );
   }
 
+  /// «1 ночь / 2 ночи / 5 ночей».
+  static String _nightsLabel(int n) {
+    final mod10 = n % 10;
+    final mod100 = n % 100;
+    if (mod10 == 1 && mod100 != 11) return '$n ночь';
+    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
+      return '$n ночи';
+    }
+    return '$n ночей';
+  }
+
   Widget _datePill(DateTime value, ValueChanged<DateTime> onPicked) {
     final dl = context.dl;
     return OutlinedButton(
@@ -514,6 +642,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
       id: widget.existing?.id,
       taskId: widget.trip.id!,
       title: _title.text.trim(),
+      kind: _kind,
       startDate: _start,
       endDate: _end,
       placeName: _place.text.trim(),

@@ -475,7 +475,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         children: [
           _bandHeader(
             label: 'Отложенные',
-            count: tasks.length,
+            // Счётчик — только невыполненные (выполненные лежат в конце).
+            count: ref.watch(deferredOpenCountProvider),
             danger: false,
             expanded: _showDeferred,
             onToggle: () => setState(() => _showDeferred = !_showDeferred),
@@ -560,20 +561,34 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                   height: 22,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
+                    color: task.isDone ? color : Colors.transparent,
                     border: Border.all(color: color, width: 1.6),
                   ),
+                  child: task.isDone
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
+                      : null,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: GestureDetector(
                   onTap: () => openTaskEditor(context, task),
+                  // Долгий тап — удалить вручную (с отменой).
+                  onLongPress: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    final undo = await repo.deleteTask(task.id!);
+                    showUndoSnackOn(messenger, 'Дело удалено', undo);
+                  },
                   behavior: HitTestBehavior.opaque,
                   child: Text(task.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          context.serif.copyWith(fontSize: 16, color: dl.ink)),
+                      style: context.serif.copyWith(
+                        fontSize: 16,
+                        color: task.isDone ? dl.inkFaint : dl.ink,
+                        decoration:
+                            task.isDone ? TextDecoration.lineThrough : null,
+                      )),
                 ),
               ),
               if (hasSubs)
@@ -598,23 +613,26 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                     ),
                   ),
                 ),
-              _quick(context, 'сегодня', () => _schedule(task, today)),
-              _quick(context, 'завтра',
-                  () => _schedule(task, addDays(today, 1))),
-              IconButton(
-                visualDensity: VisualDensity.compact,
-                icon: Icon(Icons.event_rounded, size: 18, color: dl.inkSoft),
-                tooltip: 'На дату',
-                onPressed: () async {
-                  final picked = await showDatePicker(
-                    context: context,
-                    initialDate: today,
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (picked != null) _schedule(task, picked);
-                },
-              ),
+              // У выполненного отложенного даты назначать незачем.
+              if (!task.isDone) ...[
+                _quick(context, 'сегодня', () => _schedule(task, today)),
+                _quick(context, 'завтра',
+                    () => _schedule(task, addDays(today, 1))),
+                IconButton(
+                  visualDensity: VisualDensity.compact,
+                  icon: Icon(Icons.event_rounded, size: 18, color: dl.inkSoft),
+                  tooltip: 'На дату',
+                  onPressed: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: today,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) _schedule(task, picked);
+                  },
+                ),
+              ],
             ],
           ),
         ),

@@ -156,7 +156,11 @@ class TaskRepository {
     final now = DateTime.now();
     await _subtasks.toggleDone(sub.id!, done);
     final siblings = await _subtasks.getForTask(sub.taskId);
-    final allDone = siblings.isNotEmpty && siblings.every((s) => s.isDone);
+    // Статус переключённого подпункта берём из known-значения `done`, а не из
+    // прочитанного — иначе при снятии галочки дело могло остаться выполненным
+    // (гонка чтения-после-записи).
+    final allDone = siblings.isNotEmpty &&
+        siblings.every((s) => s.id == sub.id ? done : s.isDone);
     final parent = await _tasks.getById(sub.taskId);
     if (parent != null && parent.isDone != allDone) {
       await _tasks.setDone(parent.id!, allDone, now);
@@ -203,8 +207,9 @@ class TaskRepository {
   /// Ручной перенос однодневного дела на сегодня.
   Future<UndoAction> carryToTodayTask(TaskModel task) =>
       _undoable(() async {
-        if (task.isPeriod) return;
+        // carryToToday сам возвращает дело без изменений для периода/повтора.
         final carried = carryToToday(task, DateTime.now());
+        if (identical(carried, task)) return;
         await _tasks.updateTask(carried);
         await _notifications.reschedule(carried);
       });
@@ -214,7 +219,7 @@ class TaskRepository {
       _undoable(() async {
         final now = DateTime.now();
         final carried = yesterdayTasks
-            .where((t) => t.isSingle && !t.isDone)
+            .where((t) => t.isSingle && !t.isRecurring && !t.isDone)
             .map((t) => carryToToday(t, now))
             .toList();
         if (carried.isEmpty) return;

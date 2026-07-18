@@ -20,6 +20,16 @@ void main() {
           id: 1, kind: TaskKind.period, start: d(2026, 6, 14), end: d(2026, 6, 20));
       expect(carryToToday(p, now).startDate, d(2026, 6, 14));
     });
+
+    test('повторяющееся не переносит (иначе сломается якорь повтора)', () {
+      final r = task(
+          id: 1,
+          start: d(2026, 6, 14),
+          recurrenceType: RecurrenceType.years);
+      final out = carryToToday(r, now);
+      expect(out.startDate, d(2026, 6, 14));
+      expect(out.carriedOver, isFalse);
+    });
   });
 
   test('carryCandidates — только прошлые невыполненные single', () {
@@ -28,6 +38,7 @@ void main() {
       task(id: 2, start: d(2026, 6, 14), isDone: true), // нет, выполнено
       task(id: 3, start: now), // нет, сегодня
       task(id: 4, kind: TaskKind.period, start: d(2026, 6, 1), end: d(2026, 6, 5)), // нет, период
+      task(id: 5, start: d(2026, 6, 14), recurrenceType: RecurrenceType.years), // нет, повтор
     ];
     expect(carryCandidates(tasks, now).map((t) => t.id), [1]);
   });

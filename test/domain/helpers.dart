@@ -16,6 +16,7 @@ TaskModel task({
   bool carriedOver = false,
   int colorId = 0,
   int sortIndex = 0,
+  RecurrenceType recurrenceType = RecurrenceType.none,
 }) {
   final e = end ?? start;
   final dur = durationDays ?? (kind == TaskKind.period ? e.difference(start).inDays + 1 : 1);
@@ -33,6 +34,7 @@ TaskModel task({
     carriedOver: carriedOver,
     colorId: colorId,
     sortIndex: sortIndex,
+    recurrenceType: recurrenceType,
     createdAt: created,
     updatedAt: created,
   );
