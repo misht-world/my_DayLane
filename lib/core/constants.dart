@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 const String kAppName = 'DayLane';
 
 /// Версия приложения (синхронизировать с `version:` в pubspec.yaml).
-const String kAppVersion = '1.7.5';
+const String kAppVersion = '1.7.6';
 
 /// Фиксированная палитра цветов дел. `colorId` — индекс в этом списке.
 /// Цвета подобраны так, чтобы читаться и в светлой, и в тёмной теме.
@@ -43,6 +43,32 @@ class TaskPalette {
 
   static Color byId(int id) => colors[id % colors.length];
 }
+
+/// Встроенный шаблон дела: иконка в кружке + цвет по умолчанию.
+class TaskTemplate {
+  const TaskTemplate(this.name, this.icon, this.colorId);
+  final String name;
+  final IconData icon;
+
+  /// Индекс цвета по умолчанию из [TaskPalette] (цвет можно переопределить).
+  final int colorId;
+}
+
+/// Набор шаблонов. `iconId` дела — индекс в этом списке; -1 = «Другое»
+/// (обычный кружок без иконки, цвет по типу дела).
+const List<TaskTemplate> kTaskTemplates = [
+  TaskTemplate('День рождения', Icons.cake_rounded, 4), // розово-красный
+  TaskTemplate('Оплата', Icons.payments_rounded, 1), // зелёный
+  TaskTemplate('Работа', Icons.work_outline_rounded, 6), // чёрный
+  TaskTemplate('Покупки', Icons.shopping_cart_rounded, 2), // янтарный
+  TaskTemplate('Список', Icons.checklist_rounded, 0), // синий
+];
+
+/// Иконка шаблона по его id (null для «Другое»/некорректного).
+IconData? taskTemplateIcon(int iconId) =>
+    (iconId >= 0 && iconId < kTaskTemplates.length)
+        ? kTaskTemplates[iconId].icon
+        : null;
 
 /// Дефолтное время напоминания — 09:00 (в минутах от полуночи).
 const int kDefaultReminderMinutes = 9 * 60;

@@ -29,6 +29,8 @@ class Tasks extends Table {
       integer().withDefault(const Constant(0))();
   /// -1 = авто (по типу дела), иначе индекс палитры.
   IntColumn get colorId => integer().withDefault(const Constant(-1))();
+  /// Индекс шаблона (иконка). -1 = без шаблона.
+  IntColumn get iconId => integer().withDefault(const Constant(-1))();
   BoolColumn get deferred => boolean().withDefault(const Constant(false))();
   BoolColumn get isTrip => boolean().withDefault(const Constant(false))();
   IntColumn get recurrenceType =>
@@ -111,7 +113,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -145,6 +147,9 @@ class AppDatabase extends _$AppDatabase {
             // Существующие этапы становятся «местами»: они задавались днями,
             // а жильё теперь считается по ночам — молча менять смысл нельзя.
             await m.addColumn(tripStages, tripStages.kind);
+          }
+          if (from < 7) {
+            await m.addColumn(tasks, tasks.iconId);
           }
         },
         beforeOpen: (details) async {
@@ -246,6 +251,7 @@ extension TaskRowMapper on TaskRow {
         reminderMinutes: reminderMinutes,
         reminderDaysBefore: reminderDaysBefore,
         colorId: colorId,
+        iconId: iconId,
         deferred: deferred,
         isTrip: isTrip,
         recurrenceType: recurrenceType,
@@ -287,6 +293,7 @@ extension TaskModelMapper on TaskModel {
         reminderMinutes: Value(reminderMinutes),
         reminderDaysBefore: Value(reminderDaysBefore),
         colorId: Value(colorId),
+        iconId: Value(iconId),
         deferred: Value(deferred),
         isTrip: Value(isTrip),
         recurrenceType: Value(recurrenceType),

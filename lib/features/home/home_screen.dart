@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
+import '../../core/constants.dart';
 import '../../core/date_utils.dart';
 import '../../core/marker_label.dart';
 import '../../core/theme.dart';
@@ -557,16 +558,20 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                 onTap: () => repo.toggleDone(task),
                 behavior: HitTestBehavior.opaque,
                 child: Container(
-                  width: 22,
-                  height: 22,
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: task.isDone ? color : Colors.transparent,
-                    border: Border.all(color: color, width: 1.6),
+                    border: Border.all(color: color, width: 1.7),
                   ),
                   child: task.isDone
-                      ? const Icon(Icons.check, size: 14, color: Colors.white)
-                      : null,
+                      ? const Icon(Icons.check, size: 15, color: Colors.white)
+                      : (taskTemplateIcon(task.iconId) != null
+                          ? Icon(taskTemplateIcon(task.iconId),
+                              size: 15, color: color)
+                          : null),
                 ),
               ),
               const SizedBox(width: 12),

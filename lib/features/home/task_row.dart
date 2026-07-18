@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../core/constants.dart';
 import '../../core/date_utils.dart';
 import '../../core/theme.dart';
 import '../../core/undo_snack.dart';
@@ -69,6 +70,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                 _Checkbox(
                   done: done,
                   color: color,
+                  icon: taskTemplateIcon(t.iconId),
                   onTap: () {
                     final repo = ref.read(repositoryProvider);
                     if (t.isRecurring) {
@@ -261,10 +263,14 @@ class _Checkbox extends StatelessWidget {
     required this.done,
     required this.color,
     required this.onTap,
+    this.icon,
   });
 
   final bool done;
   final Color color;
+
+  /// Иконка шаблона (если задан) — показывается в кружке у невыполненного дела.
+  final IconData? icon;
   final VoidCallback onTap;
 
   @override
@@ -274,16 +280,17 @@ class _Checkbox extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        width: 22,
-        height: 22,
+        width: 26,
+        height: 26,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           color: done ? color : Colors.transparent,
-          border: Border.all(color: color, width: 1.6),
+          border: Border.all(color: color, width: 1.7),
         ),
         child: done
-            ? const Icon(Icons.check, size: 14, color: Colors.white)
-            : null,
+            ? const Icon(Icons.check, size: 15, color: Colors.white)
+            : (icon != null ? Icon(icon, size: 15, color: color) : null),
       ),
     );
   }

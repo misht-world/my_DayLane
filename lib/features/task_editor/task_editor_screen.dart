@@ -67,6 +67,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   int _reminderMinutes = kDefaultReminderMinutes;
   int _reminderDaysBefore = 0;
   int _colorId = 0;
+  int _iconId = -1;
 
   RecurrenceType _recurrence = RecurrenceType.none;
   int _recurInterval = 1;
@@ -98,6 +99,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _reminderMinutes = e?.reminderMinutes ?? kDefaultReminderMinutes;
     _reminderDaysBefore = e?.reminderDaysBefore ?? 0;
     _colorId = e?.colorId ?? 0;
+    _iconId = e?.iconId ?? -1;
     _recurrence = e?.recurrenceType ?? RecurrenceType.none;
     _recurInterval = e?.recurrenceInterval ?? 1;
     _recurAnchor = (e?.recurrenceType == RecurrenceType.monthBeforeEnd)
@@ -179,6 +181,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               _reminderBlock(),
             ],
           ]),
+          const SizedBox(height: 14),
+          _card(children: [_templateBlock()]),
           const SizedBox(height: 14),
           _card(children: [_colorBlock()]),
           const SizedBox(height: 14),
@@ -569,6 +573,89 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         _ => 'мес.',
       };
 
+  /// Выбор шаблона: иконка в кружке + цвет по умолчанию (цвет ниже можно
+  /// переопределить). «Другое» — без иконки.
+  Widget _templateBlock() {
+    final dl = context.dl;
+
+    Widget cell({
+      required bool selected,
+      required VoidCallback onTap,
+      required Widget child,
+      required String label,
+      Color? color,
+    }) {
+      final c = color ?? dl.inkSoft;
+      return GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? c.withValues(alpha: 0.14) : Colors.transparent,
+                border: Border.all(
+                    color: selected ? c : dl.lineStrong,
+                    width: selected ? 2 : 1),
+              ),
+              child: child,
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: 60,
+              child: Text(label,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: selected ? dl.ink : dl.inkFaint)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label('Шаблон'),
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 14,
+          runSpacing: 12,
+          children: [
+            cell(
+              selected: _iconId < 0,
+              label: 'Другое',
+              onTap: () => setState(() => _iconId = -1),
+              child: Icon(Icons.circle_outlined,
+                  size: 20, color: _iconId < 0 ? dl.ink : dl.inkFaint),
+            ),
+            for (var i = 0; i < kTaskTemplates.length; i++)
+              cell(
+                selected: _iconId == i,
+                label: kTaskTemplates[i].name,
+                color: TaskPalette.byId(kTaskTemplates[i].colorId),
+                onTap: () => setState(() {
+                  _iconId = i;
+                  // Шаблон задаёт цвет по умолчанию (ниже можно переопределить).
+                  _colorId = kTaskTemplates[i].colorId;
+                }),
+                child: Icon(kTaskTemplates[i].icon,
+                    size: 22,
+                    color: TaskPalette.byId(kTaskTemplates[i].colorId)),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _colorBlock() {
     final dl = context.dl;
     Widget dot({
@@ -914,6 +1001,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           : _reminderMinutes,
       reminderDaysBefore: _reminderDaysBefore,
       colorId: _colorId,
+      iconId: _iconId,
       deferred: _deferred,
       isTrip: _kind == TaskKind.period && _isTrip,
       recurrenceType: (_kind == TaskKind.single && !_deferred)

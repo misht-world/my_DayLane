@@ -44,6 +44,7 @@ class BackupService {
             'reminderMinutes': t.reminderMinutes,
             'reminderDaysBefore': t.reminderDaysBefore,
             'colorId': t.colorId,
+            'iconId': t.iconId,
             'deferred': t.deferred,
             'isTrip': t.isTrip,
             'recurrenceType': t.recurrenceType.index,
@@ -146,6 +147,7 @@ class BackupService {
               reminderMinutes: Value(t['reminderMinutes'] as int),
               reminderDaysBefore: Value(t['reminderDaysBefore'] as int? ?? 0),
               colorId: Value(t['colorId'] as int? ?? -1),
+              iconId: Value(t['iconId'] as int? ?? -1),
               deferred: Value(t['deferred'] as bool? ?? false),
               isTrip: Value(t['isTrip'] as bool? ?? false),
               recurrenceType: Value(

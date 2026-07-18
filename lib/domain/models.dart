@@ -56,6 +56,9 @@ class TaskModel {
   /// Индекс цвета из палитры. -1 = авто (по типу дела).
   final int colorId;
 
+  /// Индекс шаблона (иконка в кружке). -1 = без шаблона («Другое»).
+  final int iconId;
+
   /// Отложенное дело без даты («ждёт своего часа») — не присутствует ни в одном
   /// дне, живёт в отдельной секции, пока ему не назначат дату.
   final bool deferred;
@@ -99,6 +102,7 @@ class TaskModel {
     this.reminderMinutes = 540,
     this.reminderDaysBefore = 0,
     this.colorId = -1,
+    this.iconId = -1,
     this.deferred = false,
     this.isTrip = false,
     this.recurrenceType = RecurrenceType.none,
@@ -133,6 +137,7 @@ class TaskModel {
     int? reminderMinutes,
     int? reminderDaysBefore,
     int? colorId,
+    int? iconId,
     bool? deferred,
     bool? isTrip,
     RecurrenceType? recurrenceType,
@@ -164,6 +169,7 @@ class TaskModel {
       reminderMinutes: reminderMinutes ?? this.reminderMinutes,
       reminderDaysBefore: reminderDaysBefore ?? this.reminderDaysBefore,
       colorId: colorId ?? this.colorId,
+      iconId: iconId ?? this.iconId,
       deferred: deferred ?? this.deferred,
       isTrip: isTrip ?? this.isTrip,
       recurrenceType: recurrenceType ?? this.recurrenceType,

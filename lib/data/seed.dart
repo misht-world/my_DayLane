@@ -65,10 +65,12 @@ Future<void> seedIfEmpty(AppDatabase db, TaskRepository repo) async {
   // ── Однодневные дела по ближайшим дням (для точек в календаре) ────
   await repo.saveTask(single('Встреча с Анной', 1, colorId: 0, timeMinutes: 11 * 60));
   await repo.saveTask(single('Записаться к врачу', 2, colorId: 4));
-  await repo.saveTask(single('День рождения мамы', 3, colorId: 2));
+  await repo.saveTask(
+      single('День рождения мамы', 3, colorId: 4).copyWith(iconId: 0));
   await repo.saveTask(single('Сдать книги в библиотеку', 5, colorId: 5));
   await repo.saveTask(single('Техосмотр авто', 7, colorId: 0));
-  await repo.saveTask(single('Оплатить аренду', 9, colorId: 3));
+  await repo.saveTask(
+      single('Оплатить аренду', 9, colorId: 1).copyWith(iconId: 1));
 
   // ── Повторяющиеся (события: ДР, платежи, занятия) ────────────────
   TaskModel recurring(
