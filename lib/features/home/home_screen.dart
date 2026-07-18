@@ -568,10 +568,14 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                   ),
                   child: task.isDone
                       ? const Icon(Icons.check, size: 15, color: Colors.white)
-                      : (taskTemplateIcon(task.iconId) != null
-                          ? Icon(taskTemplateIcon(task.iconId),
-                              size: 15, color: color)
-                          : null),
+                      : (() {
+                          final ic = task.isTrip
+                              ? Icons.luggage_rounded
+                              : taskTemplateIcon(task.iconId);
+                          return ic != null
+                              ? Icon(ic, size: 15, color: color)
+                              : null;
+                        }()),
                 ),
               ),
               const SizedBox(width: 12),

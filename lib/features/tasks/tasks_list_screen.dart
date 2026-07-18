@@ -20,7 +20,9 @@ class TasksListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
-    final tasks = ref.watch(tasksProvider).value ?? const [];
+    // Путешествия исключаем — у них отдельный полный список («Путешествия»).
+    final tasks =
+        (ref.watch(tasksProvider).value ?? const []).where((t) => !t.isTrip);
     final today = ref.watch(todayProvider);
 
     // Опорная дата дела для группировки и сортировки.

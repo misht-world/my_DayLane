@@ -70,7 +70,10 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                 _Checkbox(
                   done: done,
                   color: color,
-                  icon: taskTemplateIcon(t.iconId),
+                  // Путешествие — всегда чемоданчик, как на полосе в календаре.
+                  icon: t.isTrip
+                      ? Icons.luggage_rounded
+                      : taskTemplateIcon(t.iconId),
                   onTap: () {
                     final repo = ref.read(repositoryProvider);
                     if (t.isRecurring) {
