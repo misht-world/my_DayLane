@@ -15,14 +15,26 @@ import '../task_editor/task_editor_screen.dart';
 /// близости (просрочено / сегодня / завтра / ближайшие / позже / отложенные /
 /// выполнено). Тап открывает дело (поездку — дневником).
 class TasksListScreen extends ConsumerWidget {
-  const TasksListScreen({super.key});
+  const TasksListScreen({
+    super.key,
+    this.title = 'Все дела',
+    this.filter,
+    this.emptyText = 'Пока нет дел',
+  });
+
+  /// Заголовок экрана.
+  final String title;
+
+  /// Фильтр дел. По умолчанию — все, кроме путешествий (у них свой список).
+  final bool Function(TaskModel)? filter;
+
+  final String emptyText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
-    // Путешествия исключаем — у них отдельный полный список («Путешествия»).
-    final tasks =
-        (ref.watch(tasksProvider).value ?? const []).where((t) => !t.isTrip);
+    final f = filter ?? (t) => !t.isTrip;
+    final tasks = (ref.watch(tasksProvider).value ?? const []).where(f);
     final today = ref.watch(todayProvider);
 
     // Опорная дата дела для группировки и сортировки.
@@ -81,7 +93,7 @@ class TasksListScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Все дела', style: context.serif.copyWith(fontSize: 18)),
+        title: Text(title, style: context.serif.copyWith(fontSize: 18)),
         actions: [
           IconButton(
             tooltip: 'Новое дело',
@@ -99,7 +111,7 @@ class TasksListScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.checklist_rounded, size: 40, color: dl.inkFaint),
                     const SizedBox(height: 12),
-                    Text('Пока нет дел',
+                    Text(emptyText,
                         style: TextStyle(color: dl.inkSoft, fontSize: 14)),
                   ],
                 ),

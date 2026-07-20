@@ -77,6 +77,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   final List<_SubItem> _subs = [];
 
+  /// Не авто-сохранять при закрытии (после удаления или явного «Готово»).
+  bool _skipAutosave = false;
+
   bool get _editing => widget.existing != null;
   bool get _linked => _dependsOn != null;
 
@@ -137,7 +140,14 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   Widget build(BuildContext context) {
     final dl = context.dl;
     final divider = Divider(height: 1, color: dl.line);
-    return Scaffold(
+    // Авто-сохранение: закрытие/свайп назад сохраняет дело (если есть заголовок),
+    // отдельно жать «Готово» не обязательно.
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _autosave();
+      },
+      child: Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
@@ -147,7 +157,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         actions: [
           TextButton(
             onPressed: _save,
-            child: Text('Сохранить',
+            child: Text('Готово',
                 style: TextStyle(
                     color: dl.accent, fontWeight: FontWeight.w500)),
           ),
@@ -195,6 +205,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
               controller: _note,
               maxLines: null,
               minLines: 2,
+              textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 hintText: 'Заметка к делу',
                 border: InputBorder.none,
@@ -214,6 +225,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             ),
           ],
         ],
+      ),
       ),
     );
   }
@@ -812,6 +824,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                 child: TextField(
                   controller: _subs[i].controller,
                   focusNode: _subs[i].focus,
+                  textCapitalization: TextCapitalization.sentences,
                   decoration: const InputDecoration(
                     hintText: 'Пункт',
                     isDense: true,
@@ -1021,13 +1034,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     );
   }
 
-  Future<void> _save() async {
-    if (_title.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Введите заголовок дела')),
-      );
-      return;
-    }
+  /// Собственно сохранение. Все чтения контроллеров — синхронно (до await),
+  /// поэтому безопасно вызывать даже при закрытии карточки. Возвращает id.
+  Future<int> _doSave() {
+    final repo = ref.read(repositoryProvider);
     final model = _currentModel();
     final subs = [
       for (final s in _subs)
@@ -1038,11 +1048,29 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             isDone: s.isDone,
           ),
     ];
-    final id =
-        await ref.read(repositoryProvider).saveTask(model, subtasks: subs);
+    return repo.saveTask(model, subtasks: subs);
+  }
+
+  /// Авто-сохранение при закрытии/свайпе назад: пустое (без заголовка) —
+  /// не создаём. Fire-and-forget: сохранение доживает даже после закрытия.
+  void _autosave() {
+    if (_skipAutosave || _title.text.trim().isEmpty) return;
+    _doSave();
+  }
+
+  /// Кнопка «Готово»: сохранить и закрыть (новую поездку — открыть дневником).
+  Future<void> _save() async {
+    if (_title.text.trim().isEmpty) {
+      Navigator.of(context).pop(); // пустое — просто закрыть, ничего не создаём
+      return;
+    }
+    _skipAutosave = true; // сохраняем здесь, чтобы не сохранять повторно при pop
+    final id = await _doSave();
     if (!mounted) return;
-    if (model.isTrip && !model.deferred && widget.existing == null) {
-      // Новую поездку сразу открываем дневником — добавлять этапы.
+    if (_kind == TaskKind.period &&
+        _isTrip &&
+        !_deferred &&
+        widget.existing == null) {
       Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (_) => TripScreen(taskId: id)));
     } else {
@@ -1051,6 +1079,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   }
 
   Future<void> _delete() async {
+    _skipAutosave = true; // не воскрешать удалённое дело авто-сохранением
     final undo =
         await ref.read(repositoryProvider).deleteTask(widget.existing!.id!);
     if (!mounted) return;

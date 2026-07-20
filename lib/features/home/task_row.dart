@@ -328,6 +328,14 @@ class SubtaskChecklist extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
     final subs = ref.watch(subtasksForTaskProvider(taskId)).value ?? [];
+    final tasks = ref.watch(tasksProvider).value ?? const [];
+    TaskModel? task;
+    for (final t in tasks) {
+      if (t.id == taskId) {
+        task = t;
+        break;
+      }
+    }
     return Padding(
       padding: const EdgeInsets.only(left: 34, bottom: 6),
       child: Column(
@@ -335,45 +343,53 @@ class SubtaskChecklist extends ConsumerWidget {
           for (var i = 0; i < subs.length; i++) ...[
             // Линия между подпунктами: с отступом слева, без точек.
             if (i > 0) Container(height: 1, color: dl.ink),
-            _subRow(context, ref, subs[i]),
+            _subRow(context, ref, subs[i], task),
           ],
         ],
       ),
     );
   }
 
-  Widget _subRow(BuildContext context, WidgetRef ref, SubtaskModel s) {
+  /// Кружок-галочка переключает выполнение; тап по тексту открывает карточку
+  /// дела — там подпункт можно отредактировать.
+  Widget _subRow(
+      BuildContext context, WidgetRef ref, SubtaskModel s, TaskModel? task) {
     final dl = context.dl;
-    return InkWell(
-              onTap: () => ref
-                  .read(repositoryProvider)
-                  .setSubtaskDone(s, !s.isDone),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: Row(
-                  children: [
-                    Icon(
-                      s.isDone
-                          ? Icons.check_circle_rounded
-                          : Icons.radio_button_unchecked_rounded,
-                      size: 18,
-                      color: s.isDone ? dl.accent : dl.inkFaint,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        s.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: s.isDone ? dl.inkFaint : dl.ink,
-                          decoration:
-                              s.isDone ? TextDecoration.lineThrough : null,
-                        ),
-                      ),
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () =>
+                ref.read(repositoryProvider).setSubtaskDone(s, !s.isDone),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Icon(
+                s.isDone
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                size: 18,
+                color: s.isDone ? dl.accent : dl.inkFaint,
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: task == null ? null : () => openTaskEditor(context, task),
+              child: Text(
+                s.title,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: s.isDone ? dl.inkFaint : dl.ink,
+                  decoration: s.isDone ? TextDecoration.lineThrough : null,
                 ),
               ),
-            );
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

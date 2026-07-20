@@ -105,19 +105,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           const Spacer(),
           IconButton(
             tooltip: 'Все дела',
+            visualDensity: VisualDensity.compact,
             icon: Icon(Icons.checklist_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const TasksListScreen()),
             ),
           ),
           IconButton(
+            tooltip: 'Оплаты',
+            visualDensity: VisualDensity.compact,
+            icon: Icon(Icons.payments_outlined, color: dl.inkFaint),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => TasksListScreen(
+                  title: 'Оплаты',
+                  emptyText: 'Нет дел с шаблоном «Оплата»',
+                  // Шаблон «Оплата» — индекс 1 в kTaskTemplates.
+                  filter: (t) => t.iconId == 1,
+                ),
+              ),
+            ),
+          ),
+          IconButton(
             tooltip: 'Путешествия',
+            visualDensity: VisualDensity.compact,
             icon: Icon(Icons.luggage_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const TripsListScreen()),
             ),
           ),
           IconButton(
+            visualDensity: VisualDensity.compact,
             icon: Icon(Icons.settings_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(builder: (_) => const SettingsScreen()),
