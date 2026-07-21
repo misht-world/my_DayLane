@@ -82,6 +82,9 @@ class TaskModel {
   final String placeName;
   final String placeUrl;
 
+  /// Ссылки и файлы дела — записи через перевод строки (URL или путь к файлу).
+  final String links;
+
   final bool isDone;
   final DateTime? completedAt;
 
@@ -115,6 +118,7 @@ class TaskModel {
     this.note = '',
     this.placeName = '',
     this.placeUrl = '',
+    this.links = '',
     this.isDone = false,
     this.completedAt,
     this.carriedOver = false,
@@ -152,6 +156,7 @@ class TaskModel {
     String? note,
     String? placeName,
     String? placeUrl,
+    String? links,
     bool? isDone,
     Object? completedAt = _unset,
     bool? carriedOver,
@@ -186,6 +191,7 @@ class TaskModel {
       note: note ?? this.note,
       placeName: placeName ?? this.placeName,
       placeUrl: placeUrl ?? this.placeUrl,
+      links: links ?? this.links,
       isDone: isDone ?? this.isDone,
       completedAt: identical(completedAt, _unset)
           ? this.completedAt

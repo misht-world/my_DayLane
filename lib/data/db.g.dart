@@ -260,6 +260,16 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _linksMeta = const VerificationMeta('links');
+  @override
+  late final GeneratedColumn<String> links = GeneratedColumn<String>(
+    'links',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _isDoneMeta = const VerificationMeta('isDone');
   @override
   late final GeneratedColumn<bool> isDone = GeneratedColumn<bool>(
@@ -357,6 +367,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     note,
     placeName,
     placeUrl,
+    links,
     isDone,
     completedAt,
     carriedOver,
@@ -517,6 +528,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         placeUrl.isAcceptableOrUnknown(data['place_url']!, _placeUrlMeta),
       );
     }
+    if (data.containsKey('links')) {
+      context.handle(
+        _linksMeta,
+        links.isAcceptableOrUnknown(data['links']!, _linksMeta),
+      );
+    }
     if (data.containsKey('is_done')) {
       context.handle(
         _isDoneMeta,
@@ -666,6 +683,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.string,
         data['${effectivePrefix}place_url'],
       )!,
+      links: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}links'],
+      )!,
       isDone: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_done'],
@@ -737,6 +758,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   /// Место дела: название и ссылка на карты.
   final String placeName;
   final String placeUrl;
+
+  /// Ссылки и файлы дела — записи через перевод строки.
+  final String links;
   final bool isDone;
   final DateTime? completedAt;
   final bool carriedOver;
@@ -766,6 +790,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     required this.note,
     required this.placeName,
     required this.placeUrl,
+    required this.links,
     required this.isDone,
     this.completedAt,
     required this.carriedOver,
@@ -812,6 +837,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     map['note'] = Variable<String>(note);
     map['place_name'] = Variable<String>(placeName);
     map['place_url'] = Variable<String>(placeUrl);
+    map['links'] = Variable<String>(links);
     map['is_done'] = Variable<bool>(isDone);
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<DateTime>(completedAt);
@@ -851,6 +877,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       note: Value(note),
       placeName: Value(placeName),
       placeUrl: Value(placeUrl),
+      links: Value(links),
       isDone: Value(isDone),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
@@ -896,6 +923,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       note: serializer.fromJson<String>(json['note']),
       placeName: serializer.fromJson<String>(json['placeName']),
       placeUrl: serializer.fromJson<String>(json['placeUrl']),
+      links: serializer.fromJson<String>(json['links']),
       isDone: serializer.fromJson<bool>(json['isDone']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       carriedOver: serializer.fromJson<bool>(json['carriedOver']),
@@ -934,6 +962,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'note': serializer.toJson<String>(note),
       'placeName': serializer.toJson<String>(placeName),
       'placeUrl': serializer.toJson<String>(placeUrl),
+      'links': serializer.toJson<String>(links),
       'isDone': serializer.toJson<bool>(isDone),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'carriedOver': serializer.toJson<bool>(carriedOver),
@@ -966,6 +995,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     String? note,
     String? placeName,
     String? placeUrl,
+    String? links,
     bool? isDone,
     Value<DateTime?> completedAt = const Value.absent(),
     bool? carriedOver,
@@ -999,6 +1029,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     note: note ?? this.note,
     placeName: placeName ?? this.placeName,
     placeUrl: placeUrl ?? this.placeUrl,
+    links: links ?? this.links,
     isDone: isDone ?? this.isDone,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     carriedOver: carriedOver ?? this.carriedOver,
@@ -1050,6 +1081,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       note: data.note.present ? data.note.value : this.note,
       placeName: data.placeName.present ? data.placeName.value : this.placeName,
       placeUrl: data.placeUrl.present ? data.placeUrl.value : this.placeUrl,
+      links: data.links.present ? data.links.value : this.links,
       isDone: data.isDone.present ? data.isDone.value : this.isDone,
       completedAt: data.completedAt.present
           ? data.completedAt.value
@@ -1088,6 +1120,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('note: $note, ')
           ..write('placeName: $placeName, ')
           ..write('placeUrl: $placeUrl, ')
+          ..write('links: $links, ')
           ..write('isDone: $isDone, ')
           ..write('completedAt: $completedAt, ')
           ..write('carriedOver: $carriedOver, ')
@@ -1122,6 +1155,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     note,
     placeName,
     placeUrl,
+    links,
     isDone,
     completedAt,
     carriedOver,
@@ -1155,6 +1189,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.note == this.note &&
           other.placeName == this.placeName &&
           other.placeUrl == this.placeUrl &&
+          other.links == this.links &&
           other.isDone == this.isDone &&
           other.completedAt == this.completedAt &&
           other.carriedOver == this.carriedOver &&
@@ -1186,6 +1221,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<String> note;
   final Value<String> placeName;
   final Value<String> placeUrl;
+  final Value<String> links;
   final Value<bool> isDone;
   final Value<DateTime?> completedAt;
   final Value<bool> carriedOver;
@@ -1215,6 +1251,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.note = const Value.absent(),
     this.placeName = const Value.absent(),
     this.placeUrl = const Value.absent(),
+    this.links = const Value.absent(),
     this.isDone = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.carriedOver = const Value.absent(),
@@ -1245,6 +1282,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.note = const Value.absent(),
     this.placeName = const Value.absent(),
     this.placeUrl = const Value.absent(),
+    this.links = const Value.absent(),
     this.isDone = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.carriedOver = const Value.absent(),
@@ -1280,6 +1318,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<String>? note,
     Expression<String>? placeName,
     Expression<String>? placeUrl,
+    Expression<String>? links,
     Expression<bool>? isDone,
     Expression<DateTime>? completedAt,
     Expression<bool>? carriedOver,
@@ -1311,6 +1350,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (note != null) 'note': note,
       if (placeName != null) 'place_name': placeName,
       if (placeUrl != null) 'place_url': placeUrl,
+      if (links != null) 'links': links,
       if (isDone != null) 'is_done': isDone,
       if (completedAt != null) 'completed_at': completedAt,
       if (carriedOver != null) 'carried_over': carriedOver,
@@ -1343,6 +1383,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<String>? note,
     Value<String>? placeName,
     Value<String>? placeUrl,
+    Value<String>? links,
     Value<bool>? isDone,
     Value<DateTime?>? completedAt,
     Value<bool>? carriedOver,
@@ -1373,6 +1414,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       note: note ?? this.note,
       placeName: placeName ?? this.placeName,
       placeUrl: placeUrl ?? this.placeUrl,
+      links: links ?? this.links,
       isDone: isDone ?? this.isDone,
       completedAt: completedAt ?? this.completedAt,
       carriedOver: carriedOver ?? this.carriedOver,
@@ -1455,6 +1497,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (placeUrl.present) {
       map['place_url'] = Variable<String>(placeUrl.value);
     }
+    if (links.present) {
+      map['links'] = Variable<String>(links.value);
+    }
     if (isDone.present) {
       map['is_done'] = Variable<bool>(isDone.value);
     }
@@ -1501,6 +1546,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('note: $note, ')
           ..write('placeName: $placeName, ')
           ..write('placeUrl: $placeUrl, ')
+          ..write('links: $links, ')
           ..write('isDone: $isDone, ')
           ..write('completedAt: $completedAt, ')
           ..write('carriedOver: $carriedOver, ')
@@ -3182,6 +3228,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<String> note,
       Value<String> placeName,
       Value<String> placeUrl,
+      Value<String> links,
       Value<bool> isDone,
       Value<DateTime?> completedAt,
       Value<bool> carriedOver,
@@ -3213,6 +3260,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<String> note,
       Value<String> placeName,
       Value<String> placeUrl,
+      Value<String> links,
       Value<bool> isDone,
       Value<DateTime?> completedAt,
       Value<bool> carriedOver,
@@ -3400,6 +3448,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get placeUrl => $composableBuilder(
     column: $table.placeUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get links => $composableBuilder(
+    column: $table.links,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3628,6 +3681,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get links => $composableBuilder(
+    column: $table.links,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isDone => $composableBuilder(
     column: $table.isDone,
     builder: (column) => ColumnOrderings(column),
@@ -3755,6 +3813,9 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<String> get placeUrl =>
       $composableBuilder(column: $table.placeUrl, builder: (column) => column);
+
+  GeneratedColumn<String> get links =>
+      $composableBuilder(column: $table.links, builder: (column) => column);
 
   GeneratedColumn<bool> get isDone =>
       $composableBuilder(column: $table.isDone, builder: (column) => column);
@@ -3908,6 +3969,7 @@ class $$TasksTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<String> placeName = const Value.absent(),
                 Value<String> placeUrl = const Value.absent(),
+                Value<String> links = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<bool> carriedOver = const Value.absent(),
@@ -3937,6 +3999,7 @@ class $$TasksTableTableManager
                 note: note,
                 placeName: placeName,
                 placeUrl: placeUrl,
+                links: links,
                 isDone: isDone,
                 completedAt: completedAt,
                 carriedOver: carriedOver,
@@ -3968,6 +4031,7 @@ class $$TasksTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<String> placeName = const Value.absent(),
                 Value<String> placeUrl = const Value.absent(),
+                Value<String> links = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<bool> carriedOver = const Value.absent(),
@@ -3997,6 +4061,7 @@ class $$TasksTableTableManager
                 note: note,
                 placeName: placeName,
                 placeUrl: placeUrl,
+                links: links,
                 isDone: isDone,
                 completedAt: completedAt,
                 carriedOver: carriedOver,

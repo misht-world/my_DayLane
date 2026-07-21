@@ -53,6 +53,7 @@ class BackupService {
             'note': t.note,
             'placeName': t.placeName,
             'placeUrl': t.placeUrl,
+            'links': t.links,
             'isDone': t.isDone,
             'completedAt': ms(t.completedAt),
             'carriedOver': t.carriedOver,
@@ -161,6 +162,7 @@ class BackupService {
               note: Value(t['note'] as String? ?? ''),
               placeName: Value(t['placeName'] as String? ?? ''),
               placeUrl: Value(t['placeUrl'] as String? ?? ''),
+              links: Value(t['links'] as String? ?? ''),
               isDone: Value(t['isDone'] as bool),
               completedAt: Value(
                   t['completedAt'] == null ? null : dt(t['completedAt'])),

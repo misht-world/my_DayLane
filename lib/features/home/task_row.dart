@@ -9,6 +9,7 @@ import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
 import '../../domain/scheduling.dart';
+import '../../services/links.dart';
 import '../../services/maps.dart';
 import '../task_editor/task_editor_screen.dart';
 import '../trips/trip_screen.dart';
@@ -192,6 +193,11 @@ class _TaskRowState extends ConsumerState<TaskRow> {
             dl.accent,
             TextStyle(fontSize: 12, color: dl.accent)),
       ));
+    }
+    final linkCount = parseLinks(t.links).length;
+    if (linkCount > 0) {
+      chips.add(_chip(Icons.attach_file_rounded, '$linkCount', dl.inkSoft,
+          muted));
     }
     return chips;
   }

@@ -42,6 +42,8 @@ class Tasks extends Table {
   /// Место дела: название и ссылка на карты.
   TextColumn get placeName => text().withDefault(const Constant(''))();
   TextColumn get placeUrl => text().withDefault(const Constant(''))();
+  /// Ссылки и файлы дела — записи через перевод строки.
+  TextColumn get links => text().withDefault(const Constant(''))();
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
   DateTimeColumn get completedAt => dateTime().nullable()();
   BoolColumn get carriedOver =>
@@ -119,7 +121,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -162,6 +164,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(tasks, tasks.placeUrl);
             await m.addColumn(tripStages, tripStages.timeMinutes);
             await m.addColumn(tripStages, tripStages.isDone);
+          }
+          if (from < 9) {
+            await m.addColumn(tasks, tasks.links);
           }
         },
         beforeOpen: (details) async {
@@ -272,6 +277,7 @@ extension TaskRowMapper on TaskRow {
         note: note,
         placeName: placeName,
         placeUrl: placeUrl,
+        links: links,
         isDone: isDone,
         completedAt: completedAt,
         carriedOver: carriedOver,
@@ -316,6 +322,7 @@ extension TaskModelMapper on TaskModel {
         note: Value(note),
         placeName: Value(placeName),
         placeUrl: Value(placeUrl),
+        links: Value(links),
         isDone: Value(isDone),
         completedAt: Value(completedAt),
         carriedOver: Value(carriedOver),
