@@ -7,7 +7,9 @@ import '../../core/date_utils.dart';
 import '../../core/theme.dart';
 import '../../domain/models.dart';
 import '../../domain/trip_stays.dart';
+import '../../services/links.dart';
 import '../../services/maps.dart';
+import '../common/links_editor.dart';
 import '../task_editor/task_editor_screen.dart';
 
 /// Дневник путешествия: шапка с датами, этапы-подкарточки по дням
@@ -87,6 +89,27 @@ class TripScreen extends ConsumerWidget {
                 color: color,
                 onTap: () => _editStage(context, ref, trip, s),
               ),
+          const SizedBox(height: 18),
+          Text('Ссылки и файлы',
+              style: context.serif.copyWith(
+                  fontSize: 17, fontStyle: FontStyle.italic, color: dl.ink)),
+          const SizedBox(height: 6),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+            decoration: BoxDecoration(
+              color: dl.surface,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: dl.line),
+            ),
+            child: LinksEditor(
+              label: 'Билеты, брони, документы',
+              links: parseLinks(trip.links),
+              onChanged: (v) => ref
+                  .read(repositoryProvider)
+                  .saveTask(trip.copyWith(links: joinLinks(v))),
+            ),
+          ),
           if (trip.note.isNotEmpty) ...[
             const SizedBox(height: 16),
             Text('Заметки поездки',

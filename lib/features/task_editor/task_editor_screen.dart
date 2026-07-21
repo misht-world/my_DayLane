@@ -1,4 +1,3 @@
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +12,7 @@ import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
 import '../../services/links.dart';
 import '../../services/maps.dart';
+import '../common/links_editor.dart';
 import '../trips/trip_screen.dart';
 
 /// Открывает карточку дела. [existing] == null — создание;
@@ -209,7 +209,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           const SizedBox(height: 14),
           _card(children: [_placeBlock()]),
           const SizedBox(height: 14),
-          _card(children: [_linksBlock()]),
+          _card(children: [
+            LinksEditor(
+              links: _links,
+              onChanged: (v) => setState(() => _links = v),
+            ),
+          ]),
           const SizedBox(height: 14),
           _card(children: [_subtaskBlock()]),
           const SizedBox(height: 14),
@@ -748,123 +753,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         ),
       ],
     );
-  }
-
-  /// Ссылки и файлы дела: список записей + добавить ссылку / файл.
-  Widget _linksBlock() {
-    final dl = context.dl;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _label('Ссылки и файлы'),
-        const SizedBox(height: 4),
-        for (var i = 0; i < _links.length; i++)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              children: [
-                Icon(isWebLink(_links[i]) ? Icons.link_rounded : Icons.insert_drive_file_outlined,
-                    size: 18, color: dl.inkSoft),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => openLink(_links[i]),
-                    child: Text(linkLabel(_links[i]),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                            fontSize: 14,
-                            color: dl.accent,
-                            decoration: TextDecoration.underline,
-                            decorationColor: dl.accent)),
-                  ),
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  icon: Icon(Icons.close_rounded, size: 18, color: dl.inkFaint),
-                  onPressed: () => setState(() => _links.removeAt(i)),
-                ),
-              ],
-            ),
-          ),
-        const SizedBox(height: 4),
-        Wrap(
-          spacing: 8,
-          children: [
-            OutlinedButton.icon(
-              onPressed: _addLink,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: dl.lineStrong),
-                foregroundColor: dl.ink,
-                visualDensity: VisualDensity.compact,
-              ),
-              icon: const Icon(Icons.add_link_rounded, size: 16),
-              label: const Text('Добавить ссылку',
-                  style: TextStyle(fontSize: 13)),
-            ),
-            OutlinedButton.icon(
-              onPressed: _addFile,
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: dl.lineStrong),
-                foregroundColor: dl.ink,
-                visualDensity: VisualDensity.compact,
-              ),
-              icon: const Icon(Icons.attach_file_rounded, size: 16),
-              label: const Text('Файл с телефона',
-                  style: TextStyle(fontSize: 13)),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Future<void> _addLink() async {
-    final clip = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim();
-    if (!mounted) return;
-    final ctrl = TextEditingController(
-        text: (clip != null && isWebLink(clip)) ? clip : '');
-    final url = await showDialog<String>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Ссылка'),
-        content: TextField(
-          controller: ctrl,
-          autofocus: true,
-          keyboardType: TextInputType.url,
-          decoration: const InputDecoration(
-              hintText: 'https://… (Я.Диск, Google Drive, любая)'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Отмена')),
-          TextButton(
-              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-              child: const Text('Добавить')),
-        ],
-      ),
-    );
-    if (url != null && url.isNotEmpty) {
-      setState(() => _links.add(url));
-    }
-  }
-
-  Future<void> _addFile() async {
-    final res = await FilePicker.platform.pickFiles();
-    final path = res?.files.single.path;
-    if (path == null) return;
-    // Копируем в постоянную папку приложения, чтобы ссылка не протухла.
-    try {
-      final stored = await importFileToAppStorage(path);
-      if (mounted) setState(() => _links.add(stored));
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Не удалось прикрепить файл: $e')));
-      }
-    }
   }
 
   Future<void> _pastePlaceLink() async {
