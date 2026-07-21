@@ -201,8 +201,8 @@ class TripScreen extends ConsumerWidget {
   }
 }
 
-/// Подкарточка этапа: даты («день N–M»), место, заметки.
-class _StageCard extends StatelessWidget {
+/// Подкарточка этапа: галочка выполнения, даты («день N–M»), место, заметки.
+class _StageCard extends ConsumerWidget {
   const _StageCard({
     required this.trip,
     required this.stage,
@@ -216,8 +216,9 @@ class _StageCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
+    final done = stage.isDone;
     final String meta;
     if (stage.isStay) {
       // Жильё — заезд→выезд и число ночей.
@@ -228,7 +229,10 @@ class _StageCard extends StatelessWidget {
       final d1 = daysBetween(trip.startDate, stage.startDate) + 1;
       final d2 = daysBetween(trip.startDate, stage.endDate) + 1;
       final dayLabel = d1 == d2 ? 'день $d1' : 'дни $d1–$d2';
-      meta = '${formatDateRange(stage.startDate, stage.endDate)} · $dayLabel';
+      final time =
+          stage.timeMinutes == null ? '' : ' · ${formatMinutesOfDay(stage.timeMinutes!)}';
+      meta =
+          '${formatDateRange(stage.startDate, stage.endDate)} · $dayLabel$time';
     }
 
     return Padding(
@@ -255,9 +259,33 @@ class _StageCard extends StatelessWidget {
                         right: Radius.circular(3)),
                   ),
                 ),
+                // Галочка «этап пройден».
+                Padding(
+                  padding: const EdgeInsets.only(left: 10, top: 12),
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => ref
+                        .read(repositoryProvider)
+                        .toggleStageDone(stage, !done),
+                    child: Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: done ? color : Colors.transparent,
+                        border: Border.all(color: color, width: 1.6),
+                      ),
+                      child: done
+                          ? const Icon(Icons.check,
+                              size: 14, color: Colors.white)
+                          : null,
+                    ),
+                  ),
+                ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -280,8 +308,12 @@ class _StageCard extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(stage.title,
-                                  style: context.serif
-                                      .copyWith(fontSize: 16, color: dl.ink)),
+                                  style: context.serif.copyWith(
+                                      fontSize: 16,
+                                      color: done ? dl.inkFaint : dl.ink,
+                                      decoration: done
+                                          ? TextDecoration.lineThrough
+                                          : null)),
                             ),
                           ],
                         ),
@@ -364,6 +396,8 @@ class _StageSheetState extends ConsumerState<StageSheet> {
   late DateTime _end;
   late TripStageKind _kind;
   String _placeUrl = '';
+  int? _time;
+  bool _skipAutosave = false;
 
   bool get _isStay => _kind == TripStageKind.stay;
 
@@ -379,6 +413,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     // У жилья endDate — день выезда (минимум одна ночь).
     _end = e?.endDate ?? (_isStay ? addDays(_start, 1) : _start);
     _placeUrl = e?.placeUrl ?? '';
+    _time = e?.timeMinutes;
   }
 
   @override
@@ -392,7 +427,12 @@ class _StageSheetState extends ConsumerState<StageSheet> {
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
-    return SafeArea(
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _autosave();
+      },
+      child: SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         child: Column(
@@ -548,6 +588,37 @@ class _StageSheetState extends ConsumerState<StageSheet> {
               'затем вернитесь и нажмите «Вставить ссылку».',
               style: TextStyle(fontSize: 11.5, color: dl.inkFaint),
             ),
+            if (!_isStay) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Text('Время',
+                      style: TextStyle(fontSize: 14, color: dl.inkSoft)),
+                  const Spacer(),
+                  OutlinedButton(
+                    onPressed: _pickTime,
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: dl.lineStrong),
+                      foregroundColor: dl.ink,
+                      visualDensity: VisualDensity.compact,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
+                    ),
+                    child: Text(
+                        _time == null
+                            ? 'не указано'
+                            : formatMinutesOfDay(_time!),
+                        style: const TextStyle(fontSize: 13)),
+                  ),
+                  if (_time != null)
+                    IconButton(
+                      icon: Icon(Icons.clear_rounded,
+                          size: 18, color: dl.inkFaint),
+                      onPressed: () => setState(() => _time = null),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _note,
@@ -576,12 +647,13 @@ class _StageSheetState extends ConsumerState<StageSheet> {
                       backgroundColor: dl.accent,
                       foregroundColor:
                           Theme.of(context).colorScheme.onPrimary),
-                  child: const Text('Сохранить'),
+                  child: const Text('Готово'),
                 ),
               ],
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -619,12 +691,28 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     );
   }
 
+  Future<void> _pickTime() async {
+    final res = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(
+          hour: (_time ?? 12 * 60) ~/ 60, minute: (_time ?? 0) % 60),
+    );
+    if (res != null) setState(() => _time = res.hour * 60 + res.minute);
+  }
+
   Future<void> _pasteLink() async {
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     final text = data?.text?.trim() ?? '';
     if (!mounted) return;
     if (looksLikeMapsLink(text)) {
-      setState(() => _placeUrl = text);
+      setState(() {
+        _placeUrl = text;
+        // Если название пустое — пробуем достать из полной ссылки.
+        if (_place.text.trim().isEmpty) {
+          final name = placeNameFromUrl(text);
+          if (name != null) _place.text = name;
+        }
+      });
     } else {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('В буфере нет ссылки на карты. Скопируйте её '
@@ -632,29 +720,39 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     }
   }
 
+  TripStageModel _model() => TripStageModel(
+        id: widget.existing?.id,
+        taskId: widget.trip.id!,
+        title: _title.text.trim(),
+        kind: _kind,
+        startDate: _start,
+        endDate: _end,
+        placeName: _place.text.trim(),
+        placeUrl: _placeUrl,
+        timeMinutes: _isStay ? null : _time,
+        isDone: widget.existing?.isDone ?? false,
+        note: _note.text.trim(),
+        sortIndex: widget.existing?.sortIndex ?? 0,
+      );
+
+  /// Авто-сохранение при закрытии/свайпе: без названия — не создаём.
+  void _autosave() {
+    if (_skipAutosave || _title.text.trim().isEmpty) return;
+    ref.read(repositoryProvider).saveStage(_model());
+  }
+
   Future<void> _save() async {
     if (_title.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Назовите этап')));
+      Navigator.of(context).pop();
       return;
     }
-    final stage = TripStageModel(
-      id: widget.existing?.id,
-      taskId: widget.trip.id!,
-      title: _title.text.trim(),
-      kind: _kind,
-      startDate: _start,
-      endDate: _end,
-      placeName: _place.text.trim(),
-      placeUrl: _placeUrl,
-      note: _note.text.trim(),
-      sortIndex: widget.existing?.sortIndex ?? 0,
-    );
-    await ref.read(repositoryProvider).saveStage(stage);
+    _skipAutosave = true;
+    await ref.read(repositoryProvider).saveStage(_model());
     if (mounted) Navigator.of(context).pop();
   }
 
   Future<void> _delete() async {
+    _skipAutosave = true;
     await ref.read(repositoryProvider).deleteStage(widget.existing!.id!);
     if (mounted) Navigator.of(context).pop();
   }

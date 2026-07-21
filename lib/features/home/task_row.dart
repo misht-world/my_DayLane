@@ -9,6 +9,7 @@ import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
 import '../../domain/scheduling.dart';
+import '../../services/maps.dart';
 import '../task_editor/task_editor_screen.dart';
 import '../trips/trip_screen.dart';
 
@@ -180,6 +181,17 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     if (t.carriedOver) {
       chips.add(_chip(Icons.autorenew, 'перенесено', dl.accent,
           TextStyle(fontSize: 12, color: dl.accent)));
+    }
+    if (t.placeName.isNotEmpty || t.placeUrl.isNotEmpty) {
+      chips.add(GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => openInMaps(url: t.placeUrl, query: t.placeName),
+        child: _chip(
+            Icons.place_rounded,
+            t.placeName.isNotEmpty ? t.placeName : 'на карте',
+            dl.accent,
+            TextStyle(fontSize: 12, color: dl.accent)),
+      ));
     }
     return chips;
   }

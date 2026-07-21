@@ -78,6 +78,10 @@ class TaskModel {
 
   final String note;
 
+  /// Место дела: название и ссылка на карты (Google Maps / geo:). Пусто — нет.
+  final String placeName;
+  final String placeUrl;
+
   final bool isDone;
   final DateTime? completedAt;
 
@@ -109,6 +113,8 @@ class TaskModel {
     this.recurrenceInterval = 1,
     this.recurrenceAnchor = 0,
     this.note = '',
+    this.placeName = '',
+    this.placeUrl = '',
     this.isDone = false,
     this.completedAt,
     this.carriedOver = false,
@@ -144,6 +150,8 @@ class TaskModel {
     int? recurrenceInterval,
     int? recurrenceAnchor,
     String? note,
+    String? placeName,
+    String? placeUrl,
     bool? isDone,
     Object? completedAt = _unset,
     bool? carriedOver,
@@ -176,6 +184,8 @@ class TaskModel {
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
       note: note ?? this.note,
+      placeName: placeName ?? this.placeName,
+      placeUrl: placeUrl ?? this.placeUrl,
       isDone: isDone ?? this.isDone,
       completedAt: identical(completedAt, _unset)
           ? this.completedAt
@@ -219,6 +229,12 @@ class TripStageModel {
   /// Ссылка на место в картах (Google Maps share-link или geo:).
   final String placeUrl;
 
+  /// Время дня в минутах от полуночи (для места: «со скольки»). null — не задано.
+  final int? timeMinutes;
+
+  /// Этап пройден (галочка выполнения).
+  final bool isDone;
+
   /// Дневник по итогу этапа: как была гостиница, что посмотрели и пр.
   final String note;
 
@@ -233,6 +249,8 @@ class TripStageModel {
     required this.endDate,
     this.placeName = '',
     this.placeUrl = '',
+    this.timeMinutes,
+    this.isDone = false,
     this.note = '',
     this.sortIndex = 0,
   });
@@ -252,6 +270,8 @@ class TripStageModel {
     DateTime? endDate,
     String? placeName,
     String? placeUrl,
+    Object? timeMinutes = _unset,
+    bool? isDone,
     String? note,
     int? sortIndex,
   }) {
@@ -264,6 +284,10 @@ class TripStageModel {
       endDate: endDate ?? this.endDate,
       placeName: placeName ?? this.placeName,
       placeUrl: placeUrl ?? this.placeUrl,
+      timeMinutes: identical(timeMinutes, _unset)
+          ? this.timeMinutes
+          : timeMinutes as int?,
+      isDone: isDone ?? this.isDone,
       note: note ?? this.note,
       sortIndex: sortIndex ?? this.sortIndex,
     );

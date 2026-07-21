@@ -45,6 +45,15 @@ class TaskRepository {
 
     if (subtasks != null) {
       await _subtasks.replaceForTask(id, subtasks);
+      // Дело с подпунктами выполнено ⇔ все подпункты выполнены. Иначе (добавили
+      // новый / сняли галочку) дело могло остаться зачёркнутым из-за старого
+      // isDone.
+      if (subtasks.isNotEmpty) {
+        final allDone = subtasks.every((s) => s.isDone);
+        if (toSave.isDone != allDone) {
+          await _tasks.setDone(id, allDone, now);
+        }
+      }
     }
 
     await _recomputeAndSync(touchedIds: {id});
@@ -184,6 +193,9 @@ class TaskRepository {
   Future<void> saveStage(TripStageModel stage) => stage.id == null
       ? _db.insertStage(stage)
       : _db.updateStage(stage);
+
+  Future<void> toggleStageDone(TripStageModel stage, bool done) =>
+      _db.updateStage(stage.copyWith(isDone: done));
 
   Future<void> deleteStage(int id) => _db.deleteStage(id);
 

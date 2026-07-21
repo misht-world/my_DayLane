@@ -236,6 +236,30 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _placeNameMeta = const VerificationMeta(
+    'placeName',
+  );
+  @override
+  late final GeneratedColumn<String> placeName = GeneratedColumn<String>(
+    'place_name',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _placeUrlMeta = const VerificationMeta(
+    'placeUrl',
+  );
+  @override
+  late final GeneratedColumn<String> placeUrl = GeneratedColumn<String>(
+    'place_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _isDoneMeta = const VerificationMeta('isDone');
   @override
   late final GeneratedColumn<bool> isDone = GeneratedColumn<bool>(
@@ -331,6 +355,8 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     recurrenceInterval,
     recurrenceAnchor,
     note,
+    placeName,
+    placeUrl,
     isDone,
     completedAt,
     carriedOver,
@@ -479,6 +505,18 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         note.isAcceptableOrUnknown(data['note']!, _noteMeta),
       );
     }
+    if (data.containsKey('place_name')) {
+      context.handle(
+        _placeNameMeta,
+        placeName.isAcceptableOrUnknown(data['place_name']!, _placeNameMeta),
+      );
+    }
+    if (data.containsKey('place_url')) {
+      context.handle(
+        _placeUrlMeta,
+        placeUrl.isAcceptableOrUnknown(data['place_url']!, _placeUrlMeta),
+      );
+    }
     if (data.containsKey('is_done')) {
       context.handle(
         _isDoneMeta,
@@ -620,6 +658,14 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.string,
         data['${effectivePrefix}note'],
       )!,
+      placeName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}place_name'],
+      )!,
+      placeUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}place_url'],
+      )!,
       isDone: attachedDatabase.typeMapping.read(
         DriftSqlType.bool,
         data['${effectivePrefix}is_done'],
@@ -687,6 +733,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final int recurrenceInterval;
   final int recurrenceAnchor;
   final String note;
+
+  /// Место дела: название и ссылка на карты.
+  final String placeName;
+  final String placeUrl;
   final bool isDone;
   final DateTime? completedAt;
   final bool carriedOver;
@@ -714,6 +764,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     required this.recurrenceInterval,
     required this.recurrenceAnchor,
     required this.note,
+    required this.placeName,
+    required this.placeUrl,
     required this.isDone,
     this.completedAt,
     required this.carriedOver,
@@ -758,6 +810,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     map['recurrence_interval'] = Variable<int>(recurrenceInterval);
     map['recurrence_anchor'] = Variable<int>(recurrenceAnchor);
     map['note'] = Variable<String>(note);
+    map['place_name'] = Variable<String>(placeName);
+    map['place_url'] = Variable<String>(placeUrl);
     map['is_done'] = Variable<bool>(isDone);
     if (!nullToAbsent || completedAt != null) {
       map['completed_at'] = Variable<DateTime>(completedAt);
@@ -795,6 +849,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       recurrenceInterval: Value(recurrenceInterval),
       recurrenceAnchor: Value(recurrenceAnchor),
       note: Value(note),
+      placeName: Value(placeName),
+      placeUrl: Value(placeUrl),
       isDone: Value(isDone),
       completedAt: completedAt == null && nullToAbsent
           ? const Value.absent()
@@ -838,6 +894,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       recurrenceInterval: serializer.fromJson<int>(json['recurrenceInterval']),
       recurrenceAnchor: serializer.fromJson<int>(json['recurrenceAnchor']),
       note: serializer.fromJson<String>(json['note']),
+      placeName: serializer.fromJson<String>(json['placeName']),
+      placeUrl: serializer.fromJson<String>(json['placeUrl']),
       isDone: serializer.fromJson<bool>(json['isDone']),
       completedAt: serializer.fromJson<DateTime?>(json['completedAt']),
       carriedOver: serializer.fromJson<bool>(json['carriedOver']),
@@ -874,6 +932,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'recurrenceInterval': serializer.toJson<int>(recurrenceInterval),
       'recurrenceAnchor': serializer.toJson<int>(recurrenceAnchor),
       'note': serializer.toJson<String>(note),
+      'placeName': serializer.toJson<String>(placeName),
+      'placeUrl': serializer.toJson<String>(placeUrl),
       'isDone': serializer.toJson<bool>(isDone),
       'completedAt': serializer.toJson<DateTime?>(completedAt),
       'carriedOver': serializer.toJson<bool>(carriedOver),
@@ -904,6 +964,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     int? recurrenceInterval,
     int? recurrenceAnchor,
     String? note,
+    String? placeName,
+    String? placeUrl,
     bool? isDone,
     Value<DateTime?> completedAt = const Value.absent(),
     bool? carriedOver,
@@ -935,6 +997,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
     recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
     note: note ?? this.note,
+    placeName: placeName ?? this.placeName,
+    placeUrl: placeUrl ?? this.placeUrl,
     isDone: isDone ?? this.isDone,
     completedAt: completedAt.present ? completedAt.value : this.completedAt,
     carriedOver: carriedOver ?? this.carriedOver,
@@ -984,6 +1048,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ? data.recurrenceAnchor.value
           : this.recurrenceAnchor,
       note: data.note.present ? data.note.value : this.note,
+      placeName: data.placeName.present ? data.placeName.value : this.placeName,
+      placeUrl: data.placeUrl.present ? data.placeUrl.value : this.placeUrl,
       isDone: data.isDone.present ? data.isDone.value : this.isDone,
       completedAt: data.completedAt.present
           ? data.completedAt.value
@@ -1020,6 +1086,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
           ..write('note: $note, ')
+          ..write('placeName: $placeName, ')
+          ..write('placeUrl: $placeUrl, ')
           ..write('isDone: $isDone, ')
           ..write('completedAt: $completedAt, ')
           ..write('carriedOver: $carriedOver, ')
@@ -1052,6 +1120,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     recurrenceInterval,
     recurrenceAnchor,
     note,
+    placeName,
+    placeUrl,
     isDone,
     completedAt,
     carriedOver,
@@ -1083,6 +1153,8 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.recurrenceInterval == this.recurrenceInterval &&
           other.recurrenceAnchor == this.recurrenceAnchor &&
           other.note == this.note &&
+          other.placeName == this.placeName &&
+          other.placeUrl == this.placeUrl &&
           other.isDone == this.isDone &&
           other.completedAt == this.completedAt &&
           other.carriedOver == this.carriedOver &&
@@ -1112,6 +1184,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<int> recurrenceInterval;
   final Value<int> recurrenceAnchor;
   final Value<String> note;
+  final Value<String> placeName;
+  final Value<String> placeUrl;
   final Value<bool> isDone;
   final Value<DateTime?> completedAt;
   final Value<bool> carriedOver;
@@ -1139,6 +1213,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
     this.note = const Value.absent(),
+    this.placeName = const Value.absent(),
+    this.placeUrl = const Value.absent(),
     this.isDone = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.carriedOver = const Value.absent(),
@@ -1167,6 +1243,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
     this.note = const Value.absent(),
+    this.placeName = const Value.absent(),
+    this.placeUrl = const Value.absent(),
     this.isDone = const Value.absent(),
     this.completedAt = const Value.absent(),
     this.carriedOver = const Value.absent(),
@@ -1200,6 +1278,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<int>? recurrenceInterval,
     Expression<int>? recurrenceAnchor,
     Expression<String>? note,
+    Expression<String>? placeName,
+    Expression<String>? placeUrl,
     Expression<bool>? isDone,
     Expression<DateTime>? completedAt,
     Expression<bool>? carriedOver,
@@ -1229,6 +1309,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (recurrenceInterval != null) 'recurrence_interval': recurrenceInterval,
       if (recurrenceAnchor != null) 'recurrence_anchor': recurrenceAnchor,
       if (note != null) 'note': note,
+      if (placeName != null) 'place_name': placeName,
+      if (placeUrl != null) 'place_url': placeUrl,
       if (isDone != null) 'is_done': isDone,
       if (completedAt != null) 'completed_at': completedAt,
       if (carriedOver != null) 'carried_over': carriedOver,
@@ -1259,6 +1341,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<int>? recurrenceInterval,
     Value<int>? recurrenceAnchor,
     Value<String>? note,
+    Value<String>? placeName,
+    Value<String>? placeUrl,
     Value<bool>? isDone,
     Value<DateTime?>? completedAt,
     Value<bool>? carriedOver,
@@ -1287,6 +1371,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
       note: note ?? this.note,
+      placeName: placeName ?? this.placeName,
+      placeUrl: placeUrl ?? this.placeUrl,
       isDone: isDone ?? this.isDone,
       completedAt: completedAt ?? this.completedAt,
       carriedOver: carriedOver ?? this.carriedOver,
@@ -1363,6 +1449,12 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
+    if (placeName.present) {
+      map['place_name'] = Variable<String>(placeName.value);
+    }
+    if (placeUrl.present) {
+      map['place_url'] = Variable<String>(placeUrl.value);
+    }
     if (isDone.present) {
       map['is_done'] = Variable<bool>(isDone.value);
     }
@@ -1407,6 +1499,8 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
           ..write('note: $note, ')
+          ..write('placeName: $placeName, ')
+          ..write('placeUrl: $placeUrl, ')
           ..write('isDone: $isDone, ')
           ..write('completedAt: $completedAt, ')
           ..write('carriedOver: $carriedOver, ')
@@ -2416,6 +2510,30 @@ class $TripStagesTable extends TripStages
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _timeMinutesMeta = const VerificationMeta(
+    'timeMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> timeMinutes = GeneratedColumn<int>(
+    'time_minutes',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isDoneMeta = const VerificationMeta('isDone');
+  @override
+  late final GeneratedColumn<bool> isDone = GeneratedColumn<bool>(
+    'is_done',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_done" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _noteMeta = const VerificationMeta('note');
   @override
   late final GeneratedColumn<String> note = GeneratedColumn<String>(
@@ -2448,6 +2566,8 @@ class $TripStagesTable extends TripStages
     endDate,
     placeName,
     placeUrl,
+    timeMinutes,
+    isDone,
     note,
     sortIndex,
   ];
@@ -2510,6 +2630,21 @@ class $TripStagesTable extends TripStages
         placeUrl.isAcceptableOrUnknown(data['place_url']!, _placeUrlMeta),
       );
     }
+    if (data.containsKey('time_minutes')) {
+      context.handle(
+        _timeMinutesMeta,
+        timeMinutes.isAcceptableOrUnknown(
+          data['time_minutes']!,
+          _timeMinutesMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_done')) {
+      context.handle(
+        _isDoneMeta,
+        isDone.isAcceptableOrUnknown(data['is_done']!, _isDoneMeta),
+      );
+    }
     if (data.containsKey('note')) {
       context.handle(
         _noteMeta,
@@ -2565,6 +2700,14 @@ class $TripStagesTable extends TripStages
         DriftSqlType.string,
         data['${effectivePrefix}place_url'],
       )!,
+      timeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}time_minutes'],
+      ),
+      isDone: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_done'],
+      )!,
       note: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}note'],
@@ -2596,6 +2739,10 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
   final DateTime endDate;
   final String placeName;
   final String placeUrl;
+
+  /// Время дня места (минуты от полуночи). null — не задано.
+  final int? timeMinutes;
+  final bool isDone;
   final String note;
   final int sortIndex;
   const TripStageRow({
@@ -2607,6 +2754,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     required this.endDate,
     required this.placeName,
     required this.placeUrl,
+    this.timeMinutes,
+    required this.isDone,
     required this.note,
     required this.sortIndex,
   });
@@ -2623,6 +2772,10 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     map['end_date'] = Variable<DateTime>(endDate);
     map['place_name'] = Variable<String>(placeName);
     map['place_url'] = Variable<String>(placeUrl);
+    if (!nullToAbsent || timeMinutes != null) {
+      map['time_minutes'] = Variable<int>(timeMinutes);
+    }
+    map['is_done'] = Variable<bool>(isDone);
     map['note'] = Variable<String>(note);
     map['sort_index'] = Variable<int>(sortIndex);
     return map;
@@ -2638,6 +2791,10 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       endDate: Value(endDate),
       placeName: Value(placeName),
       placeUrl: Value(placeUrl),
+      timeMinutes: timeMinutes == null && nullToAbsent
+          ? const Value.absent()
+          : Value(timeMinutes),
+      isDone: Value(isDone),
       note: Value(note),
       sortIndex: Value(sortIndex),
     );
@@ -2659,6 +2816,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       endDate: serializer.fromJson<DateTime>(json['endDate']),
       placeName: serializer.fromJson<String>(json['placeName']),
       placeUrl: serializer.fromJson<String>(json['placeUrl']),
+      timeMinutes: serializer.fromJson<int?>(json['timeMinutes']),
+      isDone: serializer.fromJson<bool>(json['isDone']),
       note: serializer.fromJson<String>(json['note']),
       sortIndex: serializer.fromJson<int>(json['sortIndex']),
     );
@@ -2677,6 +2836,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       'endDate': serializer.toJson<DateTime>(endDate),
       'placeName': serializer.toJson<String>(placeName),
       'placeUrl': serializer.toJson<String>(placeUrl),
+      'timeMinutes': serializer.toJson<int?>(timeMinutes),
+      'isDone': serializer.toJson<bool>(isDone),
       'note': serializer.toJson<String>(note),
       'sortIndex': serializer.toJson<int>(sortIndex),
     };
@@ -2691,6 +2852,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     DateTime? endDate,
     String? placeName,
     String? placeUrl,
+    Value<int?> timeMinutes = const Value.absent(),
+    bool? isDone,
     String? note,
     int? sortIndex,
   }) => TripStageRow(
@@ -2702,6 +2865,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     endDate: endDate ?? this.endDate,
     placeName: placeName ?? this.placeName,
     placeUrl: placeUrl ?? this.placeUrl,
+    timeMinutes: timeMinutes.present ? timeMinutes.value : this.timeMinutes,
+    isDone: isDone ?? this.isDone,
     note: note ?? this.note,
     sortIndex: sortIndex ?? this.sortIndex,
   );
@@ -2715,6 +2880,10 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       endDate: data.endDate.present ? data.endDate.value : this.endDate,
       placeName: data.placeName.present ? data.placeName.value : this.placeName,
       placeUrl: data.placeUrl.present ? data.placeUrl.value : this.placeUrl,
+      timeMinutes: data.timeMinutes.present
+          ? data.timeMinutes.value
+          : this.timeMinutes,
+      isDone: data.isDone.present ? data.isDone.value : this.isDone,
       note: data.note.present ? data.note.value : this.note,
       sortIndex: data.sortIndex.present ? data.sortIndex.value : this.sortIndex,
     );
@@ -2731,6 +2900,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           ..write('endDate: $endDate, ')
           ..write('placeName: $placeName, ')
           ..write('placeUrl: $placeUrl, ')
+          ..write('timeMinutes: $timeMinutes, ')
+          ..write('isDone: $isDone, ')
           ..write('note: $note, ')
           ..write('sortIndex: $sortIndex')
           ..write(')'))
@@ -2747,6 +2918,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     endDate,
     placeName,
     placeUrl,
+    timeMinutes,
+    isDone,
     note,
     sortIndex,
   );
@@ -2762,6 +2935,8 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           other.endDate == this.endDate &&
           other.placeName == this.placeName &&
           other.placeUrl == this.placeUrl &&
+          other.timeMinutes == this.timeMinutes &&
+          other.isDone == this.isDone &&
           other.note == this.note &&
           other.sortIndex == this.sortIndex);
 }
@@ -2775,6 +2950,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
   final Value<DateTime> endDate;
   final Value<String> placeName;
   final Value<String> placeUrl;
+  final Value<int?> timeMinutes;
+  final Value<bool> isDone;
   final Value<String> note;
   final Value<int> sortIndex;
   const TripStagesCompanion({
@@ -2786,6 +2963,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     this.endDate = const Value.absent(),
     this.placeName = const Value.absent(),
     this.placeUrl = const Value.absent(),
+    this.timeMinutes = const Value.absent(),
+    this.isDone = const Value.absent(),
     this.note = const Value.absent(),
     this.sortIndex = const Value.absent(),
   });
@@ -2798,6 +2977,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     required DateTime endDate,
     this.placeName = const Value.absent(),
     this.placeUrl = const Value.absent(),
+    this.timeMinutes = const Value.absent(),
+    this.isDone = const Value.absent(),
     this.note = const Value.absent(),
     this.sortIndex = const Value.absent(),
   }) : taskId = Value(taskId),
@@ -2813,6 +2994,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     Expression<DateTime>? endDate,
     Expression<String>? placeName,
     Expression<String>? placeUrl,
+    Expression<int>? timeMinutes,
+    Expression<bool>? isDone,
     Expression<String>? note,
     Expression<int>? sortIndex,
   }) {
@@ -2825,6 +3008,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
       if (endDate != null) 'end_date': endDate,
       if (placeName != null) 'place_name': placeName,
       if (placeUrl != null) 'place_url': placeUrl,
+      if (timeMinutes != null) 'time_minutes': timeMinutes,
+      if (isDone != null) 'is_done': isDone,
       if (note != null) 'note': note,
       if (sortIndex != null) 'sort_index': sortIndex,
     });
@@ -2839,6 +3024,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     Value<DateTime>? endDate,
     Value<String>? placeName,
     Value<String>? placeUrl,
+    Value<int?>? timeMinutes,
+    Value<bool>? isDone,
     Value<String>? note,
     Value<int>? sortIndex,
   }) {
@@ -2851,6 +3038,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
       endDate: endDate ?? this.endDate,
       placeName: placeName ?? this.placeName,
       placeUrl: placeUrl ?? this.placeUrl,
+      timeMinutes: timeMinutes ?? this.timeMinutes,
+      isDone: isDone ?? this.isDone,
       note: note ?? this.note,
       sortIndex: sortIndex ?? this.sortIndex,
     );
@@ -2885,6 +3074,12 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     if (placeUrl.present) {
       map['place_url'] = Variable<String>(placeUrl.value);
     }
+    if (timeMinutes.present) {
+      map['time_minutes'] = Variable<int>(timeMinutes.value);
+    }
+    if (isDone.present) {
+      map['is_done'] = Variable<bool>(isDone.value);
+    }
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
@@ -2905,6 +3100,8 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
           ..write('endDate: $endDate, ')
           ..write('placeName: $placeName, ')
           ..write('placeUrl: $placeUrl, ')
+          ..write('timeMinutes: $timeMinutes, ')
+          ..write('isDone: $isDone, ')
           ..write('note: $note, ')
           ..write('sortIndex: $sortIndex')
           ..write(')'))
@@ -2983,6 +3180,8 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
       Value<String> note,
+      Value<String> placeName,
+      Value<String> placeUrl,
       Value<bool> isDone,
       Value<DateTime?> completedAt,
       Value<bool> carriedOver,
@@ -3012,6 +3211,8 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
       Value<String> note,
+      Value<String> placeName,
+      Value<String> placeUrl,
       Value<bool> isDone,
       Value<DateTime?> completedAt,
       Value<bool> carriedOver,
@@ -3189,6 +3390,16 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<String> get note => $composableBuilder(
     column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placeName => $composableBuilder(
+    column: $table.placeName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get placeUrl => $composableBuilder(
+    column: $table.placeUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3407,6 +3618,16 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get placeName => $composableBuilder(
+    column: $table.placeName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get placeUrl => $composableBuilder(
+    column: $table.placeUrl,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<bool> get isDone => $composableBuilder(
     column: $table.isDone,
     builder: (column) => ColumnOrderings(column),
@@ -3528,6 +3749,12 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
+
+  GeneratedColumn<String> get placeName =>
+      $composableBuilder(column: $table.placeName, builder: (column) => column);
+
+  GeneratedColumn<String> get placeUrl =>
+      $composableBuilder(column: $table.placeUrl, builder: (column) => column);
 
   GeneratedColumn<bool> get isDone =>
       $composableBuilder(column: $table.isDone, builder: (column) => column);
@@ -3679,6 +3906,8 @@ class $$TasksTableTableManager
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
                 Value<String> note = const Value.absent(),
+                Value<String> placeName = const Value.absent(),
+                Value<String> placeUrl = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<bool> carriedOver = const Value.absent(),
@@ -3706,6 +3935,8 @@ class $$TasksTableTableManager
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,
                 note: note,
+                placeName: placeName,
+                placeUrl: placeUrl,
                 isDone: isDone,
                 completedAt: completedAt,
                 carriedOver: carriedOver,
@@ -3735,6 +3966,8 @@ class $$TasksTableTableManager
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
                 Value<String> note = const Value.absent(),
+                Value<String> placeName = const Value.absent(),
+                Value<String> placeUrl = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
                 Value<DateTime?> completedAt = const Value.absent(),
                 Value<bool> carriedOver = const Value.absent(),
@@ -3762,6 +3995,8 @@ class $$TasksTableTableManager
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,
                 note: note,
+                placeName: placeName,
+                placeUrl: placeUrl,
                 isDone: isDone,
                 completedAt: completedAt,
                 carriedOver: carriedOver,
@@ -4661,6 +4896,8 @@ typedef $$TripStagesTableCreateCompanionBuilder =
       required DateTime endDate,
       Value<String> placeName,
       Value<String> placeUrl,
+      Value<int?> timeMinutes,
+      Value<bool> isDone,
       Value<String> note,
       Value<int> sortIndex,
     });
@@ -4674,6 +4911,8 @@ typedef $$TripStagesTableUpdateCompanionBuilder =
       Value<DateTime> endDate,
       Value<String> placeName,
       Value<String> placeUrl,
+      Value<int?> timeMinutes,
+      Value<bool> isDone,
       Value<String> note,
       Value<int> sortIndex,
     });
@@ -4742,6 +4981,16 @@ class $$TripStagesTableFilterComposer
 
   ColumnFilters<String> get placeUrl => $composableBuilder(
     column: $table.placeUrl,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get timeMinutes => $composableBuilder(
+    column: $table.timeMinutes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4823,6 +5072,16 @@ class $$TripStagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get timeMinutes => $composableBuilder(
+    column: $table.timeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isDone => $composableBuilder(
+    column: $table.isDone,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get note => $composableBuilder(
     column: $table.note,
     builder: (column) => ColumnOrderings(column),
@@ -4886,6 +5145,14 @@ class $$TripStagesTableAnnotationComposer
 
   GeneratedColumn<String> get placeUrl =>
       $composableBuilder(column: $table.placeUrl, builder: (column) => column);
+
+  GeneratedColumn<int> get timeMinutes => $composableBuilder(
+    column: $table.timeMinutes,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isDone =>
+      $composableBuilder(column: $table.isDone, builder: (column) => column);
 
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
@@ -4953,6 +5220,8 @@ class $$TripStagesTableTableManager
                 Value<DateTime> endDate = const Value.absent(),
                 Value<String> placeName = const Value.absent(),
                 Value<String> placeUrl = const Value.absent(),
+                Value<int?> timeMinutes = const Value.absent(),
+                Value<bool> isDone = const Value.absent(),
                 Value<String> note = const Value.absent(),
                 Value<int> sortIndex = const Value.absent(),
               }) => TripStagesCompanion(
@@ -4964,6 +5233,8 @@ class $$TripStagesTableTableManager
                 endDate: endDate,
                 placeName: placeName,
                 placeUrl: placeUrl,
+                timeMinutes: timeMinutes,
+                isDone: isDone,
                 note: note,
                 sortIndex: sortIndex,
               ),
@@ -4977,6 +5248,8 @@ class $$TripStagesTableTableManager
                 required DateTime endDate,
                 Value<String> placeName = const Value.absent(),
                 Value<String> placeUrl = const Value.absent(),
+                Value<int?> timeMinutes = const Value.absent(),
+                Value<bool> isDone = const Value.absent(),
                 Value<String> note = const Value.absent(),
                 Value<int> sortIndex = const Value.absent(),
               }) => TripStagesCompanion.insert(
@@ -4988,6 +5261,8 @@ class $$TripStagesTableTableManager
                 endDate: endDate,
                 placeName: placeName,
                 placeUrl: placeUrl,
+                timeMinutes: timeMinutes,
+                isDone: isDone,
                 note: note,
                 sortIndex: sortIndex,
               ),

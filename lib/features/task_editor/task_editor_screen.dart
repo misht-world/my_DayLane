@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
@@ -9,6 +10,7 @@ import '../../core/undo_snack.dart';
 import '../../domain/dependencies.dart';
 import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
+import '../../services/maps.dart';
 import '../trips/trip_screen.dart';
 
 /// Открывает карточку дела. [existing] == null — создание;
@@ -54,6 +56,8 @@ class TaskEditorScreen extends ConsumerStatefulWidget {
 class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   late final TextEditingController _title;
   late final TextEditingController _note;
+  late final TextEditingController _place;
+  String _placeUrl = '';
 
   late TaskKind _kind;
   late DateTime _start;
@@ -90,6 +94,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final today = dateOnly(widget.initialDate ?? DateTime.now());
     _title = TextEditingController(text: e?.title ?? '');
     _note = TextEditingController(text: e?.note ?? '');
+    _place = TextEditingController(text: e?.placeName ?? '');
+    _placeUrl = e?.placeUrl ?? '';
     _isTrip = e?.isTrip ?? widget.trip;
     _kind = e?.kind ?? (widget.trip ? TaskKind.period : TaskKind.single);
     _start = e?.startDate ?? today;
@@ -129,6 +135,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   void dispose() {
     _title.dispose();
     _note.dispose();
+    _place.dispose();
     for (final s in _subs) {
       s.controller.dispose();
       s.focus.dispose();
@@ -195,6 +202,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           _card(children: [_templateBlock()]),
           const SizedBox(height: 14),
           _card(children: [_colorBlock()]),
+          const SizedBox(height: 14),
+          _card(children: [_placeBlock()]),
           const SizedBox(height: 14),
           _card(children: [_subtaskBlock()]),
           const SizedBox(height: 14),
@@ -668,6 +677,93 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     );
   }
 
+  /// Место дела: название + ссылка на карты (открыть / вставить из буфера).
+  Widget _placeBlock() {
+    final dl = context.dl;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _label('Место'),
+        const SizedBox(height: 2),
+        TextField(
+          controller: _place,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            hintText: 'Адрес или название',
+            border: InputBorder.none,
+            isDense: true,
+            suffixIcon: _placeUrl.isNotEmpty
+                ? IconButton(
+                    tooltip: 'Убрать ссылку на карты',
+                    icon: Icon(Icons.link_off_rounded,
+                        size: 18, color: dl.inkFaint),
+                    onPressed: () => setState(() => _placeUrl = ''),
+                  )
+                : null,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            OutlinedButton.icon(
+              onPressed: () =>
+                  openInMaps(url: _placeUrl, query: _place.text),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: dl.lineStrong),
+                foregroundColor: dl.ink,
+                visualDensity: VisualDensity.compact,
+              ),
+              icon: const Icon(Icons.map_rounded, size: 16),
+              label: const Text('Открыть карты',
+                  style: TextStyle(fontSize: 13)),
+            ),
+            OutlinedButton.icon(
+              onPressed: _pastePlaceLink,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: dl.lineStrong),
+                foregroundColor: dl.ink,
+                visualDensity: VisualDensity.compact,
+              ),
+              icon: const Icon(Icons.content_paste_rounded, size: 16),
+              label: const Text('Вставить ссылку',
+                  style: TextStyle(fontSize: 13)),
+            ),
+            if (_placeUrl.isNotEmpty)
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.link_rounded, size: 14, color: dl.accent),
+                const SizedBox(width: 3),
+                Text('ссылка сохранена',
+                    style: TextStyle(fontSize: 12, color: dl.accent)),
+              ]),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _pastePlaceLink() async {
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    final text = data?.text?.trim() ?? '';
+    if (!mounted) return;
+    if (looksLikeMapsLink(text)) {
+      setState(() {
+        _placeUrl = text;
+        // Если название пустое — пробуем достать из полной ссылки.
+        if (_place.text.trim().isEmpty) {
+          final name = placeNameFromUrl(text);
+          if (name != null) _place.text = name;
+        }
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('В буфере нет ссылки на карты. Скопируйте её в '
+              'приложении карт: Поделиться → Копировать ссылку.')));
+    }
+  }
+
   Widget _colorBlock() {
     final dl = context.dl;
     Widget dot({
@@ -825,6 +921,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
                   controller: _subs[i].controller,
                   focusNode: _subs[i].focus,
                   textCapitalization: TextCapitalization.sentences,
+                  // Длинный текст подпункта переносится, виден полностью.
+                  maxLines: null,
+                  keyboardType: TextInputType.multiline,
                   decoration: const InputDecoration(
                     hintText: 'Пункт',
                     isDense: true,
@@ -1025,6 +1124,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           ? _recurAnchor
           : 0,
       note: _note.text.trim(),
+      placeName: _place.text.trim(),
+      placeUrl: _placeUrl,
       isDone: e?.isDone ?? false,
       completedAt: e?.completedAt,
       carriedOver: e?.carriedOver ?? false,

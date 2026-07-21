@@ -51,6 +51,8 @@ class BackupService {
             'recurrenceInterval': t.recurrenceInterval,
             'recurrenceAnchor': t.recurrenceAnchor,
             'note': t.note,
+            'placeName': t.placeName,
+            'placeUrl': t.placeUrl,
             'isDone': t.isDone,
             'completedAt': ms(t.completedAt),
             'carriedOver': t.carriedOver,
@@ -84,6 +86,8 @@ class BackupService {
             'endDate': x.endDate.millisecondsSinceEpoch,
             'placeName': x.placeName,
             'placeUrl': x.placeUrl,
+            'timeMinutes': x.timeMinutes,
+            'isDone': x.isDone,
             'note': x.note,
             'sortIndex': x.sortIndex,
           }
@@ -155,6 +159,8 @@ class BackupService {
               recurrenceInterval: Value(t['recurrenceInterval'] as int? ?? 1),
               recurrenceAnchor: Value(t['recurrenceAnchor'] as int? ?? 0),
               note: Value(t['note'] as String? ?? ''),
+              placeName: Value(t['placeName'] as String? ?? ''),
+              placeUrl: Value(t['placeUrl'] as String? ?? ''),
               isDone: Value(t['isDone'] as bool),
               completedAt: Value(
                   t['completedAt'] == null ? null : dt(t['completedAt'])),
@@ -191,6 +197,8 @@ class BackupService {
               endDate: Value(dt(x['endDate'])),
               placeName: Value(x['placeName'] as String? ?? ''),
               placeUrl: Value(x['placeUrl'] as String? ?? ''),
+              timeMinutes: Value(x['timeMinutes'] as int?),
+              isDone: Value(x['isDone'] as bool? ?? false),
               note: Value(x['note'] as String? ?? ''),
               sortIndex: Value(x['sortIndex'] as int? ?? 0),
             ));

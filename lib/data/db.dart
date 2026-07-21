@@ -39,6 +39,9 @@ class Tasks extends Table {
       integer().withDefault(const Constant(1))();
   IntColumn get recurrenceAnchor => integer().withDefault(const Constant(0))();
   TextColumn get note => text().withDefault(const Constant(''))();
+  /// Место дела: название и ссылка на карты.
+  TextColumn get placeName => text().withDefault(const Constant(''))();
+  TextColumn get placeUrl => text().withDefault(const Constant(''))();
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
   DateTimeColumn get completedAt => dateTime().nullable()();
   BoolColumn get carriedOver =>
@@ -74,6 +77,9 @@ class TripStages extends Table {
   DateTimeColumn get endDate => dateTime()();
   TextColumn get placeName => text().withDefault(const Constant(''))();
   TextColumn get placeUrl => text().withDefault(const Constant(''))();
+  /// Время дня места (минуты от полуночи). null — не задано.
+  IntColumn get timeMinutes => integer().nullable()();
+  BoolColumn get isDone => boolean().withDefault(const Constant(false))();
   TextColumn get note => text().withDefault(const Constant(''))();
   IntColumn get sortIndex => integer().withDefault(const Constant(0))();
 }
@@ -113,7 +119,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -150,6 +156,12 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 7) {
             await m.addColumn(tasks, tasks.iconId);
+          }
+          if (from < 8) {
+            await m.addColumn(tasks, tasks.placeName);
+            await m.addColumn(tasks, tasks.placeUrl);
+            await m.addColumn(tripStages, tripStages.timeMinutes);
+            await m.addColumn(tripStages, tripStages.isDone);
           }
         },
         beforeOpen: (details) async {
@@ -258,6 +270,8 @@ extension TaskRowMapper on TaskRow {
         recurrenceInterval: recurrenceInterval,
         recurrenceAnchor: recurrenceAnchor,
         note: note,
+        placeName: placeName,
+        placeUrl: placeUrl,
         isDone: isDone,
         completedAt: completedAt,
         carriedOver: carriedOver,
@@ -300,6 +314,8 @@ extension TaskModelMapper on TaskModel {
         recurrenceInterval: Value(recurrenceInterval),
         recurrenceAnchor: Value(recurrenceAnchor),
         note: Value(note),
+        placeName: Value(placeName),
+        placeUrl: Value(placeUrl),
         isDone: Value(isDone),
         completedAt: Value(completedAt),
         carriedOver: Value(carriedOver),
@@ -319,6 +335,8 @@ extension TripStageRowMapper on TripStageRow {
         endDate: endDate,
         placeName: placeName,
         placeUrl: placeUrl,
+        timeMinutes: timeMinutes,
+        isDone: isDone,
         note: note,
         sortIndex: sortIndex,
       );
@@ -334,6 +352,8 @@ extension TripStageModelMapper on TripStageModel {
         endDate: Value(endDate),
         placeName: Value(placeName),
         placeUrl: Value(placeUrl),
+        timeMinutes: Value(timeMinutes),
+        isDone: Value(isDone),
         note: Value(note),
         sortIndex: Value(sortIndex),
       );
