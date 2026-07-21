@@ -83,6 +83,8 @@ class TripStages extends Table {
   IntColumn get timeMinutes => integer().nullable()();
   BoolColumn get isDone => boolean().withDefault(const Constant(false))();
   TextColumn get note => text().withDefault(const Constant(''))();
+  /// Ссылки и файлы этапа — записи через перевод строки.
+  TextColumn get links => text().withDefault(const Constant(''))();
   IntColumn get sortIndex => integer().withDefault(const Constant(0))();
 }
 
@@ -121,7 +123,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -167,6 +169,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 9) {
             await m.addColumn(tasks, tasks.links);
+          }
+          if (from < 10) {
+            await m.addColumn(tripStages, tripStages.links);
           }
         },
         beforeOpen: (details) async {
@@ -345,6 +350,7 @@ extension TripStageRowMapper on TripStageRow {
         timeMinutes: timeMinutes,
         isDone: isDone,
         note: note,
+        links: links,
         sortIndex: sortIndex,
       );
 }
@@ -362,6 +368,7 @@ extension TripStageModelMapper on TripStageModel {
         timeMinutes: Value(timeMinutes),
         isDone: Value(isDone),
         note: Value(note),
+        links: Value(links),
         sortIndex: Value(sortIndex),
       );
 }

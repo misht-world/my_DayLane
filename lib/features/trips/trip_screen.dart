@@ -383,6 +383,20 @@ class _StageCard extends ConsumerWidget {
                                     color: dl.inkSoft,
                                     height: 1.35)),
                           ),
+                        if (parseLinks(stage.links).isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Row(
+                              children: [
+                                Icon(Icons.attach_file_rounded,
+                                    size: 14, color: dl.inkSoft),
+                                const SizedBox(width: 4),
+                                Text('вложений: ${parseLinks(stage.links).length}',
+                                    style: TextStyle(
+                                        fontSize: 12, color: dl.inkSoft)),
+                              ],
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -420,6 +434,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
   late TripStageKind _kind;
   String _placeUrl = '';
   int? _time;
+  List<String> _links = [];
   bool _skipAutosave = false;
 
   bool get _isStay => _kind == TripStageKind.stay;
@@ -437,6 +452,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     _end = e?.endDate ?? (_isStay ? addDays(_start, 1) : _start);
     _placeUrl = e?.placeUrl ?? '';
     _time = e?.timeMinutes;
+    _links = parseLinks(e?.links ?? '');
   }
 
   @override
@@ -654,6 +670,12 @@ class _StageSheetState extends ConsumerState<StageSheet> {
               ),
             ),
             const SizedBox(height: 14),
+            LinksEditor(
+              label: 'Ссылки и файлы (бронь, билет, документ)',
+              links: _links,
+              onChanged: (v) => setState(() => _links = v),
+            ),
+            const SizedBox(height: 14),
             Row(
               children: [
                 if (widget.existing != null)
@@ -755,6 +777,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
         timeMinutes: _isStay ? null : _time,
         isDone: widget.existing?.isDone ?? false,
         note: _note.text.trim(),
+        links: joinLinks(_links),
         sortIndex: widget.existing?.sortIndex ?? 0,
       );
 

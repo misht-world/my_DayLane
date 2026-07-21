@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 const String kAppName = 'DayLane';
 
 /// Версия приложения (синхронизировать с `version:` в pubspec.yaml).
-const String kAppVersion = '1.8.1';
+const String kAppVersion = '1.8.2';
 
 /// Фиксированная палитра цветов дел. `colorId` — индекс в этом списке.
 /// Цвета подобраны так, чтобы читаться и в светлой, и в тёмной теме.

@@ -2590,6 +2590,16 @@ class $TripStagesTable extends TripStages
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _linksMeta = const VerificationMeta('links');
+  @override
+  late final GeneratedColumn<String> links = GeneratedColumn<String>(
+    'links',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _sortIndexMeta = const VerificationMeta(
     'sortIndex',
   );
@@ -2615,6 +2625,7 @@ class $TripStagesTable extends TripStages
     timeMinutes,
     isDone,
     note,
+    links,
     sortIndex,
   ];
   @override
@@ -2697,6 +2708,12 @@ class $TripStagesTable extends TripStages
         note.isAcceptableOrUnknown(data['note']!, _noteMeta),
       );
     }
+    if (data.containsKey('links')) {
+      context.handle(
+        _linksMeta,
+        links.isAcceptableOrUnknown(data['links']!, _linksMeta),
+      );
+    }
     if (data.containsKey('sort_index')) {
       context.handle(
         _sortIndexMeta,
@@ -2758,6 +2775,10 @@ class $TripStagesTable extends TripStages
         DriftSqlType.string,
         data['${effectivePrefix}note'],
       )!,
+      links: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}links'],
+      )!,
       sortIndex: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}sort_index'],
@@ -2790,6 +2811,9 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
   final int? timeMinutes;
   final bool isDone;
   final String note;
+
+  /// Ссылки и файлы этапа — записи через перевод строки.
+  final String links;
   final int sortIndex;
   const TripStageRow({
     required this.id,
@@ -2803,6 +2827,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     this.timeMinutes,
     required this.isDone,
     required this.note,
+    required this.links,
     required this.sortIndex,
   });
   @override
@@ -2823,6 +2848,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     }
     map['is_done'] = Variable<bool>(isDone);
     map['note'] = Variable<String>(note);
+    map['links'] = Variable<String>(links);
     map['sort_index'] = Variable<int>(sortIndex);
     return map;
   }
@@ -2842,6 +2868,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           : Value(timeMinutes),
       isDone: Value(isDone),
       note: Value(note),
+      links: Value(links),
       sortIndex: Value(sortIndex),
     );
   }
@@ -2865,6 +2892,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       timeMinutes: serializer.fromJson<int?>(json['timeMinutes']),
       isDone: serializer.fromJson<bool>(json['isDone']),
       note: serializer.fromJson<String>(json['note']),
+      links: serializer.fromJson<String>(json['links']),
       sortIndex: serializer.fromJson<int>(json['sortIndex']),
     );
   }
@@ -2885,6 +2913,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
       'timeMinutes': serializer.toJson<int?>(timeMinutes),
       'isDone': serializer.toJson<bool>(isDone),
       'note': serializer.toJson<String>(note),
+      'links': serializer.toJson<String>(links),
       'sortIndex': serializer.toJson<int>(sortIndex),
     };
   }
@@ -2901,6 +2930,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     Value<int?> timeMinutes = const Value.absent(),
     bool? isDone,
     String? note,
+    String? links,
     int? sortIndex,
   }) => TripStageRow(
     id: id ?? this.id,
@@ -2914,6 +2944,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     timeMinutes: timeMinutes.present ? timeMinutes.value : this.timeMinutes,
     isDone: isDone ?? this.isDone,
     note: note ?? this.note,
+    links: links ?? this.links,
     sortIndex: sortIndex ?? this.sortIndex,
   );
   TripStageRow copyWithCompanion(TripStagesCompanion data) {
@@ -2931,6 +2962,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           : this.timeMinutes,
       isDone: data.isDone.present ? data.isDone.value : this.isDone,
       note: data.note.present ? data.note.value : this.note,
+      links: data.links.present ? data.links.value : this.links,
       sortIndex: data.sortIndex.present ? data.sortIndex.value : this.sortIndex,
     );
   }
@@ -2949,6 +2981,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           ..write('timeMinutes: $timeMinutes, ')
           ..write('isDone: $isDone, ')
           ..write('note: $note, ')
+          ..write('links: $links, ')
           ..write('sortIndex: $sortIndex')
           ..write(')'))
         .toString();
@@ -2967,6 +3000,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
     timeMinutes,
     isDone,
     note,
+    links,
     sortIndex,
   );
   @override
@@ -2984,6 +3018,7 @@ class TripStageRow extends DataClass implements Insertable<TripStageRow> {
           other.timeMinutes == this.timeMinutes &&
           other.isDone == this.isDone &&
           other.note == this.note &&
+          other.links == this.links &&
           other.sortIndex == this.sortIndex);
 }
 
@@ -2999,6 +3034,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
   final Value<int?> timeMinutes;
   final Value<bool> isDone;
   final Value<String> note;
+  final Value<String> links;
   final Value<int> sortIndex;
   const TripStagesCompanion({
     this.id = const Value.absent(),
@@ -3012,6 +3048,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     this.timeMinutes = const Value.absent(),
     this.isDone = const Value.absent(),
     this.note = const Value.absent(),
+    this.links = const Value.absent(),
     this.sortIndex = const Value.absent(),
   });
   TripStagesCompanion.insert({
@@ -3026,6 +3063,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     this.timeMinutes = const Value.absent(),
     this.isDone = const Value.absent(),
     this.note = const Value.absent(),
+    this.links = const Value.absent(),
     this.sortIndex = const Value.absent(),
   }) : taskId = Value(taskId),
        title = Value(title),
@@ -3043,6 +3081,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     Expression<int>? timeMinutes,
     Expression<bool>? isDone,
     Expression<String>? note,
+    Expression<String>? links,
     Expression<int>? sortIndex,
   }) {
     return RawValuesInsertable({
@@ -3057,6 +3096,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
       if (timeMinutes != null) 'time_minutes': timeMinutes,
       if (isDone != null) 'is_done': isDone,
       if (note != null) 'note': note,
+      if (links != null) 'links': links,
       if (sortIndex != null) 'sort_index': sortIndex,
     });
   }
@@ -3073,6 +3113,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     Value<int?>? timeMinutes,
     Value<bool>? isDone,
     Value<String>? note,
+    Value<String>? links,
     Value<int>? sortIndex,
   }) {
     return TripStagesCompanion(
@@ -3087,6 +3128,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
       timeMinutes: timeMinutes ?? this.timeMinutes,
       isDone: isDone ?? this.isDone,
       note: note ?? this.note,
+      links: links ?? this.links,
       sortIndex: sortIndex ?? this.sortIndex,
     );
   }
@@ -3129,6 +3171,9 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
     if (note.present) {
       map['note'] = Variable<String>(note.value);
     }
+    if (links.present) {
+      map['links'] = Variable<String>(links.value);
+    }
     if (sortIndex.present) {
       map['sort_index'] = Variable<int>(sortIndex.value);
     }
@@ -3149,6 +3194,7 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
           ..write('timeMinutes: $timeMinutes, ')
           ..write('isDone: $isDone, ')
           ..write('note: $note, ')
+          ..write('links: $links, ')
           ..write('sortIndex: $sortIndex')
           ..write(')'))
         .toString();
@@ -4964,6 +5010,7 @@ typedef $$TripStagesTableCreateCompanionBuilder =
       Value<int?> timeMinutes,
       Value<bool> isDone,
       Value<String> note,
+      Value<String> links,
       Value<int> sortIndex,
     });
 typedef $$TripStagesTableUpdateCompanionBuilder =
@@ -4979,6 +5026,7 @@ typedef $$TripStagesTableUpdateCompanionBuilder =
       Value<int?> timeMinutes,
       Value<bool> isDone,
       Value<String> note,
+      Value<String> links,
       Value<int> sortIndex,
     });
 
@@ -5061,6 +5109,11 @@ class $$TripStagesTableFilterComposer
 
   ColumnFilters<String> get note => $composableBuilder(
     column: $table.note,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get links => $composableBuilder(
+    column: $table.links,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -5152,6 +5205,11 @@ class $$TripStagesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get links => $composableBuilder(
+    column: $table.links,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get sortIndex => $composableBuilder(
     column: $table.sortIndex,
     builder: (column) => ColumnOrderings(column),
@@ -5222,6 +5280,9 @@ class $$TripStagesTableAnnotationComposer
   GeneratedColumn<String> get note =>
       $composableBuilder(column: $table.note, builder: (column) => column);
 
+  GeneratedColumn<String> get links =>
+      $composableBuilder(column: $table.links, builder: (column) => column);
+
   GeneratedColumn<int> get sortIndex =>
       $composableBuilder(column: $table.sortIndex, builder: (column) => column);
 
@@ -5288,6 +5349,7 @@ class $$TripStagesTableTableManager
                 Value<int?> timeMinutes = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
                 Value<String> note = const Value.absent(),
+                Value<String> links = const Value.absent(),
                 Value<int> sortIndex = const Value.absent(),
               }) => TripStagesCompanion(
                 id: id,
@@ -5301,6 +5363,7 @@ class $$TripStagesTableTableManager
                 timeMinutes: timeMinutes,
                 isDone: isDone,
                 note: note,
+                links: links,
                 sortIndex: sortIndex,
               ),
           createCompanionCallback:
@@ -5316,6 +5379,7 @@ class $$TripStagesTableTableManager
                 Value<int?> timeMinutes = const Value.absent(),
                 Value<bool> isDone = const Value.absent(),
                 Value<String> note = const Value.absent(),
+                Value<String> links = const Value.absent(),
                 Value<int> sortIndex = const Value.absent(),
               }) => TripStagesCompanion.insert(
                 id: id,
@@ -5329,6 +5393,7 @@ class $$TripStagesTableTableManager
                 timeMinutes: timeMinutes,
                 isDone: isDone,
                 note: note,
+                links: links,
                 sortIndex: sortIndex,
               ),
           withReferenceMapper: (p0) => p0

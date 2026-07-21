@@ -244,6 +244,9 @@ class TripStageModel {
   /// Дневник по итогу этапа: как была гостиница, что посмотрели и пр.
   final String note;
 
+  /// Ссылки и файлы этапа — записи через перевод строки.
+  final String links;
+
   final int sortIndex;
 
   const TripStageModel({
@@ -258,6 +261,7 @@ class TripStageModel {
     this.timeMinutes,
     this.isDone = false,
     this.note = '',
+    this.links = '',
     this.sortIndex = 0,
   });
 
@@ -279,6 +283,7 @@ class TripStageModel {
     Object? timeMinutes = _unset,
     bool? isDone,
     String? note,
+    String? links,
     int? sortIndex,
   }) {
     return TripStageModel(
@@ -295,6 +300,7 @@ class TripStageModel {
           : timeMinutes as int?,
       isDone: isDone ?? this.isDone,
       note: note ?? this.note,
+      links: links ?? this.links,
       sortIndex: sortIndex ?? this.sortIndex,
     );
   }

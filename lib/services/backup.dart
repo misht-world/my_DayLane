@@ -90,6 +90,7 @@ class BackupService {
             'timeMinutes': x.timeMinutes,
             'isDone': x.isDone,
             'note': x.note,
+            'links': x.links,
             'sortIndex': x.sortIndex,
           }
       ],
@@ -202,6 +203,7 @@ class BackupService {
               timeMinutes: Value(x['timeMinutes'] as int?),
               isDone: Value(x['isDone'] as bool? ?? false),
               note: Value(x['note'] as String? ?? ''),
+              links: Value(x['links'] as String? ?? ''),
               sortIndex: Value(x['sortIndex'] as int? ?? 0),
             ));
       }
