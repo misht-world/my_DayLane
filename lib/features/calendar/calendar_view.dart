@@ -319,47 +319,36 @@ class _WeekRow extends StatelessWidget {
             ),
           ));
         }
-        // Чёрная точка-стык там, где выезд из одного жилья совпадает
-        // с заездом в другое в тот же день — смена места видна сразу
-        // (тот же приём, что у соединителей зависимых дел).
-        for (final a in stays) {
-          for (final b in stays) {
-            if (isSameDate(a.checkOut, b.checkIn) &&
-                a.checkOut != b.checkOut) {
-              final x = (daysBetween(weekStart, a.checkOut) + 0.5) * colW;
-              if (x < 0 || x > 7 * colW) continue;
-              bars.add(Positioned(
-                left: x - 3,
-                top: stayTop + 1.5 - 3,
-                width: 6,
-                height: 6,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                      shape: BoxShape.circle, color: context.dl.ink),
+        // Вертикальные чёрточки — заезд и выезд КАЖДОГО жилья (в серединах
+        // дней, как и сама линия). На стыке двух жилий чёрточки совпадают —
+        // получается одна отметка смены места. Нет жилья — нет и чёрточек.
+        for (final stay in stays) {
+          for (final edge in [stay.checkIn, stay.checkOut]) {
+            final x = (daysBetween(weekStart, edge) + 0.5) * colW;
+            if (x < 0 || x > 7 * colW) continue;
+            bars.add(Positioned(
+              left: x - 0.8,
+              top: stayTop + 1.5 - 5,
+              width: 1.6,
+              height: 10,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: context.dl.ink,
+                  borderRadius: BorderRadius.circular(1),
                 ),
-              ));
-            }
+              ),
+            ));
           }
         }
-        // Вертикальные чёрточки — начало и конец поездки.
-        for (final edge in [s, addDays(e, 1)]) {
-          final x = daysBetween(weekStart, edge) * colW;
-          if (x < 0 || x > 7 * colW) continue;
-          bars.add(Positioned(
-            left: x - 0.8,
-            top: stayTop + 1.5 - 5,
-            width: 1.6,
-            height: 10,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: context.dl.ink,
-                borderRadius: BorderRadius.circular(1),
-              ),
-            ),
-          ));
-        }
         // Дела (места-этапы) внутри поездки — чёрные точки по дням;
-        // несколько дел в день = несколько точек рядом.
+        // несколько дел в день = несколько точек рядом. В день заезда/выезда
+        // середина занята чёрточкой — точки сдвигаем правее.
+        final edgeDays = <int>{
+          for (final st in stays) ...[
+            dayKey(st.checkIn),
+            dayKey(st.checkOut),
+          ],
+        };
         final byDay = <int, int>{};
         for (final d in placeDays[t.id] ?? const <DateTime>[]) {
           byDay[dayKey(d)] = (byDay[dayKey(d)] ?? 0) + 1;
@@ -370,7 +359,9 @@ class _WeekRow extends StatelessWidget {
           if (count == 0) continue;
           const dot = 5.0, gap = 3.0;
           final totalW = count * dot + (count - 1) * gap;
-          final startX = (i + 0.5) * colW - totalW / 2;
+          final startX = edgeDays.contains(dayKey(day))
+              ? (i + 0.5) * colW + 5 // справа от чёрточки смены жилья
+              : (i + 0.5) * colW - totalW / 2;
           for (var k = 0; k < count; k++) {
             bars.add(Positioned(
               left: startX + k * (dot + gap),

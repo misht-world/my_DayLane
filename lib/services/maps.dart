@@ -56,15 +56,21 @@ String? placeNameFromUrl(String url) {
   return null;
 }
 
-/// Открывает маршрут через все точки (по названиям) в Google Maps:
-/// https://www.google.com/maps/dir/A/B/C. Одна точка — обычный поиск.
+/// Открывает маршрут через все точки (по названиям) в Google Maps —
+/// официальный Maps URL API (?api=1&origin&destination&waypoints).
+/// Одна точка — обычный поиск.
 Future<bool> openRouteInMaps(List<String> names) async {
   final pts = names.map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
   if (pts.isEmpty) return false;
   if (pts.length == 1) return openInMaps(query: pts.first);
-  final path = pts.map(Uri.encodeComponent).join('/');
+  final origin = Uri.encodeComponent(pts.first);
+  final dest = Uri.encodeComponent(pts.last);
+  final mid = pts.sublist(1, pts.length - 1);
+  final waypoints =
+      mid.isEmpty ? '' : '&waypoints=${mid.map(Uri.encodeComponent).join('%7C')}';
   return launchUrl(
-    Uri.parse('https://www.google.com/maps/dir/$path'),
+    Uri.parse('https://www.google.com/maps/dir/?api=1'
+        '&origin=$origin&destination=$dest$waypoints'),
     mode: LaunchMode.externalApplication,
   );
 }
