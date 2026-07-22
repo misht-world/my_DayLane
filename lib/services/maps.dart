@@ -56,6 +56,42 @@ String? placeNameFromUrl(String url) {
   return null;
 }
 
+/// Пытается достать координаты точки из ПОЛНОЙ ссылки карт:
+/// `!3d<lat>!4d<lng>` (точный пин), `@<lat>,<lng>` (центр карты) или
+/// `?q=<lat>,<lng>`. Возвращает "lat,lng" или null.
+String? coordsFromUrl(String url) {
+  final u = url.trim();
+  final pin = RegExp(r'!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)').firstMatch(u);
+  if (pin != null) return '${pin.group(1)},${pin.group(2)}';
+  final at = RegExp(r'@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)').firstMatch(u);
+  if (at != null) return '${at.group(1)},${at.group(2)}';
+  final q = Uri.tryParse(u)?.queryParameters['q'];
+  if (q != null &&
+      RegExp(r'^-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+$').hasMatch(q)) {
+    return q.replaceAll(' ', '');
+  }
+  return null;
+}
+
+/// Открывает маршрут через точки (координаты или названия) в Google Maps —
+/// официальный Maps URL API (?api=1&origin&destination&waypoints).
+Future<bool> openRouteInMaps(List<String> points) async {
+  final pts = points.map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
+  if (pts.isEmpty) return false;
+  if (pts.length == 1) return openInMaps(query: pts.first);
+  final origin = Uri.encodeComponent(pts.first);
+  final dest = Uri.encodeComponent(pts.last);
+  final mid = pts.sublist(1, pts.length - 1);
+  final waypoints = mid.isEmpty
+      ? ''
+      : '&waypoints=${mid.map(Uri.encodeComponent).join('%7C')}';
+  return launchUrl(
+    Uri.parse('https://www.google.com/maps/dir/?api=1'
+        '&origin=$origin&destination=$dest$waypoints'),
+    mode: LaunchMode.externalApplication,
+  );
+}
+
 /// Открывает место во внешних картах: по сохранённой ссылке, иначе —
 /// поиском по названию (geo:, при неудаче — веб-ссылка Google Maps).
 Future<bool> openInMaps({String url = '', String query = ''}) async {
