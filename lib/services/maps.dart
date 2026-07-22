@@ -56,6 +56,19 @@ String? placeNameFromUrl(String url) {
   return null;
 }
 
+/// Открывает маршрут через все точки (по названиям) в Google Maps:
+/// https://www.google.com/maps/dir/A/B/C. Одна точка — обычный поиск.
+Future<bool> openRouteInMaps(List<String> names) async {
+  final pts = names.map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
+  if (pts.isEmpty) return false;
+  if (pts.length == 1) return openInMaps(query: pts.first);
+  final path = pts.map(Uri.encodeComponent).join('/');
+  return launchUrl(
+    Uri.parse('https://www.google.com/maps/dir/$path'),
+    mode: LaunchMode.externalApplication,
+  );
+}
+
 /// Открывает место во внешних картах: по сохранённой ссылке, иначе —
 /// поиском по названию (geo:, при неудаче — веб-ссылка Google Maps).
 Future<bool> openInMaps({String url = '', String query = ''}) async {

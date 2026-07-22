@@ -54,6 +54,25 @@ class TripScreen extends ConsumerWidget {
         children: [
           _header(context, trip, color),
           _staysBanner(context, trip, stages),
+          // Все точки поездки (с названиями) одним маршрутом в Google Maps.
+          if (stages.any((s) => s.placeName.trim().isNotEmpty))
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: OutlinedButton.icon(
+                onPressed: () => openRouteInMaps([
+                  for (final s in stages)
+                    if (s.placeName.trim().isNotEmpty) s.placeName,
+                ]),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: dl.lineStrong),
+                  foregroundColor: dl.ink,
+                  visualDensity: VisualDensity.compact,
+                ),
+                icon: const Icon(Icons.map_rounded, size: 16),
+                label: const Text('Все точки на карте',
+                    style: TextStyle(fontSize: 13)),
+              ),
+            ),
           const SizedBox(height: 16),
           Row(
             children: [

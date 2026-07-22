@@ -66,6 +66,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final visibleLanes = totalLanes < _maxLanes ? totalLanes : _maxLanes;
     final dones = ref.watch(donesMapProvider);
     final stayRanges = ref.watch(tripStayRangesProvider);
+    final placeDays = ref.watch(tripPlaceDaysProvider);
 
     final weekdays = _orderedWeekdays(firstWeekday);
     final end = addDays(start, _gridDays - 1);
@@ -158,6 +159,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                     isLastRow: r == _gridRows - 1,
                     dones: dones,
                     stayRanges: stayRanges,
+                    placeDays: placeDays,
                     onTapDay: _showDay,
                     onAddDay: (day) =>
                         openTaskEditor(context, null, initialDate: day),
@@ -234,6 +236,7 @@ class _WeekRow extends StatelessWidget {
     required this.isLastRow,
     required this.dones,
     required this.stayRanges,
+    required this.placeDays,
     required this.onTapDay,
     required this.onAddDay,
   });
@@ -251,6 +254,9 @@ class _WeekRow extends StatelessWidget {
 
   /// Отрезки жилья по поездкам: taskId → (заезд, выезд).
   final Map<int, List<({DateTime checkIn, DateTime checkOut})>> stayRanges;
+
+  /// Дни мест-этапов по поездкам (с повторами).
+  final Map<int, List<DateTime>> placeDays;
   final void Function(DateTime) onTapDay;
   final void Function(DateTime) onAddDay;
 
@@ -333,6 +339,49 @@ class _WeekRow extends StatelessWidget {
                 ),
               ));
             }
+          }
+        }
+        // Вертикальные чёрточки — начало и конец поездки.
+        for (final edge in [s, addDays(e, 1)]) {
+          final x = daysBetween(weekStart, edge) * colW;
+          if (x < 0 || x > 7 * colW) continue;
+          bars.add(Positioned(
+            left: x - 0.8,
+            top: stayTop + 1.5 - 5,
+            width: 1.6,
+            height: 10,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: context.dl.ink,
+                borderRadius: BorderRadius.circular(1),
+              ),
+            ),
+          ));
+        }
+        // Дела (места-этапы) внутри поездки — чёрные точки по дням;
+        // несколько дел в день = несколько точек рядом.
+        final byDay = <int, int>{};
+        for (final d in placeDays[t.id] ?? const <DateTime>[]) {
+          byDay[dayKey(d)] = (byDay[dayKey(d)] ?? 0) + 1;
+        }
+        for (var i = 0; i < 7; i++) {
+          final day = addDays(weekStart, i);
+          final count = byDay[dayKey(day)] ?? 0;
+          if (count == 0) continue;
+          const dot = 5.0, gap = 3.0;
+          final totalW = count * dot + (count - 1) * gap;
+          final startX = (i + 0.5) * colW - totalW / 2;
+          for (var k = 0; k < count; k++) {
+            bars.add(Positioned(
+              left: startX + k * (dot + gap),
+              top: stayTop + 1.5 - dot / 2,
+              width: dot,
+              height: dot,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle, color: context.dl.ink),
+              ),
+            ));
           }
         }
       }

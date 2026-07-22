@@ -145,6 +145,22 @@ final _allStagesProvider = StreamProvider<List<TripStageRow>>(
   (ref) => ref.watch(databaseProvider).watchAllStages(),
 );
 
+/// Дни мест-этапов (активностей) по поездкам: taskId → список дней
+/// (с повторами — несколько дел в день = несколько записей).
+final tripPlaceDaysProvider = Provider<Map<int, List<DateTime>>>((ref) {
+  final rows = ref.watch(_allStagesProvider).value ?? const [];
+  final map = <int, List<DateTime>>{};
+  for (final r in rows) {
+    if (r.kind != TripStageKind.place) continue;
+    for (var d = dateOnly(r.startDate);
+        !d.isAfter(dateOnly(r.endDate));
+        d = addDays(d, 1)) {
+      map.putIfAbsent(r.taskId, () => []).add(d);
+    }
+  }
+  return map;
+});
+
 /// Отрезки жилья по поездкам: taskId → список (заезд, выезд).
 /// Для календаря: полоса проживания рисуется от середины дня заезда до
 /// середины дня выезда — поэтому день переезда стыкуется встык и видно,

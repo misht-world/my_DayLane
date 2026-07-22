@@ -180,6 +180,21 @@ class TaskRepository {
     }
   }
 
+  /// Добавляет подпункт к делу (в конец). Выполненное дело при этом снова
+  /// становится невыполненным — новый пункт ещё не сделан.
+  Future<void> addSubtask(int taskId, String title) async {
+    final siblings = await _subtasks.getForTask(taskId);
+    final nextSort = siblings.isEmpty
+        ? 0
+        : siblings.map((s) => s.sortIndex).reduce((a, b) => a > b ? a : b) + 1;
+    await _subtasks.insertSubtask(
+        SubtaskModel(taskId: taskId, title: title, sortIndex: nextSort));
+    final parent = await _tasks.getById(taskId);
+    if (parent != null && parent.isDone && !parent.isRecurring) {
+      await _tasks.setDone(taskId, false, DateTime.now());
+    }
+  }
+
   /// Отмечает/снимает выполнение конкретного вхождения повторяющегося дела.
   Future<void> toggleOccurrence(
       TaskModel task, DateTime day, bool done) async {

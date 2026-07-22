@@ -357,15 +357,61 @@ class SubtaskChecklist extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.only(left: 34, bottom: 6),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (var i = 0; i < subs.length; i++) ...[
             // Линия между подпунктами: с отступом слева, без точек.
             if (i > 0) Container(height: 1, color: dl.ink),
             _subRow(context, ref, subs[i], task),
           ],
+          // Добавить подпункт прямо из списка.
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => _addSubtask(context, ref),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.add_rounded, size: 17, color: dl.accent),
+                  const SizedBox(width: 8),
+                  Text('пункт',
+                      style: TextStyle(fontSize: 13, color: dl.accent)),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
+  }
+
+  Future<void> _addSubtask(BuildContext context, WidgetRef ref) async {
+    final ctrl = TextEditingController();
+    final title = await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Новый пункт'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: const InputDecoration(hintText: 'Что сделать?'),
+          onSubmitted: (v) => Navigator.pop(context, v.trim()),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Отмена')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, ctrl.text.trim()),
+              child: const Text('Добавить')),
+        ],
+      ),
+    );
+    if (title != null && title.isNotEmpty) {
+      await ref.read(repositoryProvider).addSubtask(taskId, title);
+    }
   }
 
   /// Кружок-галочка переключает выполнение; тап по тексту открывает карточку
