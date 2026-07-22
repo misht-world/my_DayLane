@@ -111,6 +111,13 @@ String? coordsFromUrl(String url) {
   if (pin != null) return '${pin.group(1)},${pin.group(2)}';
   final at = RegExp(r'@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)').firstMatch(u);
   if (at != null) return '${at.group(1)},${at.group(2)}';
+  // /maps/search/<lat>,+<lng> — так разворачиваются короткие ссылки шаринга
+  // (плюс/пробел между координатами). Требуем ≥3 знаков после точки,
+  // чтобы не зацепить случайные числа.
+  final search = RegExp(
+          r'(-?\d{1,3}\.\d{3,})(?:%2C|,)(?:\+|%2B|\s|%20)?(-?\d{1,3}\.\d{3,})')
+      .firstMatch(u);
+  if (search != null) return '${search.group(1)},${search.group(2)}';
   final q = Uri.tryParse(u)?.queryParameters['q'];
   if (q != null &&
       RegExp(r'^-?\d{1,3}\.\d+,\s*-?\d{1,3}\.\d+$').hasMatch(q)) {
