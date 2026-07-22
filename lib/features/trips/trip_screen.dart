@@ -54,22 +54,20 @@ class TripScreen extends ConsumerWidget {
         children: [
           _header(context, trip, color),
           _staysBanner(context, trip, stages),
-          // Все точки поездки (с названиями) одним маршрутом в Google Maps.
-          if (stages.any((s) => s.placeName.trim().isNotEmpty))
+          // Список всех точек поездки: тап открывает точку в картах по её
+          // сохранённой ссылке (точное место, без геокодинга по названию).
+          if (stages.any((s) => s.hasPlace))
             Padding(
               padding: const EdgeInsets.only(top: 10),
               child: OutlinedButton.icon(
-                onPressed: () => openRouteInMaps([
-                  for (final s in stages)
-                    if (s.placeName.trim().isNotEmpty) s.placeName,
-                ]),
+                onPressed: () => _showPoints(context, stages),
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: dl.lineStrong),
                   foregroundColor: dl.ink,
                   visualDensity: VisualDensity.compact,
                 ),
                 icon: const Icon(Icons.map_rounded, size: 16),
-                label: const Text('Все точки на карте',
+                label: const Text('Точки поездки',
                     style: TextStyle(fontSize: 13)),
               ),
             ),
@@ -148,6 +146,52 @@ class TripScreen extends ConsumerWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  /// Список точек поездки: тап — открыть в картах по сохранённой ссылке
+  /// (или поиском по названию, если ссылки нет).
+  void _showPoints(BuildContext context, List<TripStageModel> stages) {
+    final dl = context.dl;
+    final points = stages.where((s) => s.hasPlace).toList();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: dl.surface,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: 12),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('Точки поездки',
+                  style: context.serif.copyWith(fontSize: 17, color: dl.ink)),
+            ),
+            for (final s in points)
+              ListTile(
+                dense: true,
+                leading: Icon(
+                    s.isStay ? Icons.hotel_rounded : Icons.place_rounded,
+                    size: 20,
+                    color: dl.inkSoft),
+                title: Text(
+                    s.placeName.isNotEmpty ? s.placeName : s.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                subtitle: Text(
+                    s.isStay
+                        ? 'заезд ${formatDayMonth(s.startDate)}'
+                        : formatDayMonth(s.startDate),
+                    style: TextStyle(fontSize: 12, color: dl.inkFaint)),
+                trailing:
+                    Icon(Icons.open_in_new_rounded, size: 17, color: dl.accent),
+                onTap: () =>
+                    openInMaps(url: s.placeUrl, query: s.placeName),
+              ),
+          ],
+        ),
       ),
     );
   }
