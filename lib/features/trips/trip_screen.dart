@@ -155,18 +155,27 @@ class TripScreen extends ConsumerWidget {
   void _showPoints(BuildContext context, List<TripStageModel> stages) {
     final dl = context.dl;
     final points = stages.where((s) => s.hasPlace).toList();
-    // Точка для маршрута: координаты из ссылки (надёжно), иначе — название.
-    String? routePoint(TripStageModel s) {
-      final c = coordsFromUrl(s.placeUrl);
-      if (c != null) return c;
-      final n = s.placeName.trim();
-      return n.isEmpty ? null : n;
-    }
+    final routable = points
+        .where((s) =>
+            s.placeUrl.trim().isNotEmpty || s.placeName.trim().isNotEmpty)
+        .length;
 
-    final routePts = [
-      for (final s in points)
-        if (routePoint(s) != null) routePoint(s)!,
-    ];
+    // Точки маршрута: координаты из ссылки (короткую разворачиваем в сети),
+    // фолбэк — название. Координаты геокодятся всегда, названия — как повезёт.
+    Future<void> openRoute() async {
+      final pts = <String>[];
+      for (final s in points) {
+        var coords = coordsFromUrl(s.placeUrl);
+        if (coords == null && isShortMapsLink(s.placeUrl)) {
+          final full = await resolveMapsShortLink(s.placeUrl);
+          if (full != null) coords = coordsFromUrl(full);
+        }
+        final p = coords ??
+            (s.placeName.trim().isNotEmpty ? s.placeName.trim() : null);
+        if (p != null) pts.add(p);
+      }
+      await openRouteInMaps(pts);
+    }
     showModalBottomSheet(
       context: context,
       backgroundColor: dl.surface,
@@ -181,7 +190,7 @@ class TripScreen extends ConsumerWidget {
               child: Text('Точки поездки',
                   style: context.serif.copyWith(fontSize: 17, color: dl.ink)),
             ),
-            if (routePts.length >= 2) ...[
+            if (routable >= 2) ...[
               ListTile(
                 dense: true,
                 leading:
@@ -191,7 +200,7 @@ class TripScreen extends ConsumerWidget {
                         color: dl.accent, fontWeight: FontWeight.w500)),
                 subtitle: Text('через все точки по порядку',
                     style: TextStyle(fontSize: 12, color: dl.inkFaint)),
-                onTap: () => openRouteInMaps(routePts),
+                onTap: openRoute,
               ),
               Divider(height: 1, color: dl.line),
             ],
@@ -839,11 +848,18 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     final text = data?.text?.trim() ?? '';
     if (!mounted) return;
     if (looksLikeMapsLink(text)) {
+      // Короткую ссылку разворачиваем в полную (в ней координаты и название).
+      var stored = text;
+      if (isShortMapsLink(text)) {
+        final full = await resolveMapsShortLink(text);
+        if (full != null && looksLikeMapsLink(full)) stored = full;
+      }
+      if (!mounted) return;
       setState(() {
-        _placeUrl = text;
+        _placeUrl = stored;
         // Если название пустое — пробуем достать из полной ссылки.
         if (_place.text.trim().isEmpty) {
-          final name = placeNameFromUrl(text);
+          final name = placeNameFromUrl(stored);
           if (name != null) _place.text = name;
         }
       });

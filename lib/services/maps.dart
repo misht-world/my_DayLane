@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:url_launcher/url_launcher.dart';
 
 /// Открытие мест во внешнем приложении карт (Google Maps и т.п.).
@@ -54,6 +57,49 @@ String? placeNameFromUrl(String url) {
     if (name.isNotEmpty) return name;
   }
   return null;
+}
+
+/// Короткая ли это ссылка карт (maps.app.goo.gl / goo.gl) — в них нет
+/// ни названия, ни координат, всё содержится в полной ссылке после редиректа.
+bool isShortMapsLink(String url) {
+  final h = Uri.tryParse(url.trim())?.host.toLowerCase() ?? '';
+  return h == 'maps.app.goo.gl' || h == 'goo.gl' || h.endsWith('.goo.gl');
+}
+
+/// Разворачивает короткую ссылку карт в полную, следуя редиректам
+/// (максимум 5, таймаут ~5 с). Возвращает первую ссылку вида google…/maps/…
+/// или null (нет сети/не разложилось). Единственное сетевое место приложения.
+Future<String?> resolveMapsShortLink(String url) async {
+  final start = Uri.tryParse(url.trim());
+  if (start == null || !isShortMapsLink(url)) return null;
+  final client = HttpClient()
+    ..connectionTimeout = const Duration(seconds: 4);
+  try {
+    var current = start;
+    for (var i = 0; i < 5; i++) {
+      final req = await client.getUrl(current);
+      req.followRedirects = false;
+      final res = await req.close().timeout(const Duration(seconds: 5));
+      unawaited(res.drain<void>().catchError((_) {}));
+      if (res.statusCode < 300 || res.statusCode >= 400) break;
+      final loc = res.headers.value(HttpHeaders.locationHeader);
+      if (loc == null) break;
+      final next = Uri.parse(loc);
+      current = next.isAbsolute ? next : current.resolve(loc);
+      // Первая же полная ссылка карт — то, что нужно (дальше может быть
+      // consent-страница и пр.).
+      if (current.host.contains('google') &&
+          current.path.contains('/maps')) {
+        return current.toString();
+      }
+    }
+    final s = current.toString();
+    return s == url.trim() ? null : s;
+  } catch (_) {
+    return null;
+  } finally {
+    client.close(force: true);
+  }
 }
 
 /// Пытается достать координаты точки из ПОЛНОЙ ссылки карт:

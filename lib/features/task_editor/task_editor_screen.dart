@@ -760,11 +760,18 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final text = data?.text?.trim() ?? '';
     if (!mounted) return;
     if (looksLikeMapsLink(text)) {
+      // Короткую ссылку разворачиваем в полную (в ней координаты и название).
+      var stored = text;
+      if (isShortMapsLink(text)) {
+        final full = await resolveMapsShortLink(text);
+        if (full != null && looksLikeMapsLink(full)) stored = full;
+      }
+      if (!mounted) return;
       setState(() {
-        _placeUrl = text;
+        _placeUrl = stored;
         // Если название пустое — пробуем достать из полной ссылки.
         if (_place.text.trim().isEmpty) {
-          final name = placeNameFromUrl(text);
+          final name = placeNameFromUrl(stored);
           if (name != null) _place.text = name;
         }
       });

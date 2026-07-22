@@ -4,6 +4,10 @@
     <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <!-- Только для разворачивания коротких ссылок Google Maps (maps.app.goo.gl)
+         в полные — в коротких нет ни названия, ни координат. Никаких других
+         сетевых запросов приложение не делает. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="DayLane"
         android:name="${applicationName}"
