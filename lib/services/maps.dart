@@ -127,20 +127,16 @@ String? coordsFromUrl(String url) {
 }
 
 /// Открывает маршрут через точки (координаты или названия) в Google Maps —
-/// официальный Maps URL API (?api=1&origin&destination&waypoints).
+/// формат пути `/maps/dir/P1/P2/P3`. Официальный `?api=1&waypoints=…`
+/// нативное приложение карт манглит: destination теряется, промежуточная
+/// точка становится конечной (проверено на устройстве) — не использовать.
 Future<bool> openRouteInMaps(List<String> points) async {
   final pts = points.map((n) => n.trim()).where((n) => n.isNotEmpty).toList();
   if (pts.isEmpty) return false;
   if (pts.length == 1) return openInMaps(query: pts.first);
-  final origin = Uri.encodeComponent(pts.first);
-  final dest = Uri.encodeComponent(pts.last);
-  final mid = pts.sublist(1, pts.length - 1);
-  final waypoints = mid.isEmpty
-      ? ''
-      : '&waypoints=${mid.map(Uri.encodeComponent).join('%7C')}';
+  final path = pts.map(Uri.encodeComponent).join('/');
   return launchUrl(
-    Uri.parse('https://www.google.com/maps/dir/?api=1'
-        '&origin=$origin&destination=$dest$waypoints'),
+    Uri.parse('https://www.google.com/maps/dir/$path'),
     mode: LaunchMode.externalApplication,
   );
 }

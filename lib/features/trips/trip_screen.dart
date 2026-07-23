@@ -154,11 +154,15 @@ class TripScreen extends ConsumerWidget {
   /// (или поиском по названию, если ссылки нет).
   void _showPoints(BuildContext context, List<TripStageModel> stages) {
     final dl = context.dl;
-    final points = stages.where((s) => s.hasPlace).toList();
-    final routable = points
-        .where((s) =>
-            s.placeUrl.trim().isNotEmpty || s.placeName.trim().isNotEmpty)
-        .length;
+    // Все этапы поездки: у этапа без заданного места точкой служит название.
+    final points = stages
+        .where((s) => s.hasPlace || s.title.trim().isNotEmpty)
+        .toList();
+    final routable = points.length;
+
+    // Имя точки: место, иначе название этапа.
+    String pointName(TripStageModel s) =>
+        s.placeName.trim().isNotEmpty ? s.placeName.trim() : s.title.trim();
 
     // Точки маршрута: координаты из ссылки (короткую разворачиваем в сети),
     // фолбэк — название. Координаты геокодятся всегда, названия — как повезёт.
@@ -170,9 +174,8 @@ class TripScreen extends ConsumerWidget {
           final full = await resolveMapsShortLink(s.placeUrl);
           if (full != null) coords = coordsFromUrl(full);
         }
-        final p = coords ??
-            (s.placeName.trim().isNotEmpty ? s.placeName.trim() : null);
-        if (p != null) pts.add(p);
+        final p = coords ?? pointName(s);
+        if (p.isNotEmpty) pts.add(p);
       }
       await openRouteInMaps(pts);
     }
@@ -223,7 +226,7 @@ class TripScreen extends ConsumerWidget {
                 trailing:
                     Icon(Icons.open_in_new_rounded, size: 17, color: dl.accent),
                 onTap: () =>
-                    openInMaps(url: s.placeUrl, query: s.placeName),
+                    openInMaps(url: s.placeUrl, query: pointName(s)),
               ),
           ],
         ),
