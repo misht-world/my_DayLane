@@ -107,6 +107,22 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     _scrollToDate(DateTime(base.year, base.month + delta, 1));
   }
 
+  /// Прокрутка календаря пальцем в центральной зоне (список сам не скроллится).
+  void _dragScroll(double delta) {
+    if (!_scroll.hasClients) return;
+    final max = _scroll.position.maxScrollExtent;
+    _scroll.jumpTo((_scroll.offset - delta).clamp(0.0, max));
+  }
+
+  /// Инерция после броска: пролистываем на расстояние по скорости жеста.
+  void _flingScroll(double velocity) {
+    if (!_scroll.hasClients || velocity == 0) return;
+    final max = _scroll.position.maxScrollExtent;
+    final target = (_scroll.offset - velocity * 0.25).clamp(0.0, max);
+    _scroll.animateTo(target,
+        duration: const Duration(milliseconds: 300), curve: Curves.easeOut);
+  }
+
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
@@ -212,32 +228,57 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         ),
         const SizedBox(height: 4),
         // Окно календаря со своим вертикальным скроллом — недели непрерывно.
+        // Прокрутка календаря — только жестом в ЦЕНТРЕ (колонки вт…сб); по
+        // краям (пн и вс) вертикальный жест уходит общей прокрутке страницы.
+        // Поэтому сам список физически не скроллится (NeverScrollable), а
+        // центральная зона двигает его через контроллер.
         SizedBox(
           height: rowHeight * _visibleWeeks,
           child: LayoutBuilder(builder: (context, c) {
             final colW = c.maxWidth / 7;
-            return ListView.builder(
-              controller: _scroll,
-              padding: EdgeInsets.zero,
-              itemCount: _weeksSpan,
-              itemExtent: rowHeight,
-              itemBuilder: (context, i) => _WeekRow(
-                weekStart: addDays(_originWeek, i * 7),
-                today: today,
-                focused: focused,
-                anchorMonth: visM.month,
-                colW: colW,
-                tasks: tasks,
-                laneOf: laneOf,
-                visibleLanes: visibleLanes,
-                isLastRow: false,
-                dones: dones,
-                stayRanges: stayRanges,
-                placeDays: placeDays,
-                onTapDay: _showDay,
-                onAddDay: (day) =>
-                    openTaskEditor(context, null, initialDate: day),
-              ),
+            return Stack(
+              children: [
+                ListView.builder(
+                  controller: _scroll,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: _weeksSpan,
+                  itemExtent: rowHeight,
+                  itemBuilder: (context, i) => _WeekRow(
+                    weekStart: addDays(_originWeek, i * 7),
+                    today: today,
+                    focused: focused,
+                    anchorMonth: visM.month,
+                    colW: colW,
+                    tasks: tasks,
+                    laneOf: laneOf,
+                    visibleLanes: visibleLanes,
+                    isLastRow: false,
+                    dones: dones,
+                    stayRanges: stayRanges,
+                    placeDays: placeDays,
+                    onTapDay: _showDay,
+                    onAddDay: (day) =>
+                        openTaskEditor(context, null, initialDate: day),
+                  ),
+                ),
+                // Центральная зона (без крайних колонок) ловит вертикальный
+                // жест и прокручивает календарь; тапы по дням/полосам проходят
+                // насквозь (translucent, без обработки тапа).
+                Positioned(
+                  left: colW,
+                  right: colW,
+                  top: 0,
+                  bottom: 0,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.translucent,
+                    onVerticalDragUpdate: (d) => _dragScroll(d.primaryDelta ?? 0),
+                    onVerticalDragEnd: (d) =>
+                        _flingScroll(d.primaryVelocity ?? 0),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ],
             );
           }),
         ),
