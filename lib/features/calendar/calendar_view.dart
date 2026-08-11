@@ -20,11 +20,11 @@ void openTaskOrTrip(BuildContext context, TaskModel t) {
   }
 }
 
-/// Окно календаря: 5 недель (35 дней). При листании на соседний месяц
-/// одна неделя остаётся внахлёст — для непрерывности.
-const int _gridDays = 35;
-const int _gridRows = 5;
-const int _stepDays = 28; // шаг листания = 4 недели (нахлёст в 1 неделю)
+/// Сколько недель видно в окне календаря (у окна свой вертикальный скролл).
+const int _visibleWeeks = 5;
+
+/// Общий диапазон прокрутки в неделях (~11 лет вокруг «сегодня»).
+const int _weeksSpan = 574;
 
 /// Максимум видимых дорожек; остальное сворачивается в «+N».
 const int _maxLanes = 3;
@@ -43,8 +43,69 @@ class CalendarView extends ConsumerStatefulWidget {
 }
 
 class _CalendarViewState extends ConsumerState<CalendarView> {
-  /// Якорная дата отображаемого периода (по умолчанию — сегодня).
   static const _weekdayShort = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+
+  final ScrollController _scroll = ScrollController();
+
+  /// Месяц, к которому относится верх видимой области (для шапки и подсветки).
+  DateTime? _visibleMonth;
+
+  /// Последняя фокусная дата — чтобы прокрутить календарь при её смене в шапке.
+  DateTime? _lastFocused;
+  bool _didInitialJump = false;
+
+  // Параметры прокрутки: заполняются в build, читаются в слушателе/переходах.
+  DateTime _originWeek = DateTime(2020, 1, 1);
+  double _rowH = 60;
+  int _firstWeekday = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _scroll.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_onScroll);
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// По прокрутке определяем месяц верхней видимой недели и обновляем шапку.
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final top = (_scroll.offset / _rowH).floor().clamp(0, _weeksSpan - 1);
+    // Середина недели репрезентует её месяц (неделя может лежать на стыке).
+    final mid = addDays(_originWeek, top * 7 + 3);
+    final m = DateTime(mid.year, mid.month);
+    if (_visibleMonth == null ||
+        m.year != _visibleMonth!.year ||
+        m.month != _visibleMonth!.month) {
+      setState(() => _visibleMonth = m);
+    }
+  }
+
+  int _weekIndex(DateTime day) =>
+      (daysBetween(_originWeek, _startOfWeek(day, _firstWeekday)) ~/ 7)
+          .clamp(0, _weeksSpan - 1);
+
+  void _scrollToDate(DateTime day, {bool animate = true}) {
+    if (!_scroll.hasClients) return;
+    final max = _scroll.position.maxScrollExtent;
+    final off = (_weekIndex(day) * _rowH).clamp(0.0, max);
+    if (animate) {
+      _scroll.animateTo(off,
+          duration: const Duration(milliseconds: 260), curve: Curves.easeOut);
+    } else {
+      _scroll.jumpTo(off);
+    }
+  }
+
+  void _jumpMonths(int delta) {
+    final DateTime base = _visibleMonth ?? ref.read(focusedDateProvider);
+    _scrollToDate(DateTime(base.year, base.month + delta, 1));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -53,14 +114,11 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final settings = ref.watch(settingsProvider).value;
     final firstWeekday = settings?.firstWeekday ?? 1;
     final tasks = ref.watch(tasksProvider).value ?? const [];
+    final focused = ref.watch(focusedDateProvider);
 
-    // Календарь следует за выбранной датой (шапка/секции и календарь — единое
-    // состояние). Якорь = фокусная дата.
-    final anchor = ref.watch(focusedDateProvider);
-    final start = _startOfWeek(anchor, firstWeekday);
-    final lanes = packLanes(
-      tasks.where((t) => _intersectsRange(t, start, _gridDays)),
-    );
+    // Дорожки — по всем периодам (глобально), чтобы полоса лежала на одной
+    // дорожке в любой прокрученной неделе.
+    final lanes = packLanes(tasks.where((t) => t.isPeriod));
     final laneOf = {for (final li in lanes) li.task.id: li.lane};
     final totalLanes = laneCount(lanes);
     final visibleLanes = totalLanes < _maxLanes ? totalLanes : _maxLanes;
@@ -69,8 +127,28 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
     final placeDays = ref.watch(tripPlaceDaysProvider);
 
     final weekdays = _orderedWeekdays(firstWeekday);
-    final end = addDays(start, _gridDays - 1);
-    final showToday = today.isBefore(start) || today.isAfter(end);
+    final rowHeight = _head + visibleLanes * _laneHeight + 8;
+
+    // Параметры прокрутки — обновляем перед построением списка.
+    _firstWeekday = firstWeekday;
+    _rowH = rowHeight;
+    _originWeek = _startOfWeek(DateTime(today.year - 5, 1, 1), firstWeekday);
+    _visibleMonth ??= DateTime(focused.year, focused.month);
+
+    // Смена фокусной даты в шапке прокручивает календарь к ней (первый раз —
+    // мгновенно, дальше — плавно). Свободная прокрутка фокус не трогает.
+    if (_lastFocused == null || !isSameDate(_lastFocused!, focused)) {
+      final firstTime = !_didInitialJump;
+      _lastFocused = focused;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _scrollToDate(focused, animate: !firstTime);
+        _didInitialJump = true;
+      });
+    }
+
+    final visM = _visibleMonth ?? DateTime(focused.year, focused.month);
+    final showToday = today.year != visM.year || today.month != visM.month;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -79,24 +157,23 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           padding: const EdgeInsets.fromLTRB(0, 0, 4, 12),
           child: Row(
             children: [
-              _navArrow(context, Icons.chevron_left_rounded, () => _shift(-1)),
+              _navArrow(context, Icons.chevron_left_rounded, () => _jumpMonths(-1)),
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => _pickMonth(context, anchor),
+                onTap: () => _pickMonth(context, visM),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                  child: Text(formatMonthYear(anchor),
+                  child: Text(formatMonthYear(visM),
                       style:
                           context.serif.copyWith(fontSize: 16, color: dl.ink)),
                 ),
               ),
-              _navArrow(context, Icons.chevron_right_rounded, () => _shift(1)),
+              _navArrow(context, Icons.chevron_right_rounded, () => _jumpMonths(1)),
               const Spacer(),
               if (showToday)
                 GestureDetector(
                   behavior: HitTestBehavior.opaque,
-                  onTap: () =>
-                      ref.read(focusedDateProvider.notifier).set(today),
+                  onTap: () => _scrollToDate(today),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 6),
@@ -134,37 +211,33 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
           ],
         ),
         const SizedBox(height: 4),
-        // Свайп влево/вправо листает на соседний период (с нахлёстом в неделю).
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onHorizontalDragEnd: (d) {
-            final v = d.primaryVelocity ?? 0;
-            if (v > 120) _shift(-1);
-            if (v < -120) _shift(1);
-          },
+        // Окно календаря со своим вертикальным скроллом — недели непрерывно.
+        SizedBox(
+          height: rowHeight * _visibleWeeks,
           child: LayoutBuilder(builder: (context, c) {
             final colW = c.maxWidth / 7;
-            return Column(
-              children: [
-                for (var r = 0; r < _gridRows; r++)
-                  _WeekRow(
-                    weekStart: addDays(start, r * 7),
-                    today: today,
-                    focused: anchor,
-                    anchorMonth: anchor.month,
-                    colW: colW,
-                    tasks: tasks,
-                    laneOf: laneOf,
-                    visibleLanes: visibleLanes,
-                    isLastRow: r == _gridRows - 1,
-                    dones: dones,
-                    stayRanges: stayRanges,
-                    placeDays: placeDays,
-                    onTapDay: _showDay,
-                    onAddDay: (day) =>
-                        openTaskEditor(context, null, initialDate: day),
-                  ),
-              ],
+            return ListView.builder(
+              controller: _scroll,
+              padding: EdgeInsets.zero,
+              itemCount: _weeksSpan,
+              itemExtent: rowHeight,
+              itemBuilder: (context, i) => _WeekRow(
+                weekStart: addDays(_originWeek, i * 7),
+                today: today,
+                focused: focused,
+                anchorMonth: visM.month,
+                colW: colW,
+                tasks: tasks,
+                laneOf: laneOf,
+                visibleLanes: visibleLanes,
+                isLastRow: false,
+                dones: dones,
+                stayRanges: stayRanges,
+                placeDays: placeDays,
+                onTapDay: _showDay,
+                onAddDay: (day) =>
+                    openTaskEditor(context, null, initialDate: day),
+              ),
             );
           }),
         ),
@@ -182,17 +255,12 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         ),
       );
 
-  /// Листание на соседний период: шаг 4 недели, чтобы одна неделя осталась
-  /// внахлёст с предыдущим экраном. Двигает фокусную дату (за ней — секции).
-  void _shift(int dir) =>
-      ref.read(focusedDateProvider.notifier).shift(_stepDays * dir);
-
   Future<void> _pickMonth(BuildContext context, DateTime anchor) async {
     final picked = await showDialog<DateTime>(
       context: context,
       builder: (_) => _MonthYearPicker(initial: anchor),
     );
-    if (picked != null) ref.read(focusedDateProvider.notifier).set(picked);
+    if (picked != null) _scrollToDate(picked);
   }
 
   void _showDay(DateTime day) {
@@ -214,13 +282,6 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
 
   List<int> _orderedWeekdays(int firstWeekday) =>
       [for (var i = 0; i < 7; i++) ((firstWeekday - 1 + i) % 7) + 1];
-
-  bool _intersectsRange(TaskModel t, DateTime start, int days) {
-    if (!t.isPeriod) return false;
-    final end = addDays(start, days - 1);
-    return !dateOnly(t.startDate).isAfter(end) &&
-        !dateOnly(t.endDate).isBefore(start);
-  }
 }
 
 class _WeekRow extends StatelessWidget {
