@@ -175,7 +175,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 32),
+        // Низ прокручивается над клавиатурой (иначе примечание/файлы не видны).
+        padding: EdgeInsets.fromLTRB(
+            16, 12, 16, 32 + MediaQuery.of(context).viewInsets.bottom),
         children: [
           _titleField(),
           const SizedBox(height: 14),

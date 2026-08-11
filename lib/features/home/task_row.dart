@@ -345,7 +345,12 @@ class SubtaskChecklist extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
-    final subs = ref.watch(subtasksForTaskProvider(taskId)).value ?? [];
+    final raw = ref.watch(subtasksForTaskProvider(taskId)).value ?? const [];
+    // Выполненные подпункты — вниз (порядок внутри групп сохраняется).
+    final subs = [
+      ...raw.where((s) => !s.isDone),
+      ...raw.where((s) => s.isDone),
+    ];
     final tasks = ref.watch(tasksProvider).value ?? const [];
     TaskModel? task;
     for (final t in tasks) {

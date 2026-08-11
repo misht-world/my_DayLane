@@ -548,7 +548,12 @@ class _StageSheetState extends ConsumerState<StageSheet> {
     _place = TextEditingController(text: e?.placeName ?? '');
     _note = TextEditingController(text: e?.note ?? '');
     _kind = e?.kind ?? TripStageKind.place;
-    _start = e?.startDate ?? widget.trip.startDate;
+    // Новый этап: дата по умолчанию — сегодня, если попадает в даты поездки,
+    // иначе — начало поездки.
+    final today = dateOnly(DateTime.now());
+    final todayInTrip = !today.isBefore(widget.trip.startDate) &&
+        !today.isAfter(widget.trip.endDate);
+    _start = e?.startDate ?? (todayInTrip ? today : widget.trip.startDate);
     // У жилья endDate — день выезда (минимум одна ночь).
     _end = e?.endDate ?? (_isStay ? addDays(_start, 1) : _start);
     _placeUrl = e?.placeUrl ?? '';
@@ -573,7 +578,8 @@ class _StageSheetState extends ConsumerState<StageSheet> {
         if (didPop) _autosave();
       },
       child: SafeArea(
-      child: Padding(
+      // Прокрутка: при открытой клавиатуре низ (заметки, файлы, «Готово») виден.
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -762,8 +768,11 @@ class _StageSheetState extends ConsumerState<StageSheet> {
             const SizedBox(height: 12),
             TextField(
               controller: _note,
-              maxLines: 4,
+              // Растущее поле (без внутренней прокрутки) — тап ставит курсор,
+              // а не выделяет текст.
+              maxLines: null,
               minLines: 2,
+              keyboardType: TextInputType.multiline,
               textCapitalization: TextCapitalization.sentences,
               decoration: const InputDecoration(
                 labelText: 'Заметки (по итогу: как было, что понравилось)',
