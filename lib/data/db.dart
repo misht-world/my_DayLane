@@ -35,6 +35,12 @@ class Tasks extends Table {
   IntColumn get iconId => integer().withDefault(const Constant(-1))();
   BoolColumn get deferred => boolean().withDefault(const Constant(false))();
   BoolColumn get isTrip => boolean().withDefault(const Constant(false))();
+
+  /// Категория раздела «Заметки». -1 = не заметка.
+  IntColumn get noteCategory => integer().withDefault(const Constant(-1))();
+  TextColumn get author => text().withDefault(const Constant(''))();
+  IntColumn get year => integer().nullable()();
+  IntColumn get audience => integer().withDefault(const Constant(0))();
   IntColumn get recurrenceType =>
       intEnum<RecurrenceType>().withDefault(const Constant(0))();
   IntColumn get recurrenceInterval =>
@@ -125,7 +131,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -177,6 +183,12 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 11) {
             await m.addColumn(tasks, tasks.dependsBefore);
+          }
+          if (from < 12) {
+            await m.addColumn(tasks, tasks.noteCategory);
+            await m.addColumn(tasks, tasks.author);
+            await m.addColumn(tasks, tasks.year);
+            await m.addColumn(tasks, tasks.audience);
           }
         },
         beforeOpen: (details) async {
@@ -282,6 +294,10 @@ extension TaskRowMapper on TaskRow {
         iconId: iconId,
         deferred: deferred,
         isTrip: isTrip,
+        noteCategory: noteCategory,
+        author: author,
+        year: year,
+        audience: audience,
         recurrenceType: recurrenceType,
         recurrenceInterval: recurrenceInterval,
         recurrenceAnchor: recurrenceAnchor,
@@ -328,6 +344,10 @@ extension TaskModelMapper on TaskModel {
         iconId: Value(iconId),
         deferred: Value(deferred),
         isTrip: Value(isTrip),
+        noteCategory: Value(noteCategory),
+        author: Value(author),
+        year: Value(year),
+        audience: Value(audience),
         recurrenceType: Value(recurrenceType),
         recurrenceInterval: Value(recurrenceInterval),
         recurrenceAnchor: Value(recurrenceAnchor),

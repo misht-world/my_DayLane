@@ -208,6 +208,49 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _noteCategoryMeta = const VerificationMeta(
+    'noteCategory',
+  );
+  @override
+  late final GeneratedColumn<int> noteCategory = GeneratedColumn<int>(
+    'note_category',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(-1),
+  );
+  static const VerificationMeta _authorMeta = const VerificationMeta('author');
+  @override
+  late final GeneratedColumn<String> author = GeneratedColumn<String>(
+    'author',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _yearMeta = const VerificationMeta('year');
+  @override
+  late final GeneratedColumn<int> year = GeneratedColumn<int>(
+    'year',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _audienceMeta = const VerificationMeta(
+    'audience',
+  );
+  @override
+  late final GeneratedColumn<int> audience = GeneratedColumn<int>(
+    'audience',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   late final GeneratedColumnWithTypeConverter<RecurrenceType, int>
   recurrenceType = GeneratedColumn<int>(
@@ -377,6 +420,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     iconId,
     deferred,
     isTrip,
+    noteCategory,
+    author,
+    year,
+    audience,
     recurrenceType,
     recurrenceInterval,
     recurrenceAnchor,
@@ -515,6 +562,33 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
       context.handle(
         _isTripMeta,
         isTrip.isAcceptableOrUnknown(data['is_trip']!, _isTripMeta),
+      );
+    }
+    if (data.containsKey('note_category')) {
+      context.handle(
+        _noteCategoryMeta,
+        noteCategory.isAcceptableOrUnknown(
+          data['note_category']!,
+          _noteCategoryMeta,
+        ),
+      );
+    }
+    if (data.containsKey('author')) {
+      context.handle(
+        _authorMeta,
+        author.isAcceptableOrUnknown(data['author']!, _authorMeta),
+      );
+    }
+    if (data.containsKey('year')) {
+      context.handle(
+        _yearMeta,
+        year.isAcceptableOrUnknown(data['year']!, _yearMeta),
+      );
+    }
+    if (data.containsKey('audience')) {
+      context.handle(
+        _audienceMeta,
+        audience.isAcceptableOrUnknown(data['audience']!, _audienceMeta),
       );
     }
     if (data.containsKey('recurrence_interval')) {
@@ -686,6 +760,22 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_trip'],
       )!,
+      noteCategory: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}note_category'],
+      )!,
+      author: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author'],
+      )!,
+      year: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}year'],
+      ),
+      audience: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}audience'],
+      )!,
       recurrenceType: $TasksTable.$converterrecurrenceType.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.int,
@@ -780,6 +870,12 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final int iconId;
   final bool deferred;
   final bool isTrip;
+
+  /// Категория раздела «Заметки». -1 = не заметка.
+  final int noteCategory;
+  final String author;
+  final int? year;
+  final int audience;
   final RecurrenceType recurrenceType;
   final int recurrenceInterval;
   final int recurrenceAnchor;
@@ -815,6 +911,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     required this.iconId,
     required this.deferred,
     required this.isTrip,
+    required this.noteCategory,
+    required this.author,
+    this.year,
+    required this.audience,
     required this.recurrenceType,
     required this.recurrenceInterval,
     required this.recurrenceAnchor,
@@ -859,6 +959,12 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     map['icon_id'] = Variable<int>(iconId);
     map['deferred'] = Variable<bool>(deferred);
     map['is_trip'] = Variable<bool>(isTrip);
+    map['note_category'] = Variable<int>(noteCategory);
+    map['author'] = Variable<String>(author);
+    if (!nullToAbsent || year != null) {
+      map['year'] = Variable<int>(year);
+    }
+    map['audience'] = Variable<int>(audience);
     {
       map['recurrence_type'] = Variable<int>(
         $TasksTable.$converterrecurrenceType.toSql(recurrenceType),
@@ -904,6 +1010,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       iconId: Value(iconId),
       deferred: Value(deferred),
       isTrip: Value(isTrip),
+      noteCategory: Value(noteCategory),
+      author: Value(author),
+      year: year == null && nullToAbsent ? const Value.absent() : Value(year),
+      audience: Value(audience),
       recurrenceType: Value(recurrenceType),
       recurrenceInterval: Value(recurrenceInterval),
       recurrenceAnchor: Value(recurrenceAnchor),
@@ -949,6 +1059,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       iconId: serializer.fromJson<int>(json['iconId']),
       deferred: serializer.fromJson<bool>(json['deferred']),
       isTrip: serializer.fromJson<bool>(json['isTrip']),
+      noteCategory: serializer.fromJson<int>(json['noteCategory']),
+      author: serializer.fromJson<String>(json['author']),
+      year: serializer.fromJson<int?>(json['year']),
+      audience: serializer.fromJson<int>(json['audience']),
       recurrenceType: $TasksTable.$converterrecurrenceType.fromJson(
         serializer.fromJson<int>(json['recurrenceType']),
       ),
@@ -989,6 +1103,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'iconId': serializer.toJson<int>(iconId),
       'deferred': serializer.toJson<bool>(deferred),
       'isTrip': serializer.toJson<bool>(isTrip),
+      'noteCategory': serializer.toJson<int>(noteCategory),
+      'author': serializer.toJson<String>(author),
+      'year': serializer.toJson<int?>(year),
+      'audience': serializer.toJson<int>(audience),
       'recurrenceType': serializer.toJson<int>(
         $TasksTable.$converterrecurrenceType.toJson(recurrenceType),
       ),
@@ -1025,6 +1143,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     int? iconId,
     bool? deferred,
     bool? isTrip,
+    int? noteCategory,
+    String? author,
+    Value<int?> year = const Value.absent(),
+    int? audience,
     RecurrenceType? recurrenceType,
     int? recurrenceInterval,
     int? recurrenceAnchor,
@@ -1060,6 +1182,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     iconId: iconId ?? this.iconId,
     deferred: deferred ?? this.deferred,
     isTrip: isTrip ?? this.isTrip,
+    noteCategory: noteCategory ?? this.noteCategory,
+    author: author ?? this.author,
+    year: year.present ? year.value : this.year,
+    audience: audience ?? this.audience,
     recurrenceType: recurrenceType ?? this.recurrenceType,
     recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
     recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
@@ -1109,6 +1235,12 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       iconId: data.iconId.present ? data.iconId.value : this.iconId,
       deferred: data.deferred.present ? data.deferred.value : this.deferred,
       isTrip: data.isTrip.present ? data.isTrip.value : this.isTrip,
+      noteCategory: data.noteCategory.present
+          ? data.noteCategory.value
+          : this.noteCategory,
+      author: data.author.present ? data.author.value : this.author,
+      year: data.year.present ? data.year.value : this.year,
+      audience: data.audience.present ? data.audience.value : this.audience,
       recurrenceType: data.recurrenceType.present
           ? data.recurrenceType.value
           : this.recurrenceType,
@@ -1155,6 +1287,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('iconId: $iconId, ')
           ..write('deferred: $deferred, ')
           ..write('isTrip: $isTrip, ')
+          ..write('noteCategory: $noteCategory, ')
+          ..write('author: $author, ')
+          ..write('year: $year, ')
+          ..write('audience: $audience, ')
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
@@ -1191,6 +1327,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     iconId,
     deferred,
     isTrip,
+    noteCategory,
+    author,
+    year,
+    audience,
     recurrenceType,
     recurrenceInterval,
     recurrenceAnchor,
@@ -1226,6 +1366,10 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.iconId == this.iconId &&
           other.deferred == this.deferred &&
           other.isTrip == this.isTrip &&
+          other.noteCategory == this.noteCategory &&
+          other.author == this.author &&
+          other.year == this.year &&
+          other.audience == this.audience &&
           other.recurrenceType == this.recurrenceType &&
           other.recurrenceInterval == this.recurrenceInterval &&
           other.recurrenceAnchor == this.recurrenceAnchor &&
@@ -1259,6 +1403,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<int> iconId;
   final Value<bool> deferred;
   final Value<bool> isTrip;
+  final Value<int> noteCategory;
+  final Value<String> author;
+  final Value<int?> year;
+  final Value<int> audience;
   final Value<RecurrenceType> recurrenceType;
   final Value<int> recurrenceInterval;
   final Value<int> recurrenceAnchor;
@@ -1290,6 +1438,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.iconId = const Value.absent(),
     this.deferred = const Value.absent(),
     this.isTrip = const Value.absent(),
+    this.noteCategory = const Value.absent(),
+    this.author = const Value.absent(),
+    this.year = const Value.absent(),
+    this.audience = const Value.absent(),
     this.recurrenceType = const Value.absent(),
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
@@ -1322,6 +1474,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.iconId = const Value.absent(),
     this.deferred = const Value.absent(),
     this.isTrip = const Value.absent(),
+    this.noteCategory = const Value.absent(),
+    this.author = const Value.absent(),
+    this.year = const Value.absent(),
+    this.audience = const Value.absent(),
     this.recurrenceType = const Value.absent(),
     this.recurrenceInterval = const Value.absent(),
     this.recurrenceAnchor = const Value.absent(),
@@ -1359,6 +1515,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<int>? iconId,
     Expression<bool>? deferred,
     Expression<bool>? isTrip,
+    Expression<int>? noteCategory,
+    Expression<String>? author,
+    Expression<int>? year,
+    Expression<int>? audience,
     Expression<int>? recurrenceType,
     Expression<int>? recurrenceInterval,
     Expression<int>? recurrenceAnchor,
@@ -1392,6 +1552,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (iconId != null) 'icon_id': iconId,
       if (deferred != null) 'deferred': deferred,
       if (isTrip != null) 'is_trip': isTrip,
+      if (noteCategory != null) 'note_category': noteCategory,
+      if (author != null) 'author': author,
+      if (year != null) 'year': year,
+      if (audience != null) 'audience': audience,
       if (recurrenceType != null) 'recurrence_type': recurrenceType,
       if (recurrenceInterval != null) 'recurrence_interval': recurrenceInterval,
       if (recurrenceAnchor != null) 'recurrence_anchor': recurrenceAnchor,
@@ -1426,6 +1590,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<int>? iconId,
     Value<bool>? deferred,
     Value<bool>? isTrip,
+    Value<int>? noteCategory,
+    Value<String>? author,
+    Value<int?>? year,
+    Value<int>? audience,
     Value<RecurrenceType>? recurrenceType,
     Value<int>? recurrenceInterval,
     Value<int>? recurrenceAnchor,
@@ -1458,6 +1626,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       iconId: iconId ?? this.iconId,
       deferred: deferred ?? this.deferred,
       isTrip: isTrip ?? this.isTrip,
+      noteCategory: noteCategory ?? this.noteCategory,
+      author: author ?? this.author,
+      year: year ?? this.year,
+      audience: audience ?? this.audience,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
@@ -1530,6 +1702,18 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     if (isTrip.present) {
       map['is_trip'] = Variable<bool>(isTrip.value);
     }
+    if (noteCategory.present) {
+      map['note_category'] = Variable<int>(noteCategory.value);
+    }
+    if (author.present) {
+      map['author'] = Variable<String>(author.value);
+    }
+    if (year.present) {
+      map['year'] = Variable<int>(year.value);
+    }
+    if (audience.present) {
+      map['audience'] = Variable<int>(audience.value);
+    }
     if (recurrenceType.present) {
       map['recurrence_type'] = Variable<int>(
         $TasksTable.$converterrecurrenceType.toSql(recurrenceType.value),
@@ -1594,6 +1778,10 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('iconId: $iconId, ')
           ..write('deferred: $deferred, ')
           ..write('isTrip: $isTrip, ')
+          ..write('noteCategory: $noteCategory, ')
+          ..write('author: $author, ')
+          ..write('year: $year, ')
+          ..write('audience: $audience, ')
           ..write('recurrenceType: $recurrenceType, ')
           ..write('recurrenceInterval: $recurrenceInterval, ')
           ..write('recurrenceAnchor: $recurrenceAnchor, ')
@@ -3323,6 +3511,10 @@ typedef $$TasksTableCreateCompanionBuilder =
       Value<int> iconId,
       Value<bool> deferred,
       Value<bool> isTrip,
+      Value<int> noteCategory,
+      Value<String> author,
+      Value<int?> year,
+      Value<int> audience,
       Value<RecurrenceType> recurrenceType,
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
@@ -3356,6 +3548,10 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<int> iconId,
       Value<bool> deferred,
       Value<bool> isTrip,
+      Value<int> noteCategory,
+      Value<String> author,
+      Value<int?> year,
+      Value<int> audience,
       Value<RecurrenceType> recurrenceType,
       Value<int> recurrenceInterval,
       Value<int> recurrenceAnchor,
@@ -3524,6 +3720,26 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<bool> get isTrip => $composableBuilder(
     column: $table.isTrip,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get noteCategory => $composableBuilder(
+    column: $table.noteCategory,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get audience => $composableBuilder(
+    column: $table.audience,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3763,6 +3979,26 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get noteCategory => $composableBuilder(
+    column: $table.noteCategory,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get author => $composableBuilder(
+    column: $table.author,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get year => $composableBuilder(
+    column: $table.year,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get audience => $composableBuilder(
+    column: $table.audience,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get recurrenceType => $composableBuilder(
     column: $table.recurrenceType,
     builder: (column) => ColumnOrderings(column),
@@ -3905,6 +4141,20 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<bool> get isTrip =>
       $composableBuilder(column: $table.isTrip, builder: (column) => column);
+
+  GeneratedColumn<int> get noteCategory => $composableBuilder(
+    column: $table.noteCategory,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get author =>
+      $composableBuilder(column: $table.author, builder: (column) => column);
+
+  GeneratedColumn<int> get year =>
+      $composableBuilder(column: $table.year, builder: (column) => column);
+
+  GeneratedColumn<int> get audience =>
+      $composableBuilder(column: $table.audience, builder: (column) => column);
 
   GeneratedColumnWithTypeConverter<RecurrenceType, int> get recurrenceType =>
       $composableBuilder(
@@ -4081,6 +4331,10 @@ class $$TasksTableTableManager
                 Value<int> iconId = const Value.absent(),
                 Value<bool> deferred = const Value.absent(),
                 Value<bool> isTrip = const Value.absent(),
+                Value<int> noteCategory = const Value.absent(),
+                Value<String> author = const Value.absent(),
+                Value<int?> year = const Value.absent(),
+                Value<int> audience = const Value.absent(),
                 Value<RecurrenceType> recurrenceType = const Value.absent(),
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
@@ -4112,6 +4366,10 @@ class $$TasksTableTableManager
                 iconId: iconId,
                 deferred: deferred,
                 isTrip: isTrip,
+                noteCategory: noteCategory,
+                author: author,
+                year: year,
+                audience: audience,
                 recurrenceType: recurrenceType,
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,
@@ -4145,6 +4403,10 @@ class $$TasksTableTableManager
                 Value<int> iconId = const Value.absent(),
                 Value<bool> deferred = const Value.absent(),
                 Value<bool> isTrip = const Value.absent(),
+                Value<int> noteCategory = const Value.absent(),
+                Value<String> author = const Value.absent(),
+                Value<int?> year = const Value.absent(),
+                Value<int> audience = const Value.absent(),
                 Value<RecurrenceType> recurrenceType = const Value.absent(),
                 Value<int> recurrenceInterval = const Value.absent(),
                 Value<int> recurrenceAnchor = const Value.absent(),
@@ -4176,6 +4438,10 @@ class $$TasksTableTableManager
                 iconId: iconId,
                 deferred: deferred,
                 isTrip: isTrip,
+                noteCategory: noteCategory,
+                author: author,
+                year: year,
+                audience: audience,
                 recurrenceType: recurrenceType,
                 recurrenceInterval: recurrenceInterval,
                 recurrenceAnchor: recurrenceAnchor,

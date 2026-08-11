@@ -107,7 +107,8 @@ final sectionsProvider = Provider<DaySections?>((ref) {
 /// (удалить можно только вручную).
 final deferredTasksProvider = Provider<List<TaskModel>>((ref) {
   final tasks = ref.watch(tasksProvider).value ?? const [];
-  return tasks.where((t) => t.deferred).toList()
+  // Только «дела без даты» — заметки (noteCategory>=0) сюда не попадают.
+  return tasks.where((t) => t.deferred && !t.isNote).toList()
     ..sort((a, b) {
       if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
       return a.createdAt.compareTo(b.createdAt);
@@ -117,6 +118,30 @@ final deferredTasksProvider = Provider<List<TaskModel>>((ref) {
 /// Сколько отложенных ещё не выполнено (для счётчика в заголовке секции).
 final deferredOpenCountProvider = Provider<int>((ref) =>
     ref.watch(deferredTasksProvider).where((t) => !t.isDone).length);
+
+/// Заметки категории (невыполненные сверху, выполненные — в конец).
+final notesByCategoryProvider =
+    Provider.family<List<TaskModel>, int>((ref, category) {
+  final tasks = ref.watch(tasksProvider).value ?? const [];
+  return tasks.where((t) => t.noteCategory == category).toList()
+    ..sort((a, b) {
+      if (a.isDone != b.isDone) return a.isDone ? 1 : -1;
+      return a.createdAt.compareTo(b.createdAt);
+    });
+});
+
+/// Число невыполненных заметок по категориям: {category: count}.
+/// Плитка категории показывается только если count > 0.
+final noteActiveCountsProvider = Provider<Map<int, int>>((ref) {
+  final tasks = ref.watch(tasksProvider).value ?? const [];
+  final map = <int, int>{};
+  for (final t in tasks) {
+    if (t.isNote && !t.isDone) {
+      map[t.noteCategory] = (map[t.noteCategory] ?? 0) + 1;
+    }
+  }
+  return map;
+});
 
 /// Путешествия (дела-периоды с дневником), ближайшие сверху.
 final tripsProvider = Provider<List<TaskModel>>((ref) {

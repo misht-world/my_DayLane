@@ -1,3 +1,4 @@
+import '../core/constants.dart';
 import '../core/date_utils.dart';
 import '../domain/models.dart';
 import 'db.dart';
@@ -116,6 +117,39 @@ Future<void> seedIfEmpty(AppDatabase db, TaskRepository repo) async {
       );
   await repo.saveTask(deferred('Прочитать книгу по Flutter'));
   await repo.saveTask(deferred('Разобрать гараж'));
+
+  // ── Заметки (раздел «Заметки»: категории) ────────────────────────
+  TaskModel note(
+    String title,
+    int category, {
+    String author = '',
+    int? year,
+    int audience = 0,
+    bool done = false,
+  }) =>
+      TaskModel(
+        title: title,
+        kind: TaskKind.single,
+        startDate: today,
+        endDate: today,
+        deferred: true,
+        noteCategory: category,
+        author: author,
+        year: year,
+        audience: audience,
+        colorId: kNoteCategories[category].colorId,
+        isDone: done,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+  await repo.saveTask(note('Мастер и Маргарита', 0,
+      author: 'Булгаков', year: 1967, audience: 1));
+  await repo.saveTask(
+      note('Груффало', 0, author: 'Дональдсон', year: 1999, audience: 2));
+  await repo.saveTask(note('Дюна', 0, author: 'Герберт', year: 1965, done: true));
+  await repo.saveTask(note('Оппенгеймер', 1, author: 'Нолан', year: 2023));
+  await repo.saveTask(note('Наушники', 4, author: 'Электроника'));
+  await repo.saveTask(note('Кофе в зёрнах', 4, author: 'Продукты'));
 
   // ── Периоды (полосы и дорожки; есть пересечение → 2 дорожки) ──────
   await repo.saveTask(period('Ремонт кухни', -1, 2, 1));

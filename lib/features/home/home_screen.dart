@@ -10,6 +10,8 @@ import '../../core/theme.dart';
 import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../calendar/calendar_view.dart';
+import '../notes/note_editor.dart';
+import '../notes/notes_list.dart';
 import '../settings/settings_screen.dart';
 import '../task_editor/task_editor_screen.dart';
 import '../tasks/tasks_list_screen.dart';
@@ -79,7 +81,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     danger: false,
                     emptyText: 'на завтра пусто',
                   ),
-                  _deferredSection(context),
+                  _notesSection(context),
                   _calendarSection(context),
                 ],
               ),
@@ -483,49 +485,158 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Секция «Отложенные» — дела без даты, с быстрым назначением даты.
-  Widget _deferredSection(BuildContext context) {
+  /// Секция «Заметки»: плитки категорий (только с активными записями) плюс
+  /// «Дела без даты». Пустые/полностью выполненные категории не показываются;
+  /// добавить/восстановить категорию — через «+».
+  Widget _notesSection(BuildContext context) {
     final dl = context.dl;
-    final tasks = ref.watch(deferredTasksProvider);
+    final counts = ref.watch(noteActiveCountsProvider);
+    final undated = ref.watch(deferredTasksProvider);
+    final undatedOpen = ref.watch(deferredOpenCountProvider);
+
+    final tiles = <Widget>[];
+    for (var c = 0; c < kNoteCategories.length; c++) {
+      final n = counts[c] ?? 0;
+      if (n == 0) continue;
+      final cat = kNoteCategories[c];
+      tiles.add(_noteTile(
+        icon: cat.icon,
+        label: cat.name,
+        color: TaskPalette.byId(cat.colorId),
+        count: n,
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => NotesListScreen(category: c))),
+      ));
+    }
+    if (undated.isNotEmpty) {
+      tiles.add(_noteTile(
+        icon: Icons.schedule_rounded,
+        label: 'Дела без даты',
+        color: dl.inkSoft,
+        count: undatedOpen,
+        onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const _UndatedTasksScreen())),
+      ));
+    }
+    final total =
+        counts.values.fold<int>(0, (a, b) => a + b) + undatedOpen;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _bandHeader(
-            label: 'Отложенные',
-            // Счётчик — только невыполненные (выполненные лежат в конце).
-            count: ref.watch(deferredOpenCountProvider),
+            label: 'Заметки',
+            count: total,
             danger: false,
             expanded: _showDeferred,
             onToggle: () => setState(() => _showDeferred = !_showDeferred),
             addAction: _headerAction(
               icon: Icons.add_rounded,
               filled: true,
-              tooltip: 'Добавить отложенное дело',
-              onTap: () => openTaskEditor(context, null, deferred: true),
+              tooltip: 'Добавить заметку',
+              onTap: () => _pickNoteCategory(context),
             ),
           ),
           if (_showDeferred)
             Padding(
-              padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
-              child: tasks.isEmpty
+              padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
+              child: tiles.isEmpty
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text('пусто — «ждут своего часа»',
+                      child: Text('пусто — добавьте через «+»',
                           style: TextStyle(color: dl.inkFaint, fontSize: 14)),
                     )
-                  : Column(
-                      children: [
-                        for (var i = 0; i < tasks.length; i++) ...[
-                          if (i > 0) _taskDivider(),
-                          _DeferredRow(task: tasks[i]),
-                        ],
-                        _taskDivider(),
-                      ],
-                    ),
+                  : Wrap(spacing: 8, runSpacing: 8, children: tiles),
             ),
         ],
+      ),
+    );
+  }
+
+  /// Плитка категории заметок: иконка, название, бейдж со счётчиком.
+  Widget _noteTile({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required int count,
+    required VoidCallback onTap,
+  }) {
+    final dl = context.dl;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: dl.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: dl.line),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(label, style: TextStyle(fontSize: 14, color: dl.ink)),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text('$count',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: color,
+                      fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Выбор, куда добавить: категория заметки или «дело без даты».
+  void _pickNoteCategory(BuildContext context) {
+    final dl = context.dl;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: dl.surface,
+      showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.only(bottom: 12),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+              child: Text('Куда добавить',
+                  style: context.serif.copyWith(fontSize: 17, color: dl.ink)),
+            ),
+            for (var c = 0; c < kNoteCategories.length; c++)
+              ListTile(
+                leading: Icon(kNoteCategories[c].icon,
+                    color: TaskPalette.byId(kNoteCategories[c].colorId)),
+                title: Text(kNoteCategories[c].name),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  openNoteEditor(context, category: c);
+                },
+              ),
+            Divider(height: 1, color: dl.line),
+            ListTile(
+              leading: Icon(Icons.schedule_rounded, color: dl.inkSoft),
+              title: const Text('Дело без даты'),
+              onTap: () {
+                Navigator.of(context).pop();
+                openTaskEditor(context, null, deferred: true);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -693,6 +804,52 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
               style: TextStyle(fontSize: 11, color: dl.accent)),
         ),
       ),
+    );
+  }
+}
+
+/// Экран «Дела без даты» (бывшие «Отложенные») — открывается плиткой из
+/// раздела «Заметки». Строки с быстрым назначением даты и раскрытием подпунктов.
+class _UndatedTasksScreen extends ConsumerWidget {
+  const _UndatedTasksScreen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dl = context.dl;
+    final tasks = ref.watch(deferredTasksProvider);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Дела без даты',
+            style: context.serif.copyWith(fontSize: 18)),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => openTaskEditor(context, null, deferred: true),
+        backgroundColor: dl.accent,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text('Добавить'),
+      ),
+      body: tasks.isEmpty
+          ? Center(
+              child: Text('пусто — «ждут своего часа»',
+                  style: TextStyle(color: dl.inkFaint, fontSize: 15)))
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 96),
+              children: [
+                for (var i = 0; i < tasks.length; i++) ...[
+                  if (i > 0)
+                    Row(children: [
+                      Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle, color: dl.ink)),
+                      Expanded(child: Container(height: 1, color: dl.ink)),
+                    ]),
+                  _DeferredRow(task: tasks[i]),
+                ],
+              ],
+            ),
     );
   }
 }

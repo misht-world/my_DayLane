@@ -72,6 +72,19 @@ class TaskModel {
   /// Планируется и рисуется как обычный период.
   final bool isTrip;
 
+  /// Категория раздела «Заметки» (индекс в kNoteCategories). -1 = не заметка
+  /// (обычное дело/дело без даты). Заметки всегда `deferred` — вне календаря.
+  final int noteCategory;
+
+  /// Автор/режиссёр/исполнитель/раздел заметки (по категории). Пусто — нет.
+  final String author;
+
+  /// Год (для книг/фильмов/музыки). null — не указан.
+  final int? year;
+
+  /// Аудитория медиа-заметки: 0 = не указано, 1 = взрослые, 2 = детские.
+  final int audience;
+
   /// Повторение (для дел-«событий»: ДР, платежи, занятия).
   final RecurrenceType recurrenceType;
 
@@ -118,6 +131,10 @@ class TaskModel {
     this.iconId = -1,
     this.deferred = false,
     this.isTrip = false,
+    this.noteCategory = -1,
+    this.author = '',
+    this.year,
+    this.audience = 0,
     this.recurrenceType = RecurrenceType.none,
     this.recurrenceInterval = 1,
     this.recurrenceAnchor = 0,
@@ -137,6 +154,9 @@ class TaskModel {
   bool get isSingle => kind == TaskKind.single;
   bool get isLinked => dependsOnTaskId != null;
   bool get isRecurring => recurrenceType != RecurrenceType.none;
+
+  /// Заметка (элемент раздела «Заметки»). Всегда вне календаря.
+  bool get isNote => noteCategory >= 0;
   bool get hasCustomColor => colorId >= 0;
 
   TaskModel copyWith({
@@ -157,6 +177,10 @@ class TaskModel {
     int? iconId,
     bool? deferred,
     bool? isTrip,
+    int? noteCategory,
+    String? author,
+    Object? year = _unset,
+    int? audience,
     RecurrenceType? recurrenceType,
     int? recurrenceInterval,
     int? recurrenceAnchor,
@@ -193,6 +217,10 @@ class TaskModel {
       iconId: iconId ?? this.iconId,
       deferred: deferred ?? this.deferred,
       isTrip: isTrip ?? this.isTrip,
+      noteCategory: noteCategory ?? this.noteCategory,
+      author: author ?? this.author,
+      year: identical(year, _unset) ? this.year : year as int?,
+      audience: audience ?? this.audience,
       recurrenceType: recurrenceType ?? this.recurrenceType,
       recurrenceInterval: recurrenceInterval ?? this.recurrenceInterval,
       recurrenceAnchor: recurrenceAnchor ?? this.recurrenceAnchor,
