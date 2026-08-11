@@ -87,8 +87,16 @@ List<TaskModel> applyDependencyDates(List<TaskModel> tasks) {
     for (final childId in childrenOf[id] ?? const <int>[]) {
       final child = result[childId]!;
       final duration = child.durationDays < 1 ? 1 : child.durationDays;
-      final start = addDays(parent.endDate, 1);
-      final end = addDays(start, duration - 1);
+      final DateTime start, end;
+      if (child.dependsBefore) {
+        // «Закончить до дела»: конец за день до начала родителя.
+        end = addDays(parent.startDate, -1);
+        start = addDays(end, -(duration - 1));
+      } else {
+        // «Начать после дела»: старт на следующий день после конца родителя.
+        start = addDays(parent.endDate, 1);
+        end = addDays(start, duration - 1);
+      }
       result[childId] = child.copyWith(startDate: start, endDate: end);
       queue.add(childId);
     }

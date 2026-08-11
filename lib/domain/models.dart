@@ -38,8 +38,13 @@ class TaskModel {
   /// Длина периода в днях (≥1). Источник истины при привязке. Для single = 1.
   final int durationDays;
 
-  /// Привязка начала к другому делу. null = нет привязки.
+  /// Привязка к другому делу. null = нет привязки.
   final int? dependsOnTaskId;
+
+  /// Направление привязки: false = «начать после» (start = parent.end+1),
+  /// true = «закончить до» (end = parent.start−1). Актуально при наличии
+  /// [dependsOnTaskId].
+  final bool dependsBefore;
 
   /// Время дня в минутах от полуночи. Разрешено только при kind == single.
   final int? timeOfDayMinutes;
@@ -103,6 +108,7 @@ class TaskModel {
     required this.endDate,
     this.durationDays = 1,
     this.dependsOnTaskId,
+    this.dependsBefore = false,
     this.timeOfDayMinutes,
     this.reminderEnabled = false,
     this.reminderRule = ReminderRule.atStart,
@@ -141,6 +147,7 @@ class TaskModel {
     DateTime? endDate,
     int? durationDays,
     Object? dependsOnTaskId = _unset,
+    bool? dependsBefore,
     Object? timeOfDayMinutes = _unset,
     bool? reminderEnabled,
     ReminderRule? reminderRule,
@@ -174,6 +181,7 @@ class TaskModel {
       dependsOnTaskId: identical(dependsOnTaskId, _unset)
           ? this.dependsOnTaskId
           : dependsOnTaskId as int?,
+      dependsBefore: dependsBefore ?? this.dependsBefore,
       timeOfDayMinutes: identical(timeOfDayMinutes, _unset)
           ? this.timeOfDayMinutes
           : timeOfDayMinutes as int?,

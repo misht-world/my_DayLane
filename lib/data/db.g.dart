@@ -84,6 +84,21 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _dependsBeforeMeta = const VerificationMeta(
+    'dependsBefore',
+  );
+  @override
+  late final GeneratedColumn<bool> dependsBefore = GeneratedColumn<bool>(
+    'depends_before',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("depends_before" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   static const VerificationMeta _timeOfDayMinutesMeta = const VerificationMeta(
     'timeOfDayMinutes',
   );
@@ -352,6 +367,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     endDate,
     durationDays,
     dependsOnTaskId,
+    dependsBefore,
     timeOfDayMinutes,
     reminderEnabled,
     reminderRule,
@@ -429,6 +445,15 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         dependsOnTaskId.isAcceptableOrUnknown(
           data['depends_on_task_id']!,
           _dependsOnTaskIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('depends_before')) {
+      context.handle(
+        _dependsBeforeMeta,
+        dependsBefore.isAcceptableOrUnknown(
+          data['depends_before']!,
+          _dependsBeforeMeta,
         ),
       );
     }
@@ -619,6 +644,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.int,
         data['${effectivePrefix}depends_on_task_id'],
       ),
+      dependsBefore: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}depends_before'],
+      )!,
       timeOfDayMinutes: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}time_of_day_minutes'],
@@ -735,6 +764,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final DateTime endDate;
   final int durationDays;
   final int? dependsOnTaskId;
+  final bool dependsBefore;
   final int? timeOfDayMinutes;
   final bool reminderEnabled;
   final ReminderRule reminderRule;
@@ -775,6 +805,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     required this.endDate,
     required this.durationDays,
     this.dependsOnTaskId,
+    required this.dependsBefore,
     this.timeOfDayMinutes,
     required this.reminderEnabled,
     required this.reminderRule,
@@ -812,6 +843,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     if (!nullToAbsent || dependsOnTaskId != null) {
       map['depends_on_task_id'] = Variable<int>(dependsOnTaskId);
     }
+    map['depends_before'] = Variable<bool>(dependsBefore);
     if (!nullToAbsent || timeOfDayMinutes != null) {
       map['time_of_day_minutes'] = Variable<int>(timeOfDayMinutes);
     }
@@ -860,6 +892,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       dependsOnTaskId: dependsOnTaskId == null && nullToAbsent
           ? const Value.absent()
           : Value(dependsOnTaskId),
+      dependsBefore: Value(dependsBefore),
       timeOfDayMinutes: timeOfDayMinutes == null && nullToAbsent
           ? const Value.absent()
           : Value(timeOfDayMinutes),
@@ -904,6 +937,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       endDate: serializer.fromJson<DateTime>(json['endDate']),
       durationDays: serializer.fromJson<int>(json['durationDays']),
       dependsOnTaskId: serializer.fromJson<int?>(json['dependsOnTaskId']),
+      dependsBefore: serializer.fromJson<bool>(json['dependsBefore']),
       timeOfDayMinutes: serializer.fromJson<int?>(json['timeOfDayMinutes']),
       reminderEnabled: serializer.fromJson<bool>(json['reminderEnabled']),
       reminderRule: $TasksTable.$converterreminderRule.fromJson(
@@ -943,6 +977,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       'endDate': serializer.toJson<DateTime>(endDate),
       'durationDays': serializer.toJson<int>(durationDays),
       'dependsOnTaskId': serializer.toJson<int?>(dependsOnTaskId),
+      'dependsBefore': serializer.toJson<bool>(dependsBefore),
       'timeOfDayMinutes': serializer.toJson<int?>(timeOfDayMinutes),
       'reminderEnabled': serializer.toJson<bool>(reminderEnabled),
       'reminderRule': serializer.toJson<int>(
@@ -980,6 +1015,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     DateTime? endDate,
     int? durationDays,
     Value<int?> dependsOnTaskId = const Value.absent(),
+    bool? dependsBefore,
     Value<int?> timeOfDayMinutes = const Value.absent(),
     bool? reminderEnabled,
     ReminderRule? reminderRule,
@@ -1012,6 +1048,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     dependsOnTaskId: dependsOnTaskId.present
         ? dependsOnTaskId.value
         : this.dependsOnTaskId,
+    dependsBefore: dependsBefore ?? this.dependsBefore,
     timeOfDayMinutes: timeOfDayMinutes.present
         ? timeOfDayMinutes.value
         : this.timeOfDayMinutes,
@@ -1050,6 +1087,9 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       dependsOnTaskId: data.dependsOnTaskId.present
           ? data.dependsOnTaskId.value
           : this.dependsOnTaskId,
+      dependsBefore: data.dependsBefore.present
+          ? data.dependsBefore.value
+          : this.dependsBefore,
       timeOfDayMinutes: data.timeOfDayMinutes.present
           ? data.timeOfDayMinutes.value
           : this.timeOfDayMinutes,
@@ -1105,6 +1145,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           ..write('endDate: $endDate, ')
           ..write('durationDays: $durationDays, ')
           ..write('dependsOnTaskId: $dependsOnTaskId, ')
+          ..write('dependsBefore: $dependsBefore, ')
           ..write('timeOfDayMinutes: $timeOfDayMinutes, ')
           ..write('reminderEnabled: $reminderEnabled, ')
           ..write('reminderRule: $reminderRule, ')
@@ -1140,6 +1181,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     endDate,
     durationDays,
     dependsOnTaskId,
+    dependsBefore,
     timeOfDayMinutes,
     reminderEnabled,
     reminderRule,
@@ -1174,6 +1216,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
           other.endDate == this.endDate &&
           other.durationDays == this.durationDays &&
           other.dependsOnTaskId == this.dependsOnTaskId &&
+          other.dependsBefore == this.dependsBefore &&
           other.timeOfDayMinutes == this.timeOfDayMinutes &&
           other.reminderEnabled == this.reminderEnabled &&
           other.reminderRule == this.reminderRule &&
@@ -1206,6 +1249,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<DateTime> endDate;
   final Value<int> durationDays;
   final Value<int?> dependsOnTaskId;
+  final Value<bool> dependsBefore;
   final Value<int?> timeOfDayMinutes;
   final Value<bool> reminderEnabled;
   final Value<ReminderRule> reminderRule;
@@ -1236,6 +1280,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     this.endDate = const Value.absent(),
     this.durationDays = const Value.absent(),
     this.dependsOnTaskId = const Value.absent(),
+    this.dependsBefore = const Value.absent(),
     this.timeOfDayMinutes = const Value.absent(),
     this.reminderEnabled = const Value.absent(),
     this.reminderRule = const Value.absent(),
@@ -1267,6 +1312,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     required DateTime endDate,
     this.durationDays = const Value.absent(),
     this.dependsOnTaskId = const Value.absent(),
+    this.dependsBefore = const Value.absent(),
     this.timeOfDayMinutes = const Value.absent(),
     this.reminderEnabled = const Value.absent(),
     this.reminderRule = const Value.absent(),
@@ -1303,6 +1349,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Expression<DateTime>? endDate,
     Expression<int>? durationDays,
     Expression<int>? dependsOnTaskId,
+    Expression<bool>? dependsBefore,
     Expression<int>? timeOfDayMinutes,
     Expression<bool>? reminderEnabled,
     Expression<int>? reminderRule,
@@ -1334,6 +1381,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       if (endDate != null) 'end_date': endDate,
       if (durationDays != null) 'duration_days': durationDays,
       if (dependsOnTaskId != null) 'depends_on_task_id': dependsOnTaskId,
+      if (dependsBefore != null) 'depends_before': dependsBefore,
       if (timeOfDayMinutes != null) 'time_of_day_minutes': timeOfDayMinutes,
       if (reminderEnabled != null) 'reminder_enabled': reminderEnabled,
       if (reminderRule != null) 'reminder_rule': reminderRule,
@@ -1368,6 +1416,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     Value<DateTime>? endDate,
     Value<int>? durationDays,
     Value<int?>? dependsOnTaskId,
+    Value<bool>? dependsBefore,
     Value<int?>? timeOfDayMinutes,
     Value<bool>? reminderEnabled,
     Value<ReminderRule>? reminderRule,
@@ -1399,6 +1448,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
       endDate: endDate ?? this.endDate,
       durationDays: durationDays ?? this.durationDays,
       dependsOnTaskId: dependsOnTaskId ?? this.dependsOnTaskId,
+      dependsBefore: dependsBefore ?? this.dependsBefore,
       timeOfDayMinutes: timeOfDayMinutes ?? this.timeOfDayMinutes,
       reminderEnabled: reminderEnabled ?? this.reminderEnabled,
       reminderRule: reminderRule ?? this.reminderRule,
@@ -1447,6 +1497,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     }
     if (dependsOnTaskId.present) {
       map['depends_on_task_id'] = Variable<int>(dependsOnTaskId.value);
+    }
+    if (dependsBefore.present) {
+      map['depends_before'] = Variable<bool>(dependsBefore.value);
     }
     if (timeOfDayMinutes.present) {
       map['time_of_day_minutes'] = Variable<int>(timeOfDayMinutes.value);
@@ -1531,6 +1584,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
           ..write('endDate: $endDate, ')
           ..write('durationDays: $durationDays, ')
           ..write('dependsOnTaskId: $dependsOnTaskId, ')
+          ..write('dependsBefore: $dependsBefore, ')
           ..write('timeOfDayMinutes: $timeOfDayMinutes, ')
           ..write('reminderEnabled: $reminderEnabled, ')
           ..write('reminderRule: $reminderRule, ')
@@ -3259,6 +3313,7 @@ typedef $$TasksTableCreateCompanionBuilder =
       required DateTime endDate,
       Value<int> durationDays,
       Value<int?> dependsOnTaskId,
+      Value<bool> dependsBefore,
       Value<int?> timeOfDayMinutes,
       Value<bool> reminderEnabled,
       Value<ReminderRule> reminderRule,
@@ -3291,6 +3346,7 @@ typedef $$TasksTableUpdateCompanionBuilder =
       Value<DateTime> endDate,
       Value<int> durationDays,
       Value<int?> dependsOnTaskId,
+      Value<bool> dependsBefore,
       Value<int?> timeOfDayMinutes,
       Value<bool> reminderEnabled,
       Value<ReminderRule> reminderRule,
@@ -3417,6 +3473,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
 
   ColumnFilters<int> get dependsOnTaskId => $composableBuilder(
     column: $table.dependsOnTaskId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dependsBefore => $composableBuilder(
+    column: $table.dependsBefore,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3652,6 +3713,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get dependsBefore => $composableBuilder(
+    column: $table.dependsBefore,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get timeOfDayMinutes => $composableBuilder(
     column: $table.timeOfDayMinutes,
     builder: (column) => ColumnOrderings(column),
@@ -3794,6 +3860,11 @@ class $$TasksTableAnnotationComposer
 
   GeneratedColumn<int> get dependsOnTaskId => $composableBuilder(
     column: $table.dependsOnTaskId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get dependsBefore => $composableBuilder(
+    column: $table.dependsBefore,
     builder: (column) => column,
   );
 
@@ -4000,6 +4071,7 @@ class $$TasksTableTableManager
                 Value<DateTime> endDate = const Value.absent(),
                 Value<int> durationDays = const Value.absent(),
                 Value<int?> dependsOnTaskId = const Value.absent(),
+                Value<bool> dependsBefore = const Value.absent(),
                 Value<int?> timeOfDayMinutes = const Value.absent(),
                 Value<bool> reminderEnabled = const Value.absent(),
                 Value<ReminderRule> reminderRule = const Value.absent(),
@@ -4030,6 +4102,7 @@ class $$TasksTableTableManager
                 endDate: endDate,
                 durationDays: durationDays,
                 dependsOnTaskId: dependsOnTaskId,
+                dependsBefore: dependsBefore,
                 timeOfDayMinutes: timeOfDayMinutes,
                 reminderEnabled: reminderEnabled,
                 reminderRule: reminderRule,
@@ -4062,6 +4135,7 @@ class $$TasksTableTableManager
                 required DateTime endDate,
                 Value<int> durationDays = const Value.absent(),
                 Value<int?> dependsOnTaskId = const Value.absent(),
+                Value<bool> dependsBefore = const Value.absent(),
                 Value<int?> timeOfDayMinutes = const Value.absent(),
                 Value<bool> reminderEnabled = const Value.absent(),
                 Value<ReminderRule> reminderRule = const Value.absent(),
@@ -4092,6 +4166,7 @@ class $$TasksTableTableManager
                 endDate: endDate,
                 durationDays: durationDays,
                 dependsOnTaskId: dependsOnTaskId,
+                dependsBefore: dependsBefore,
                 timeOfDayMinutes: timeOfDayMinutes,
                 reminderEnabled: reminderEnabled,
                 reminderRule: reminderRule,

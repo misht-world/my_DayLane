@@ -85,6 +85,23 @@ void main() {
       expect(c.endDate, d(2026, 6, 8)); // 3 дня
     });
 
+    test('«закончить до»: конец ребёнка = начало родителя − 1', () {
+      final parent = task(
+          id: 1, kind: TaskKind.period, start: d(2026, 6, 10), end: d(2026, 6, 15));
+      final child = task(
+          id: 2,
+          kind: TaskKind.period,
+          start: d(2026, 1, 1),
+          end: d(2026, 1, 2),
+          durationDays: 3,
+          dependsOnTaskId: 1,
+          dependsBefore: true);
+      final r = applyDependencyDates([parent, child]);
+      final c = byId(r, 2);
+      expect(c.endDate, d(2026, 6, 9)); // за день до начала родителя
+      expect(c.startDate, d(2026, 6, 7)); // 3 дня назад от конца
+    });
+
     test('каскад по цепочке A→B→C', () {
       final a = task(
           id: 1, kind: TaskKind.period, start: d(2026, 6, 1), end: d(2026, 6, 3));

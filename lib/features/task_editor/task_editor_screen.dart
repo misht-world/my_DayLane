@@ -68,6 +68,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   late int _duration;
   int? _timeMinutes;
   int? _dependsOn;
+  bool _dependsBefore = false;
 
   bool _reminderEnabled = false;
   ReminderRule _reminderRule = ReminderRule.atStart;
@@ -107,6 +108,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     _duration = e?.durationDays ?? 1;
     _timeMinutes = e?.timeOfDayMinutes;
     _dependsOn = e?.dependsOnTaskId;
+    _dependsBefore = e?.dependsBefore ?? false;
     _reminderEnabled = e?.reminderEnabled ?? false;
     _reminderRule = e?.reminderRule ?? ReminderRule.atStart;
     _reminderMinutes = e?.reminderMinutes ?? kDefaultReminderMinutes;
@@ -409,8 +411,15 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
     // Для привязанного дела start/end вычисляются от родителя.
     if (_linked && parent != null) {
-      _start = addDays(parent.endDate, 1);
-      _end = addDays(_start, _duration - 1);
+      if (_dependsBefore) {
+        // «Закончить до дела»: конец за день до начала родителя.
+        _end = addDays(parent.startDate, -1);
+        _start = addDays(_end, -(_duration - 1));
+      } else {
+        // «Начать после дела»: старт на следующий день после конца родителя.
+        _start = addDays(parent.endDate, 1);
+        _end = addDays(_start, _duration - 1);
+      }
     }
 
     return [
@@ -444,8 +453,12 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           ),
         ),
       ] else ...[
-        _row('Начало',
-            Text('после «${parent?.title ?? '—'}»  ·  ${formatDayMonth(_start)}',
+        _row(
+            'Начало',
+            Text(
+                _dependsBefore
+                    ? formatDayMonth(_start)
+                    : 'после «${parent?.title ?? '—'}»  ·  ${formatDayMonth(_start)}',
                 style: TextStyle(color: dl.inkSoft, fontSize: 14))),
         const SizedBox(height: 10),
         _row(
@@ -466,15 +479,19 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           ),
         ),
         const SizedBox(height: 10),
-        _row('Конец',
-            Text(formatDayMonth(_end),
+        _row(
+            'Конец',
+            Text(
+                _dependsBefore
+                    ? 'до «${parent?.title ?? '—'}»  ·  ${formatDayMonth(_end)}'
+                    : formatDayMonth(_end),
                 style: TextStyle(color: dl.inkSoft, fontSize: 14))),
       ],
       Divider(height: 1, color: dl.line),
       _switchTile(
         Icons.link_rounded,
-        'Начать после дела',
-        'даты сдвигаются за родителем автоматически',
+        'Привязать к делу',
+        'даты сдвигаются за связанным делом автоматически',
         _linked,
         (v) {
           if (v) {
@@ -484,6 +501,18 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           }
         },
       ),
+      if (_linked) ...[
+        const SizedBox(height: 8),
+        SegmentedButton<bool>(
+          segments: const [
+            ButtonSegment(value: false, label: Text('Начать после')),
+            ButtonSegment(value: true, label: Text('Закончить до')),
+          ],
+          selected: {_dependsBefore},
+          onSelectionChanged: (s) => setState(() => _dependsBefore = s.first),
+        ),
+        const SizedBox(height: 8),
+      ],
       if (_linked && parent != null)
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1085,7 +1114,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Text('Начать после дела',
+              child: Text(_dependsBefore ? 'Закончить до дела' : 'Начать после дела',
                   style: context.serif.copyWith(fontSize: 17)),
             ),
             for (final t in candidates)
@@ -1124,6 +1153,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       endDate: end,
       durationDays: duration,
       dependsOnTaskId: _kind == TaskKind.period ? _dependsOn : null,
+      dependsBefore: _kind == TaskKind.period && _dependsBefore,
       timeOfDayMinutes: _kind == TaskKind.single ? _timeMinutes : null,
       reminderEnabled: _deferred ? false : _reminderEnabled,
       reminderRule: _reminderRule,

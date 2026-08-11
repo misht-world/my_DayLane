@@ -53,6 +53,20 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     final progress = ref.watch(subtaskProgressProvider)[t.id] ?? (0, 0);
     final hasSubs = progress.$2 > 0;
 
+    // Дела поездки на этот день показываем как подзадачи (этапы дня).
+    final dayStages = t.isTrip
+        ? [
+            for (final s
+                in ref.watch(stagesForTripProvider(t.id!)).value ??
+                    const <TripStageModel>[])
+              if (!widget.day.isBefore(dateOnly(s.startDate)) &&
+                  !widget.day.isAfter(dateOnly(s.endDate)))
+                s
+          ]
+        : const <TripStageModel>[];
+    final hasStages = dayStages.isNotEmpty;
+    final expandable = hasSubs || hasStages;
+
     final titleColor = done
         ? dl.inkFaint
         : overdue
@@ -114,8 +128,11 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                 ),
                 if (hasSubs)
                   Text('${progress.$1}/${progress.$2}',
+                      style: TextStyle(fontSize: 12, color: dl.inkSoft))
+                else if (hasStages)
+                  Text('${dayStages.length}',
                       style: TextStyle(fontSize: 12, color: dl.inkSoft)),
-                if (hasSubs)
+                if (expandable)
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     icon: Icon(
@@ -146,6 +163,8 @@ class _TaskRowState extends ConsumerState<TaskRow> {
           ),
         ),
         if (_expanded && hasSubs) SubtaskChecklist(taskId: t.id!),
+        if (_expanded && hasStages)
+          _TripDayStages(trip: t, stages: dayStages),
       ],
     );
   }
@@ -338,6 +357,84 @@ class _CarryButton extends StatelessWidget {
 }
 
 /// Чек-лист подпунктов дела (раскрывается под строкой дела).
+/// Этапы поездки на конкретный день — как подпункты под строкой поездки.
+/// Кружок-галочка отмечает этап выполненным; тап по тексту открывает дневник.
+class _TripDayStages extends ConsumerWidget {
+  const _TripDayStages({required this.trip, required this.stages});
+  final TaskModel trip;
+  final List<TripStageModel> stages;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dl = context.dl;
+    // Выполненные этапы — вниз (порядок внутри групп сохраняется).
+    final ordered = [
+      ...stages.where((s) => !s.isDone),
+      ...stages.where((s) => s.isDone),
+    ];
+    return Padding(
+      padding: const EdgeInsets.only(left: 34, bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < ordered.length; i++) ...[
+            if (i > 0) Container(height: 1, color: dl.ink),
+            _stageRow(context, ref, ordered[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _stageRow(BuildContext context, WidgetRef ref, TripStageModel s) {
+    final dl = context.dl;
+    final time = s.timeMinutes == null
+        ? ''
+        : ' · ${formatMinutesOfDay(s.timeMinutes!)}';
+    final label = s.placeName.isNotEmpty ? s.placeName : s.title;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () =>
+                ref.read(repositoryProvider).toggleStageDone(s, !s.isDone),
+            child: Padding(
+              padding: const EdgeInsets.only(right: 10),
+              child: Icon(
+                s.isDone
+                    ? Icons.check_circle_rounded
+                    : Icons.radio_button_unchecked_rounded,
+                size: 18,
+                color: s.isDone ? dl.accent : dl.inkFaint,
+              ),
+            ),
+          ),
+          Icon(s.isStay ? Icons.hotel_rounded : Icons.place_rounded,
+              size: 15, color: dl.inkSoft),
+          const SizedBox(width: 6),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => TripScreen(taskId: trip.id!))),
+              child: Text(
+                '$label$time',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: s.isDone ? dl.inkFaint : dl.ink,
+                  decoration: s.isDone ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class SubtaskChecklist extends ConsumerWidget {
   const SubtaskChecklist({super.key, required this.taskId});
   final int taskId;

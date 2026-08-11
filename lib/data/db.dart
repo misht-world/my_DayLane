@@ -17,6 +17,8 @@ class Tasks extends Table {
   DateTimeColumn get endDate => dateTime()();
   IntColumn get durationDays => integer().withDefault(const Constant(1))();
   IntColumn get dependsOnTaskId => integer().nullable()();
+  BoolColumn get dependsBefore =>
+      boolean().withDefault(const Constant(false))();
   IntColumn get timeOfDayMinutes => integer().nullable()();
   BoolColumn get reminderEnabled =>
       boolean().withDefault(const Constant(false))();
@@ -123,7 +125,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -172,6 +174,9 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 10) {
             await m.addColumn(tripStages, tripStages.links);
+          }
+          if (from < 11) {
+            await m.addColumn(tasks, tasks.dependsBefore);
           }
         },
         beforeOpen: (details) async {
@@ -267,6 +272,7 @@ extension TaskRowMapper on TaskRow {
         endDate: endDate,
         durationDays: durationDays,
         dependsOnTaskId: dependsOnTaskId,
+        dependsBefore: dependsBefore,
         timeOfDayMinutes: timeOfDayMinutes,
         reminderEnabled: reminderEnabled,
         reminderRule: reminderRule,
@@ -312,6 +318,7 @@ extension TaskModelMapper on TaskModel {
         endDate: Value(endDate),
         durationDays: Value(durationDays),
         dependsOnTaskId: Value(dependsOnTaskId),
+        dependsBefore: Value(dependsBefore),
         timeOfDayMinutes: Value(timeOfDayMinutes),
         reminderEnabled: Value(reminderEnabled),
         reminderRule: Value(reminderRule),
