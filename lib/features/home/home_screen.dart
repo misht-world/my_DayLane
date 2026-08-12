@@ -6,6 +6,7 @@ import '../../app/providers.dart';
 import '../../core/constants.dart';
 import '../../core/date_utils.dart';
 import '../../core/marker_label.dart';
+import '../../core/note_l10n.dart';
 import '../../core/theme.dart';
 import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
@@ -558,7 +559,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ListTile(
                 leading: Icon(kNoteCategories[c].icon,
                     color: TaskPalette.byId(kNoteCategories[c].colorId)),
-                title: Text(kNoteCategories[c].name),
+                title: Text(noteCatName(l, c)),
                 onTap: () {
                   Navigator.of(context).pop();
                   openNoteEditor(context, category: c);
@@ -765,6 +766,7 @@ class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final cat = kNoteCategories[widget.category];
     final color = TaskPalette.byId(cat.colorId);
     final notes = ref.watch(notesByCategoryProvider(widget.category));
@@ -783,7 +785,7 @@ class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
                 Icon(cat.icon, size: 19, color: color),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: Text(cat.name,
+                    child: Text(noteCatName(l, widget.category),
                         style: context.serif
                             .copyWith(fontSize: 16, color: dl.ink))),
                 Text('${active.length}',
@@ -817,7 +819,7 @@ class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
                 style: TextButton.styleFrom(
                     foregroundColor: dl.accent, padding: EdgeInsets.zero),
                 icon: const Icon(Icons.add_rounded, size: 17),
-                label: Text(cat.addLabel,
+                label: Text(noteAddLabel(l, widget.category),
                     style: const TextStyle(fontSize: 13)),
               ),
             ),
@@ -834,7 +836,8 @@ class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
                       padding: const EdgeInsets.symmetric(vertical: 6),
                       child: Row(
                         children: [
-                          Text('${cat.doneGroup} · ${done.length}',
+                          Text(
+                              '${noteArchiveLabel(l, widget.category)} · ${done.length}',
                               style:
                                   TextStyle(fontSize: 13, color: dl.inkSoft)),
                           const Spacer(),
@@ -863,10 +866,15 @@ class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
   /// остальные — сплошным списком. Подзаголовок показываем только если групп
   /// больше одной (иначе — лишний шум).
   List<Widget> _items(BuildContext context, List<TaskModel> items) {
+    final l = AppLocalizations.of(context);
     final cat = kNoteCategories[widget.category];
     if (cat.hasMedia) {
       const order = [1, 2, 0];
-      const labels = {1: 'Взрослые', 2: 'Детские', 0: 'Без пометки'};
+      final labels = {
+        1: l.headerAdults,
+        2: l.headerKids,
+        0: l.headerNoTag,
+      };
       final groups = [
         for (final a in order)
           if (items.any((n) => n.audience == a))
@@ -887,7 +895,7 @@ class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
           return a.toLowerCase().compareTo(b.toLowerCase());
         });
       return _withHeaders(context,
-          [for (final k in keys) (k.isEmpty ? 'Без раздела' : k, map[k]!)]);
+          [for (final k in keys) (k.isEmpty ? l.noSection : k, map[k]!)]);
     }
     return [
       for (final n in items) _NoteItemRow(note: n, category: widget.category),

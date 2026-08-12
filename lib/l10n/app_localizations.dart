@@ -212,6 +212,348 @@ abstract class AppLocalizations {
   /// **'empty — \"waiting for their time\"'**
   String get undatedEmpty;
 
+  /// No description provided for @catBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Books'**
+  String get catBooks;
+
+  /// No description provided for @catFilms.
+  ///
+  /// In en, this message translates to:
+  /// **'Films & series'**
+  String get catFilms;
+
+  /// No description provided for @catMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Music'**
+  String get catMusic;
+
+  /// No description provided for @catProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Projects'**
+  String get catProjects;
+
+  /// No description provided for @catShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Shopping'**
+  String get catShopping;
+
+  /// No description provided for @catOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get catOther;
+
+  /// No description provided for @personBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Author'**
+  String get personBooks;
+
+  /// No description provided for @personFilms.
+  ///
+  /// In en, this message translates to:
+  /// **'Director / studio'**
+  String get personFilms;
+
+  /// No description provided for @personMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Artist'**
+  String get personMusic;
+
+  /// No description provided for @personShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Section / topic'**
+  String get personShopping;
+
+  /// No description provided for @doneBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get doneBooks;
+
+  /// No description provided for @doneFilms.
+  ///
+  /// In en, this message translates to:
+  /// **'Watched'**
+  String get doneFilms;
+
+  /// No description provided for @doneMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Listened'**
+  String get doneMusic;
+
+  /// No description provided for @doneProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get doneProjects;
+
+  /// No description provided for @doneShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Bought'**
+  String get doneShopping;
+
+  /// No description provided for @doneOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get doneOther;
+
+  /// No description provided for @archiveBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get archiveBooks;
+
+  /// No description provided for @archiveFilms.
+  ///
+  /// In en, this message translates to:
+  /// **'Watched'**
+  String get archiveFilms;
+
+  /// No description provided for @archiveMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Listened'**
+  String get archiveMusic;
+
+  /// No description provided for @archiveProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get archiveProjects;
+
+  /// No description provided for @archiveShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Bought'**
+  String get archiveShopping;
+
+  /// No description provided for @archiveOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get archiveOther;
+
+  /// No description provided for @hintBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Book title'**
+  String get hintBooks;
+
+  /// No description provided for @hintFilms.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get hintFilms;
+
+  /// No description provided for @hintMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Album / track'**
+  String get hintMusic;
+
+  /// No description provided for @hintProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Project name'**
+  String get hintProjects;
+
+  /// No description provided for @hintShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'What to buy'**
+  String get hintShopping;
+
+  /// No description provided for @hintOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get hintOther;
+
+  /// No description provided for @addBooks.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a book'**
+  String get addBooks;
+
+  /// No description provided for @addFilms.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addFilms;
+
+  /// No description provided for @addMusic.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addMusic;
+
+  /// No description provided for @addProjects.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a project'**
+  String get addProjects;
+
+  /// No description provided for @addShopping.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a purchase'**
+  String get addShopping;
+
+  /// No description provided for @addOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get addOther;
+
+  /// No description provided for @audienceUnset.
+  ///
+  /// In en, this message translates to:
+  /// **'unspecified'**
+  String get audienceUnset;
+
+  /// No description provided for @audienceAdults.
+  ///
+  /// In en, this message translates to:
+  /// **'adults'**
+  String get audienceAdults;
+
+  /// No description provided for @audienceKids.
+  ///
+  /// In en, this message translates to:
+  /// **'kids'**
+  String get audienceKids;
+
+  /// No description provided for @headerAdults.
+  ///
+  /// In en, this message translates to:
+  /// **'Adults'**
+  String get headerAdults;
+
+  /// No description provided for @headerKids.
+  ///
+  /// In en, this message translates to:
+  /// **'Kids'**
+  String get headerKids;
+
+  /// No description provided for @headerNoTag.
+  ///
+  /// In en, this message translates to:
+  /// **'No tag'**
+  String get headerNoTag;
+
+  /// No description provided for @noSection.
+  ///
+  /// In en, this message translates to:
+  /// **'No section'**
+  String get noSection;
+
+  /// No description provided for @noteYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get noteYear;
+
+  /// No description provided for @noteFor.
+  ///
+  /// In en, this message translates to:
+  /// **'For'**
+  String get noteFor;
+
+  /// No description provided for @notePoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Items'**
+  String get notePoints;
+
+  /// No description provided for @noteAddPoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add item'**
+  String get noteAddPoint;
+
+  /// No description provided for @notePointHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Item'**
+  String get notePointHint;
+
+  /// No description provided for @noteLinksFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Links and files'**
+  String get noteLinksFiles;
+
+  /// No description provided for @noteLinksPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'Links and photos (store, image)'**
+  String get noteLinksPhotos;
+
+  /// No description provided for @noteFieldNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteFieldNote;
+
+  /// No description provided for @noteFieldHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Note'**
+  String get noteFieldHint;
+
+  /// No description provided for @noteDoneWhenAll.
+  ///
+  /// In en, this message translates to:
+  /// **'done when all items are completed'**
+  String get noteDoneWhenAll;
+
+  /// No description provided for @noteDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Note deleted'**
+  String get noteDeleted;
+
+  /// No description provided for @linkAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add link'**
+  String get linkAdd;
+
+  /// No description provided for @linkFileFromPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'File from phone'**
+  String get linkFileFromPhone;
+
+  /// No description provided for @linkDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Link'**
+  String get linkDialogTitle;
+
+  /// No description provided for @linkHint.
+  ///
+  /// In en, this message translates to:
+  /// **'https://… (Yandex.Disk, Google Drive, any)'**
+  String get linkHint;
+
+  /// No description provided for @linkAttachFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t attach the file: {error}'**
+  String linkAttachFailed(Object error);
+
   /// No description provided for @settingsTitle.
   ///
   /// In en, this message translates to:

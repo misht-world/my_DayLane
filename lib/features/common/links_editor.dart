@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/links.dart';
 
 /// Редактор списка «Ссылки и файлы»: добавить веб-ссылку или файл с телефона,
@@ -13,20 +14,23 @@ class LinksEditor extends StatelessWidget {
     super.key,
     required this.links,
     required this.onChanged,
-    this.label = 'Ссылки и файлы',
+    this.label,
   });
 
   final List<String> links;
   final ValueChanged<List<String>> onChanged;
-  final String label;
+
+  /// Заголовок раздела; null → локализованное «Ссылки и файлы».
+  final String? label;
 
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
+        Text(label ?? l.noteLinksFiles,
             style: TextStyle(
                 fontSize: 13,
                 color: dl.inkSoft,
@@ -81,8 +85,7 @@ class LinksEditor extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
               ),
               icon: const Icon(Icons.add_link_rounded, size: 16),
-              label:
-                  const Text('Добавить ссылку', style: TextStyle(fontSize: 13)),
+              label: Text(l.linkAdd, style: const TextStyle(fontSize: 13)),
             ),
             OutlinedButton.icon(
               onPressed: () => _addFile(context),
@@ -92,8 +95,8 @@ class LinksEditor extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
               ),
               icon: const Icon(Icons.attach_file_rounded, size: 16),
-              label: const Text('Файл с телефона',
-                  style: TextStyle(fontSize: 13)),
+              label: Text(l.linkFileFromPhone,
+                  style: const TextStyle(fontSize: 13)),
             ),
           ],
         ),
@@ -102,6 +105,7 @@ class LinksEditor extends StatelessWidget {
   }
 
   Future<void> _addLink(BuildContext context) async {
+    final l = AppLocalizations.of(context);
     final clip = (await Clipboard.getData(Clipboard.kTextPlain))?.text?.trim();
     if (!context.mounted) return;
     final ctrl = TextEditingController(
@@ -109,21 +113,20 @@ class LinksEditor extends StatelessWidget {
     final url = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Ссылка'),
+        title: Text(l.linkDialogTitle),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           keyboardType: TextInputType.url,
-          decoration: const InputDecoration(
-              hintText: 'https://… (Я.Диск, Google Drive, любая)'),
+          decoration: InputDecoration(hintText: l.linkHint),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Отмена')),
+              child: Text(l.commonCancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-              child: const Text('Добавить')),
+              child: Text(l.commonAdd)),
         ],
       ),
     );
@@ -131,6 +134,7 @@ class LinksEditor extends StatelessWidget {
   }
 
   Future<void> _addFile(BuildContext context) async {
+    final l = AppLocalizations.of(context);
     final res = await FilePicker.platform.pickFiles();
     final path = res?.files.single.path;
     if (path == null) return;
@@ -140,7 +144,7 @@ class LinksEditor extends StatelessWidget {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Не удалось прикрепить файл: $e')));
+            SnackBar(content: Text(l.linkAttachFailed(e))));
       }
     }
   }

@@ -5,9 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app/providers.dart';
 import '../../core/constants.dart';
 import '../../core/date_utils.dart';
+import '../../core/note_l10n.dart';
 import '../../core/theme.dart';
 import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/links.dart';
 import '../common/links_editor.dart';
 
@@ -92,6 +94,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
+    final cat = widget.category;
+    final person = notePersonLabel(l, cat);
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, _) {
@@ -103,12 +108,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             icon: const Icon(Icons.close_rounded),
             onPressed: () => Navigator.of(context).pop(),
           ),
-          title: Text(_cat.name,
+          title: Text(noteCatName(l, cat),
               style: context.serif.copyWith(fontSize: 18)),
           actions: [
             TextButton(
               onPressed: _save,
-              child: Text('Готово',
+              child: Text(l.commonDone,
                   style: TextStyle(
                       color: dl.accent, fontWeight: FontWeight.w500)),
             ),
@@ -129,7 +134,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 minLines: 1,
                 maxLines: 3,
                 decoration: InputDecoration(
-                  hintText: _cat.itemHint,
+                  hintText: noteItemHint(l, cat),
                   hintStyle:
                       context.serif.copyWith(fontSize: 20, color: dl.inkFaint),
                   border: InputBorder.none,
@@ -138,14 +143,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             ]),
             const SizedBox(height: 14),
             // Поля по категории: автор/год/аудитория (медиа) или раздел (покупки).
-            if (_cat.hasMedia || _cat.personLabel.isNotEmpty) ...[
+            if (_cat.hasMedia || person != null) ...[
               _card(children: [
-                if (_cat.personLabel.isNotEmpty)
+                if (person != null)
                   TextField(
                     controller: _author,
                     textCapitalization: TextCapitalization.sentences,
                     decoration: InputDecoration(
-                      labelText: _cat.personLabel,
+                      labelText: person,
                       border: InputBorder.none,
                       isDense: true,
                     ),
@@ -164,8 +169,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                             FilteringTextInputFormatter.digitsOnly,
                             LengthLimitingTextInputFormatter(4),
                           ],
-                          decoration: const InputDecoration(
-                            labelText: 'Год',
+                          decoration: InputDecoration(
+                            labelText: l.noteYear,
                             border: InputBorder.none,
                             isDense: true,
                           ),
@@ -174,13 +179,13 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  _label('Кому'),
+                  _label(l.noteFor),
                   const SizedBox(height: 6),
                   SegmentedButton<int>(
                     segments: [
-                      for (var i = 0; i < kNoteAudienceLabels.length; i++)
-                        ButtonSegment(
-                            value: i, label: Text(kNoteAudienceLabels[i])),
+                      for (final (i, label)
+                          in noteAudienceOptions(l).indexed)
+                        ButtonSegment(value: i, label: Text(label)),
                     ],
                     selected: {_audience},
                     onSelectionChanged: (s) =>
@@ -194,16 +199,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
             const SizedBox(height: 14),
             _card(children: [
               LinksEditor(
-                label: widget.category == 4
-                    ? 'Ссылки и фото (магазин, картинка)'
-                    : 'Ссылки и файлы',
+                label: cat == 4 ? l.noteLinksPhotos : l.noteLinksFiles,
                 links: _links,
                 onChanged: (v) => setState(() => _links = v),
               ),
             ]),
             const SizedBox(height: 14),
             _card(children: [
-              _label('Примечание'),
+              _label(l.noteFieldNote),
               const SizedBox(height: 2),
               TextField(
                 controller: _note,
@@ -211,8 +214,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 minLines: 2,
                 keyboardType: TextInputType.multiline,
                 textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  hintText: 'Заметка',
+                decoration: InputDecoration(
+                  hintText: l.noteFieldHint,
                   border: InputBorder.none,
                   isDense: true,
                 ),
@@ -227,7 +230,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       size: 20, color: dl.inkSoft),
                   const SizedBox(width: 14),
                   Expanded(
-                      child: Text(_cat.doneLabel,
+                      child: Text(noteDoneLabel(l, cat),
                           style: TextStyle(fontSize: 15, color: dl.ink))),
                   Switch(
                     value: _isDone,
@@ -240,7 +243,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
               if (_subs.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 2, left: 34),
-                  child: Text('готово, когда выполнены все пункты',
+                  child: Text(l.noteDoneWhenAll,
                       style: TextStyle(fontSize: 12, color: dl.inkFaint)),
                 ),
             ]),
@@ -251,7 +254,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   onPressed: _delete,
                   style: TextButton.styleFrom(foregroundColor: dl.danger),
                   icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                  label: const Text('Удалить'),
+                  label: Text(l.commonDelete),
                 ),
               ),
             ],
@@ -285,10 +288,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   Widget _subtaskBlock() {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _label('Пункты'),
+        _label(l.notePoints),
         const SizedBox(height: 4),
         for (var i = 0; i < _subs.length; i++)
           Row(
@@ -316,8 +320,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   textCapitalization: TextCapitalization.sentences,
                   maxLines: null,
                   keyboardType: TextInputType.multiline,
-                  decoration: const InputDecoration(
-                    hintText: 'Пункт',
+                  decoration: InputDecoration(
+                    hintText: l.notePointHint,
                     isDense: true,
                     border: InputBorder.none,
                   ),
@@ -339,7 +343,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           style: TextButton.styleFrom(
               foregroundColor: dl.accent, padding: EdgeInsets.zero),
           icon: const Icon(Icons.add_rounded, size: 18),
-          label: const Text('Добавить пункт'),
+          label: Text(l.noteAddPoint),
         ),
       ],
     );
@@ -403,10 +407,11 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   Future<void> _delete() async {
     _skipAutosave = true;
+    final l = AppLocalizations.of(context);
     final undo =
         await ref.read(repositoryProvider).deleteTask(widget.existing!.id!);
     if (!mounted) return;
-    showUndoSnack(context, 'Заметка удалена', undo);
+    showUndoSnack(context, l.noteDeleted, undo);
     Navigator.of(context).pop();
   }
 }

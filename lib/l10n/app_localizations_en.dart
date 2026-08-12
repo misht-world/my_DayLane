@@ -66,6 +66,179 @@ class AppLocalizationsEn extends AppLocalizations {
   String get undatedEmpty => 'empty — \"waiting for their time\"';
 
   @override
+  String get catBooks => 'Books';
+
+  @override
+  String get catFilms => 'Films & series';
+
+  @override
+  String get catMusic => 'Music';
+
+  @override
+  String get catProjects => 'Projects';
+
+  @override
+  String get catShopping => 'Shopping';
+
+  @override
+  String get catOther => 'Other';
+
+  @override
+  String get personBooks => 'Author';
+
+  @override
+  String get personFilms => 'Director / studio';
+
+  @override
+  String get personMusic => 'Artist';
+
+  @override
+  String get personShopping => 'Section / topic';
+
+  @override
+  String get doneBooks => 'Read';
+
+  @override
+  String get doneFilms => 'Watched';
+
+  @override
+  String get doneMusic => 'Listened';
+
+  @override
+  String get doneProjects => 'Completed';
+
+  @override
+  String get doneShopping => 'Bought';
+
+  @override
+  String get doneOther => 'Done';
+
+  @override
+  String get archiveBooks => 'Read';
+
+  @override
+  String get archiveFilms => 'Watched';
+
+  @override
+  String get archiveMusic => 'Listened';
+
+  @override
+  String get archiveProjects => 'Completed';
+
+  @override
+  String get archiveShopping => 'Bought';
+
+  @override
+  String get archiveOther => 'Done';
+
+  @override
+  String get hintBooks => 'Book title';
+
+  @override
+  String get hintFilms => 'Title';
+
+  @override
+  String get hintMusic => 'Album / track';
+
+  @override
+  String get hintProjects => 'Project name';
+
+  @override
+  String get hintShopping => 'What to buy';
+
+  @override
+  String get hintOther => 'Note';
+
+  @override
+  String get addBooks => 'Add a book';
+
+  @override
+  String get addFilms => 'Add';
+
+  @override
+  String get addMusic => 'Add';
+
+  @override
+  String get addProjects => 'Add a project';
+
+  @override
+  String get addShopping => 'Add a purchase';
+
+  @override
+  String get addOther => 'Add';
+
+  @override
+  String get audienceUnset => 'unspecified';
+
+  @override
+  String get audienceAdults => 'adults';
+
+  @override
+  String get audienceKids => 'kids';
+
+  @override
+  String get headerAdults => 'Adults';
+
+  @override
+  String get headerKids => 'Kids';
+
+  @override
+  String get headerNoTag => 'No tag';
+
+  @override
+  String get noSection => 'No section';
+
+  @override
+  String get noteYear => 'Year';
+
+  @override
+  String get noteFor => 'For';
+
+  @override
+  String get notePoints => 'Items';
+
+  @override
+  String get noteAddPoint => 'Add item';
+
+  @override
+  String get notePointHint => 'Item';
+
+  @override
+  String get noteLinksFiles => 'Links and files';
+
+  @override
+  String get noteLinksPhotos => 'Links and photos (store, image)';
+
+  @override
+  String get noteFieldNote => 'Note';
+
+  @override
+  String get noteFieldHint => 'Note';
+
+  @override
+  String get noteDoneWhenAll => 'done when all items are completed';
+
+  @override
+  String get noteDeleted => 'Note deleted';
+
+  @override
+  String get linkAdd => 'Add link';
+
+  @override
+  String get linkFileFromPhone => 'File from phone';
+
+  @override
+  String get linkDialogTitle => 'Link';
+
+  @override
+  String get linkHint => 'https://… (Yandex.Disk, Google Drive, any)';
+
+  @override
+  String linkAttachFailed(Object error) {
+    return 'Couldn\'t attach the file: $error';
+  }
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override
