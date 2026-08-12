@@ -207,6 +207,12 @@ final tripStayRangesProvider =
 /// Реальная сегодняшняя дата без времени (для просрочки и т.п.).
 final todayProvider = Provider<DateTime>((ref) => dateOnly(DateTime.now()));
 
+/// Локаль интерфейса из настроек. '' = системная (null → следовать системе).
+final localeProvider = Provider<Locale?>((ref) {
+  final code = ref.watch(settingsProvider).value?.localeCode ?? '';
+  return code.isEmpty ? null : Locale(code);
+});
+
 /// Режим темы из настроек.
 final themeModeProvider = Provider<ThemeMode>((ref) {
   final s = ref.watch(settingsProvider).value;

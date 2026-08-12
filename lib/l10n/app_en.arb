@@ -1,0 +1,52 @@
+{
+  "@@locale": "en",
+
+  "commonDone": "Done",
+  "commonCancel": "Cancel",
+  "commonDelete": "Delete",
+  "commonAdd": "Add",
+
+  "tooltipAllTasks": "All tasks",
+  "tooltipPayments": "Payments",
+  "tooltipTrips": "Trips",
+  "tooltipSettings": "Settings",
+  "tooltipAddTask": "Add task",
+  "tooltipAddNote": "Add note",
+
+  "sectionToday": "Today",
+  "sectionTomorrow": "Tomorrow",
+  "sectionNotes": "Notes",
+  "todayEmpty": "nothing for today",
+  "tomorrowEmpty": "nothing for tomorrow",
+  "notesEmpty": "empty — add via \"+\"",
+
+  "notesWhereToAdd": "Add to",
+  "notesUndated": "Undated tasks",
+  "undatedEmpty": "empty — \"waiting for their time\"",
+
+  "settingsTitle": "Settings",
+  "settingsAutoCarry": "Auto-carry unfinished",
+  "settingsAutoCarrySubtitle": "On launch, move overdue single-day tasks to today",
+  "settingsTheme": "Theme",
+  "settingsThemeSystem": "System",
+  "settingsThemeLight": "Light",
+  "settingsThemeDark": "Dark",
+  "settingsFirstDay": "First day of week",
+  "settingsMonday": "Monday",
+  "settingsSunday": "Sunday",
+  "settingsLanguage": "Language",
+  "settingsLanguageSystem": "System",
+  "settingsLanguageRu": "Русский",
+  "settingsLanguageEn": "English",
+  "settingsAllowNotifications": "Allow notifications",
+  "settingsAllowNotificationsSubtitle": "Needed for reminders",
+  "settingsData": "Data",
+  "settingsExport": "Export (backup)",
+  "settingsExportSubtitle": "Save all tasks to a JSON file",
+  "settingsImport": "Import from file",
+  "settingsImportSubtitle": "Replace all data from a backup",
+  "settingsImported": "Tasks imported: {count}",
+  "@settingsImported": {
+    "placeholders": { "count": { "type": "int" } }
+  }
+}

@@ -9,6 +9,7 @@ import '../../core/marker_label.dart';
 import '../../core/theme.dart';
 import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
+import '../../l10n/app_localizations.dart';
 import '../calendar/calendar_view.dart';
 import '../notes/note_editor.dart';
 import '../settings/settings_screen.dart';
@@ -37,6 +38,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final focused = ref.watch(focusedDateProvider);
     final sections = ref.watch(sectionsProvider);
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
@@ -49,24 +51,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   _hero(context, focused),
                   _section(
                     kind: _Horizon.today,
-                    label: 'Сегодня',
+                    label: l.sectionToday,
                     day: focused,
                     tasks: sections.today,
                     expanded: _showToday,
                     onToggle: () => setState(() => _showToday = !_showToday),
                     danger: false,
-                    emptyText: 'на сегодня дел нет',
+                    emptyText: l.todayEmpty,
                   ),
                   _section(
                     kind: _Horizon.tomorrow,
-                    label: 'Завтра',
+                    label: l.sectionTomorrow,
                     day: addDays(focused, 1),
                     tasks: sections.tomorrow,
                     expanded: _showTomorrow,
                     onToggle: () =>
                         setState(() => _showTomorrow = !_showTomorrow),
                     danger: false,
-                    emptyText: 'на завтра пусто',
+                    emptyText: l.tomorrowEmpty,
                   ),
                   _notesSection(context),
                   _calendarSection(context),
@@ -78,6 +80,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _topBar(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 14, 16, 0),
       child: Row(
@@ -93,7 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           const Spacer(),
           IconButton(
-            tooltip: 'Все дела',
+            tooltip: l.tooltipAllTasks,
             visualDensity: VisualDensity.compact,
             icon: Icon(Icons.checklist_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
@@ -101,22 +104,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'Оплаты',
+            tooltip: l.tooltipPayments,
             visualDensity: VisualDensity.compact,
             icon: Icon(Icons.payments_outlined, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
               MaterialPageRoute(
                 builder: (_) => TasksListScreen(
-                  title: 'Оплаты',
+                  title: l.tooltipPayments,
                   emptyText: 'Нет дел с шаблоном «Оплата»',
-                  // Шаблон «Оплата» — индекс 1 в kTaskTemplates.
+                  // Шаблон «Оплata» — индекс 1 в kTaskTemplates.
                   filter: (t) => t.iconId == 1,
                 ),
               ),
             ),
           ),
           IconButton(
-            tooltip: 'Путешествия',
+            tooltip: l.tooltipTrips,
             visualDensity: VisualDensity.compact,
             icon: Icon(Icons.luggage_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
@@ -124,6 +127,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           IconButton(
+            tooltip: l.tooltipSettings,
             visualDensity: VisualDensity.compact,
             icon: Icon(Icons.settings_rounded, color: dl.inkFaint),
             onPressed: () => Navigator.of(context).push(
@@ -150,11 +154,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final dl = context.dl;
     final realToday = ref.watch(todayProvider);
     final isToday = isSameDate(focused, realToday);
+    final loc = Localizations.localeOf(context).languageCode;
     // Родительный падеж («июня»): берём из полной даты, отбросив число.
-    final month = DateFormat('d MMMM', 'ru')
+    // Для EN это просто вычленяет название месяца («July»).
+    final month = DateFormat('d MMMM', loc)
         .format(focused)
         .replaceFirst('${focused.day} ', '');
-    final weekday = DateFormat('EEEE', 'ru').format(focused).toUpperCase();
+    final weekday = DateFormat('EEEE', loc).format(focused).toUpperCase();
 
     void shift(int days) =>
         ref.read(focusedDateProvider.notifier).shift(days);
@@ -478,6 +484,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// и «возврат» категории — через «+».
   Widget _notesSection(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final counts = ref.watch(noteActiveCountsProvider);
     final undated = ref.watch(deferredTasksProvider);
     final undatedOpen = ref.watch(deferredOpenCountProvider);
@@ -494,7 +501,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _bandHeader(
-            label: 'Заметки',
+            label: l.sectionNotes,
             count: total,
             danger: false,
             expanded: _showDeferred,
@@ -502,7 +509,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             addAction: _headerAction(
               icon: Icons.add_rounded,
               filled: true,
-              tooltip: 'Добавить заметку',
+              tooltip: l.tooltipAddNote,
               onTap: () => _pickNoteCategory(context),
             ),
           ),
@@ -512,7 +519,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: (activeCats.isEmpty && undated.isEmpty)
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      child: Text('пусто — добавьте через «+»',
+                      child: Text(l.notesEmpty,
                           style: TextStyle(color: dl.inkFaint, fontSize: 14)),
                     )
                   : Column(
@@ -532,6 +539,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   /// Выбор, куда добавить: категория заметки или «дело без даты».
   void _pickNoteCategory(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: dl.surface,
@@ -543,7 +551,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('Куда добавить',
+              child: Text(l.notesWhereToAdd,
                   style: context.serif.copyWith(fontSize: 17, color: dl.ink)),
             ),
             for (var c = 0; c < kNoteCategories.length; c++)
@@ -559,7 +567,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Divider(height: 1, color: dl.line),
             ListTile(
               leading: Icon(Icons.schedule_rounded, color: dl.inkSoft),
-              title: const Text('Дело без даты'),
+              title: Text(l.notesUndated),
               onTap: () {
                 Navigator.of(context).pop();
                 openTaskEditor(context, null, deferred: true);
@@ -1032,6 +1040,7 @@ class _UndatedGroupState extends ConsumerState<_UndatedGroup> {
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final tasks = ref.watch(deferredTasksProvider);
     final open = ref.watch(deferredOpenCountProvider);
 
@@ -1047,7 +1056,7 @@ class _UndatedGroupState extends ConsumerState<_UndatedGroup> {
                 Icon(Icons.schedule_rounded, size: 19, color: dl.inkSoft),
                 const SizedBox(width: 10),
                 Expanded(
-                    child: Text('Дела без даты',
+                    child: Text(l.notesUndated,
                         style: context.serif
                             .copyWith(fontSize: 16, color: dl.ink))),
                 Text('$open',

@@ -117,6 +117,11 @@ class AppSettings extends Table {
   /// 1 = понедельник … 7 = воскресенье.
   IntColumn get firstWeekday => integer().withDefault(const Constant(1))();
 
+  /// Код языка интерфейса: '' = системный, 'ru', 'en'.
+  /// По умолчанию — русский (интерфейс приложения RU-first; локализация EN
+  /// пока частичная, поэтому не переключаем автоматически на язык системы).
+  TextColumn get localeCode => text().withDefault(const Constant('ru'))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -131,7 +136,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -189,6 +194,9 @@ class AppDatabase extends _$AppDatabase {
             await m.addColumn(tasks, tasks.author);
             await m.addColumn(tasks, tasks.year);
             await m.addColumn(tasks, tasks.audience);
+          }
+          if (from < 13) {
+            await m.addColumn(appSettings, appSettings.localeCode);
           }
         },
         beforeOpen: (details) async {

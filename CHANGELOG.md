@@ -3,6 +3,19 @@
 Все заметные изменения DayLane. Формат — по [Keep a Changelog](https://keepachangelog.com/ru/),
 версии — по [SemVer](https://semver.org/lang/ru/).
 
+## [1.14.0] — 2026-08-12
+
+### Added
+- **App language RU / EN.** A Language setting (System / Русский / English)
+  under Settings. Localization groundwork (Flutter gen_l10n + ARB) is in place;
+  the first screens are localized — Settings and the home chrome (top bar,
+  section headers, the Notes section, the date hero). Remaining screens are
+  still Russian and will be migrated next. Default stays **Russian** so the
+  current experience is unchanged; English is opt-in.
+
+### Changed
+- Repository README and description are now in English.
+
 ## [1.13.1] — 2026-08-12
 
 ### Изменено

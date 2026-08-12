@@ -2197,12 +2197,25 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: false,
     defaultValue: const Constant(1),
   );
+  static const VerificationMeta _localeCodeMeta = const VerificationMeta(
+    'localeCode',
+  );
+  @override
+  late final GeneratedColumn<String> localeCode = GeneratedColumn<String>(
+    'locale_code',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('ru'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
     autoCarry,
     themeMode,
     firstWeekday,
+    localeCode,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2240,6 +2253,12 @@ class $AppSettingsTable extends AppSettings
         ),
       );
     }
+    if (data.containsKey('locale_code')) {
+      context.handle(
+        _localeCodeMeta,
+        localeCode.isAcceptableOrUnknown(data['locale_code']!, _localeCodeMeta),
+      );
+    }
     return context;
   }
 
@@ -2265,6 +2284,10 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.int,
         data['${effectivePrefix}first_weekday'],
       )!,
+      localeCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale_code'],
+      )!,
     );
   }
 
@@ -2283,11 +2306,17 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
 
   /// 1 = понедельник … 7 = воскресенье.
   final int firstWeekday;
+
+  /// Код языка интерфейса: '' = системный, 'ru', 'en'.
+  /// По умолчанию — русский (интерфейс приложения RU-first; локализация EN
+  /// пока частичная, поэтому не переключаем автоматически на язык системы).
+  final String localeCode;
   const SettingsRow({
     required this.id,
     required this.autoCarry,
     required this.themeMode,
     required this.firstWeekday,
+    required this.localeCode,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2296,6 +2325,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['auto_carry'] = Variable<bool>(autoCarry);
     map['theme_mode'] = Variable<int>(themeMode);
     map['first_weekday'] = Variable<int>(firstWeekday);
+    map['locale_code'] = Variable<String>(localeCode);
     return map;
   }
 
@@ -2305,6 +2335,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       autoCarry: Value(autoCarry),
       themeMode: Value(themeMode),
       firstWeekday: Value(firstWeekday),
+      localeCode: Value(localeCode),
     );
   }
 
@@ -2318,6 +2349,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       autoCarry: serializer.fromJson<bool>(json['autoCarry']),
       themeMode: serializer.fromJson<int>(json['themeMode']),
       firstWeekday: serializer.fromJson<int>(json['firstWeekday']),
+      localeCode: serializer.fromJson<String>(json['localeCode']),
     );
   }
   @override
@@ -2328,6 +2360,7 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'autoCarry': serializer.toJson<bool>(autoCarry),
       'themeMode': serializer.toJson<int>(themeMode),
       'firstWeekday': serializer.toJson<int>(firstWeekday),
+      'localeCode': serializer.toJson<String>(localeCode),
     };
   }
 
@@ -2336,11 +2369,13 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     bool? autoCarry,
     int? themeMode,
     int? firstWeekday,
+    String? localeCode,
   }) => SettingsRow(
     id: id ?? this.id,
     autoCarry: autoCarry ?? this.autoCarry,
     themeMode: themeMode ?? this.themeMode,
     firstWeekday: firstWeekday ?? this.firstWeekday,
+    localeCode: localeCode ?? this.localeCode,
   );
   SettingsRow copyWithCompanion(AppSettingsCompanion data) {
     return SettingsRow(
@@ -2350,6 +2385,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       firstWeekday: data.firstWeekday.present
           ? data.firstWeekday.value
           : this.firstWeekday,
+      localeCode: data.localeCode.present
+          ? data.localeCode.value
+          : this.localeCode,
     );
   }
 
@@ -2359,13 +2397,15 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('id: $id, ')
           ..write('autoCarry: $autoCarry, ')
           ..write('themeMode: $themeMode, ')
-          ..write('firstWeekday: $firstWeekday')
+          ..write('firstWeekday: $firstWeekday, ')
+          ..write('localeCode: $localeCode')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, autoCarry, themeMode, firstWeekday);
+  int get hashCode =>
+      Object.hash(id, autoCarry, themeMode, firstWeekday, localeCode);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2373,7 +2413,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.id == this.id &&
           other.autoCarry == this.autoCarry &&
           other.themeMode == this.themeMode &&
-          other.firstWeekday == this.firstWeekday);
+          other.firstWeekday == this.firstWeekday &&
+          other.localeCode == this.localeCode);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
@@ -2381,29 +2422,34 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
   final Value<bool> autoCarry;
   final Value<int> themeMode;
   final Value<int> firstWeekday;
+  final Value<String> localeCode;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.autoCarry = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.firstWeekday = const Value.absent(),
+    this.localeCode = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
     this.autoCarry = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.firstWeekday = const Value.absent(),
+    this.localeCode = const Value.absent(),
   });
   static Insertable<SettingsRow> custom({
     Expression<int>? id,
     Expression<bool>? autoCarry,
     Expression<int>? themeMode,
     Expression<int>? firstWeekday,
+    Expression<String>? localeCode,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (autoCarry != null) 'auto_carry': autoCarry,
       if (themeMode != null) 'theme_mode': themeMode,
       if (firstWeekday != null) 'first_weekday': firstWeekday,
+      if (localeCode != null) 'locale_code': localeCode,
     });
   }
 
@@ -2412,12 +2458,14 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
     Value<bool>? autoCarry,
     Value<int>? themeMode,
     Value<int>? firstWeekday,
+    Value<String>? localeCode,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
       autoCarry: autoCarry ?? this.autoCarry,
       themeMode: themeMode ?? this.themeMode,
       firstWeekday: firstWeekday ?? this.firstWeekday,
+      localeCode: localeCode ?? this.localeCode,
     );
   }
 
@@ -2436,6 +2484,9 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
     if (firstWeekday.present) {
       map['first_weekday'] = Variable<int>(firstWeekday.value);
     }
+    if (localeCode.present) {
+      map['locale_code'] = Variable<String>(localeCode.value);
+    }
     return map;
   }
 
@@ -2445,7 +2496,8 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
           ..write('id: $id, ')
           ..write('autoCarry: $autoCarry, ')
           ..write('themeMode: $themeMode, ')
-          ..write('firstWeekday: $firstWeekday')
+          ..write('firstWeekday: $firstWeekday, ')
+          ..write('localeCode: $localeCode')
           ..write(')'))
         .toString();
   }
@@ -4884,6 +4936,7 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<bool> autoCarry,
       Value<int> themeMode,
       Value<int> firstWeekday,
+      Value<String> localeCode,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -4891,6 +4944,7 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<bool> autoCarry,
       Value<int> themeMode,
       Value<int> firstWeekday,
+      Value<String> localeCode,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -4919,6 +4973,11 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<int> get firstWeekday => $composableBuilder(
     column: $table.firstWeekday,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4951,6 +5010,11 @@ class $$AppSettingsTableOrderingComposer
     column: $table.firstWeekday,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -4973,6 +5037,11 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<int> get firstWeekday => $composableBuilder(
     column: $table.firstWeekday,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get localeCode => $composableBuilder(
+    column: $table.localeCode,
     builder: (column) => column,
   );
 }
@@ -5012,11 +5081,13 @@ class $$AppSettingsTableTableManager
                 Value<bool> autoCarry = const Value.absent(),
                 Value<int> themeMode = const Value.absent(),
                 Value<int> firstWeekday = const Value.absent(),
+                Value<String> localeCode = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 autoCarry: autoCarry,
                 themeMode: themeMode,
                 firstWeekday: firstWeekday,
+                localeCode: localeCode,
               ),
           createCompanionCallback:
               ({
@@ -5024,11 +5095,13 @@ class $$AppSettingsTableTableManager
                 Value<bool> autoCarry = const Value.absent(),
                 Value<int> themeMode = const Value.absent(),
                 Value<int> firstWeekday = const Value.absent(),
+                Value<String> localeCode = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 autoCarry: autoCarry,
                 themeMode: themeMode,
                 firstWeekday: firstWeekday,
+                localeCode: localeCode,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

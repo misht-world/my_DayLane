@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants.dart';
 import '../core/theme.dart';
+import '../l10n/app_localizations.dart';
 import '../data/seed.dart';
 import '../features/home/home_screen.dart';
 import 'providers.dart';
@@ -37,6 +38,7 @@ class _DayLaneAppState extends ConsumerState<DayLaneApp> {
     });
 
     final themeMode = ref.watch(themeModeProvider);
+    final locale = ref.watch(localeProvider);
 
     return MaterialApp(
       title: kAppName,
@@ -44,9 +46,11 @@ class _DayLaneAppState extends ConsumerState<DayLaneApp> {
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: themeMode,
-      locale: const Locale('ru'),
-      supportedLocales: const [Locale('ru'), Locale('en')],
+      // null → следовать системному языку среди поддерживаемых.
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
