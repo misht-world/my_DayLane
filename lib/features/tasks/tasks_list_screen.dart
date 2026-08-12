@@ -33,8 +33,9 @@ class TasksListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
-    // Заметки (раздел «Заметки») в общий список дел не попадают.
-    final f = filter ?? (t) => !t.isTrip && !t.isNote;
+    // В общий список дел не попадают путешествия, заметки и оплаты
+    // (у оплат — свой отдельный список, шаблон «Оплата» = iconId 1).
+    final f = filter ?? (t) => !t.isTrip && !t.isNote && t.iconId != 1;
     final tasks = (ref.watch(tasksProvider).value ?? const []).where(f);
     final today = ref.watch(todayProvider);
 

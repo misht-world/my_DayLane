@@ -32,14 +32,15 @@ class AppTheme {
 
   // ── Тёмная палитра («Ежедневник») ───────────────────────────────
   static const Color _dAccent = Color(0xFFE0A33A);
-  static const Color _dPage = Color(0xFF100F0B);
-  static const Color _dSurface = Color(0xFF16140F);
-  static const Color _dSunken = Color(0xFF1E1B14);
+  // Тёмная тема — тёплый нейтральный СЕРЫЙ (а не почти-чёрный).
+  static const Color _dPage = Color(0xFF23211E);
+  static const Color _dSurface = Color(0xFF2D2B27);
+  static const Color _dSunken = Color(0xFF29271F);
   static const Color _dInk = Color(0xFFEFE9DC);
-  static const Color _dInkSoft = Color(0xFF9A9282);
-  static const Color _dInkFaint = Color(0xFF7D766A);
-  static const Color _dLine = Color(0xFF262219);
-  static const Color _dLineStrong = Color(0xFF34301F);
+  static const Color _dInkSoft = Color(0xFFA49C8C);
+  static const Color _dInkFaint = Color(0xFF837C6F);
+  static const Color _dLine = Color(0xFF3B382F);
+  static const Color _dLineStrong = Color(0xFF4B473C);
   static const Color _dDanger = Color(0xFFF09B8C);
   static const Color _dMarker = Color(0xFFD9B93F);
 
@@ -100,7 +101,7 @@ class AppTheme {
       onSurface: ink,
       surfaceContainerLowest: brightness == Brightness.light
           ? Colors.white
-          : const Color(0xFF0C0B08),
+          : const Color(0xFF1C1A17),
       surfaceContainerLow: sunken,
       surfaceContainer: page,
       surfaceContainerHigh: sunken,
