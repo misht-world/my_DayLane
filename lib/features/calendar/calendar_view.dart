@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../app/providers.dart';
 import '../../core/date_utils.dart';
 import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../domain/lanes.dart';
 import '../../domain/models.dart';
 import '../../domain/scheduling.dart';
@@ -43,7 +45,10 @@ class CalendarView extends ConsumerStatefulWidget {
 }
 
 class _CalendarViewState extends ConsumerState<CalendarView> {
-  static const _weekdayShort = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
+  /// Короткое имя дня недели (w: 1=пн … 7=вс) на языке приложения.
+  /// 2024-01-01 — понедельник, поэтому DateTime(2024,1,w) даёт нужный день.
+  static String _weekdayShort(int w) =>
+      DateFormat('EEE').format(DateTime(2024, 1, w)).replaceAll('.', '');
 
   final ScrollController _scroll = ScrollController();
 
@@ -198,7 +203,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
                       children: [
                         Icon(Icons.restore_rounded, size: 15, color: dl.accent),
                         const SizedBox(width: 3),
-                        Text('сегодня',
+                        Text(AppLocalizations.of(context).resetToday,
                             style: TextStyle(fontSize: 12, color: dl.accent)),
                       ],
                     ),
@@ -213,7 +218,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
               Expanded(
                 child: Center(
                   child: Text(
-                    _weekdayShort[w - 1],
+                    _weekdayShort(w),
                     style: TextStyle(
                       fontSize: 11,
                       letterSpacing: 0.5,
@@ -834,7 +839,8 @@ class _DaySheet extends StatelessWidget {
             if (tasks.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Text('дел нет', style: TextStyle(color: dl.inkFaint)),
+                child: Text(AppLocalizations.of(context).daySheetEmpty,
+                    style: TextStyle(color: dl.inkFaint)),
               )
             else
               for (final t in tasks)

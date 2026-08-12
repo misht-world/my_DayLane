@@ -6,6 +6,7 @@ import '../../core/date_utils.dart';
 import '../../core/marker_label.dart';
 import '../../core/theme.dart';
 import '../../domain/models.dart';
+import '../../l10n/app_localizations.dart';
 import '../task_editor/task_editor_screen.dart';
 import 'trip_screen.dart';
 
@@ -17,6 +18,7 @@ class TripsListScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final trips = ref.watch(tripsProvider);
     final today = ref.watch(todayProvider);
 
@@ -37,10 +39,10 @@ class TripsListScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title:
-            Text('Путешествия', style: context.serif.copyWith(fontSize: 18)),
+            Text(l.tripsTitle, style: context.serif.copyWith(fontSize: 18)),
         actions: [
           IconButton(
-            tooltip: 'Новое путешествие',
+            tooltip: l.tripsNew,
             icon: const Icon(Icons.add_rounded),
             onPressed: () => openTaskEditor(context, null, trip: true),
           ),
@@ -56,8 +58,7 @@ class TripsListScreen extends ConsumerWidget {
                     Icon(Icons.luggage_rounded, size: 40, color: dl.inkFaint),
                     const SizedBox(height: 12),
                     Text(
-                      'Пока нет путешествий.\nСоздайте поездку — это период '
-                      'с дневником: этапы по дням, места и заметки.',
+                      l.tripsEmpty,
                       textAlign: TextAlign.center,
                       style: TextStyle(color: dl.inkSoft, fontSize: 14),
                     ),
@@ -69,15 +70,15 @@ class TripsListScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
               children: [
                 if (current.isNotEmpty) ...[
-                  _groupLabel(context, 'Сейчас'),
+                  _groupLabel(context, l.tripsNow),
                   for (final t in current) _TripTile(trip: t),
                 ],
                 if (upcoming.isNotEmpty) ...[
-                  _groupLabel(context, 'Предстоящие'),
+                  _groupLabel(context, l.tripsUpcoming),
                   for (final t in upcoming) _TripTile(trip: t),
                 ],
                 if (past.isNotEmpty) ...[
-                  _groupLabel(context, 'Прошедшие'),
+                  _groupLabel(context, l.tripsPast),
                   for (final t in past) _TripTile(trip: t),
                 ],
               ],
@@ -101,6 +102,7 @@ class _TripTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final color = context.taskColor(trip);
     final stages = ref.watch(stageCountProvider)[trip.id] ?? 0;
 
@@ -133,15 +135,15 @@ class _TripTile extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       '${formatDateRange(trip.startDate, trip.endDate)}'
-                      ' · ${trip.durationDays} дн.'
-                      '${stages > 0 ? ' · этапов: $stages' : ''}',
+                      ' · ${l.daysAbbrev(trip.durationDays)}'
+                      '${stages > 0 ? l.tripStagesCount(stages) : ''}',
                       style: TextStyle(fontSize: 12.5, color: dl.inkSoft),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                tooltip: 'Показать в календаре',
+                tooltip: l.tripShowInCalendar,
                 icon: Icon(Icons.event_rounded, size: 19, color: dl.inkSoft),
                 onPressed: () {
                   ref.read(focusedDateProvider.notifier).set(trip.startDate);

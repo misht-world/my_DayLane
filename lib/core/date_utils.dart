@@ -21,34 +21,38 @@ bool isSameDate(DateTime a, DateTime b) => daysBetween(a, b) == 0;
 /// Числовой ключ календарного дня (для множеств/карт): ГГГГММДД.
 int dayKey(DateTime d) => d.year * 10000 + d.month * 100 + d.day;
 
-/// Метка «день N из M».
-String dayOfPeriodLabel(int n, int m) => 'день $n из $m';
+/// Метка «день N из M» / «day N of M». Язык — из Intl.defaultLocale
+/// (работает и в фоне, для текста уведомлений).
+String dayOfPeriodLabel(int n, int m) =>
+    (Intl.defaultLocale ?? 'ru').startsWith('en')
+        ? 'day $n of $m'
+        : 'день $n из $m';
 
-/// «20 июня».
-String formatDayMonth(DateTime d) => DateFormat('d MMMM', 'ru').format(d);
+/// «20 июня» / «20 June». Локаль — глобальная (Intl.defaultLocale).
+String formatDayMonth(DateTime d) => DateFormat('d MMMM').format(d);
 
-/// «среда, 17 июня».
+/// «среда, 17 июня» / «Wednesday, 17 June».
 String formatWeekdayDayMonth(DateTime d) =>
-    DateFormat('EEEE, d MMMM', 'ru').format(d);
+    DateFormat('EEEE, d MMMM').format(d);
 
 /// Диапазон периода: «20–24 июня» или «28 июня – 2 июля».
 String formatDateRange(DateTime a, DateTime b) {
   if (isSameDate(a, b)) return formatDayMonth(a);
   if (a.month == b.month && a.year == b.year) {
-    return '${a.day}–${DateFormat('d MMMM', 'ru').format(b)}';
+    return '${a.day}–${DateFormat('d MMMM').format(b)}';
   }
   return '${formatDayMonth(a)} – ${formatDayMonth(b)}';
 }
 
-/// «Июнь 2026» — месяц (именительный падеж) и год, с заглавной буквы.
+/// «Июль 2026» / «July 2026» — месяц и год, с заглавной буквы.
 String formatMonthYear(DateTime d) {
-  final s = DateFormat('LLLL y', 'ru').format(d);
+  final s = DateFormat('LLLL y').format(d);
   return s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 }
 
-/// Короткое название месяца: «июл». Для подписей в сетке календаря.
+/// Короткое название месяца: «июл» / «Jul». Для подписей в сетке календаря.
 String monthNameShort(int month) =>
-    DateFormat('LLL', 'ru').format(DateTime(2000, month)).replaceAll('.', '');
+    DateFormat('LLL').format(DateTime(2000, month)).replaceAll('.', '');
 
 /// Прибавляет [n] месяцев к дате, сохраняя день (с поправкой на длину месяца).
 DateTime addMonths(DateTime d, int n) {

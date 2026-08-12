@@ -306,4 +306,480 @@ class AppLocalizationsEn extends AppLocalizations {
   String settingsImported(int count) {
     return 'Tasks imported: $count';
   }
+
+  @override
+  String get commonReplace => 'Replace';
+
+  @override
+  String get commonUndo => 'Undo';
+
+  @override
+  String daysAbbrev(int count) {
+    return '$count d.';
+  }
+
+  @override
+  String get taskTitle => 'Task';
+
+  @override
+  String get taskTitleHint => 'What needs doing?';
+
+  @override
+  String get taskDefer => 'Defer (no date)';
+
+  @override
+  String get taskDeferSubtitle => 'the task goes to \"Undated tasks\"';
+
+  @override
+  String get taskNoteHint => 'Note for the task';
+
+  @override
+  String get taskDelete => 'Delete task';
+
+  @override
+  String get taskDeleted => 'Task deleted';
+
+  @override
+  String get kindOneDay => 'One day';
+
+  @override
+  String get kindPeriod => 'Period';
+
+  @override
+  String get kindTrip => 'Trip';
+
+  @override
+  String get fieldDate => 'Date';
+
+  @override
+  String get fieldTime => 'Time';
+
+  @override
+  String get timeUnset => 'not set';
+
+  @override
+  String get fieldDates => 'Dates';
+
+  @override
+  String get linkStart => 'Start';
+
+  @override
+  String get linkEnd => 'End';
+
+  @override
+  String get duration => 'Duration';
+
+  @override
+  String linkedAfter(Object title, Object date) {
+    return 'after \"$title\"  ·  $date';
+  }
+
+  @override
+  String linkedBefore(Object title, Object date) {
+    return 'before \"$title\"  ·  $date';
+  }
+
+  @override
+  String get linkToTask => 'Link to a task';
+
+  @override
+  String get linkToTaskSubtitle =>
+      'dates shift with the linked task automatically';
+
+  @override
+  String get segStartAfter => 'Start after';
+
+  @override
+  String get segFinishBefore => 'Finish before';
+
+  @override
+  String get pickAfterTitle => 'Start after a task';
+
+  @override
+  String get pickBeforeTitle => 'Finish before a task';
+
+  @override
+  String get noEligibleParents => 'No suitable tasks to link';
+
+  @override
+  String get recurNone => 'No repeat';
+
+  @override
+  String get recurDays => 'Every day / N days';
+
+  @override
+  String get recurWeeks => 'Every week / N weeks';
+
+  @override
+  String get recurMonths => 'Every month (by date)';
+
+  @override
+  String get recurYears => 'Every year (by date)';
+
+  @override
+  String get recurMonthLast => 'Last day of the month';
+
+  @override
+  String get recurMonthBeforeEnd => 'K days before month end';
+
+  @override
+  String get recurRepeat => 'Repeat';
+
+  @override
+  String get recurInterval => 'Interval';
+
+  @override
+  String recurEvery(Object n, Object unit) {
+    return 'every $n $unit';
+  }
+
+  @override
+  String get recurDaysToEnd => 'Days before end';
+
+  @override
+  String get unitDays => 'd.';
+
+  @override
+  String get unitWeeks => 'wk.';
+
+  @override
+  String get unitYears => 'yr.';
+
+  @override
+  String get unitMonths => 'mo.';
+
+  @override
+  String get tplTemplate => 'Template';
+
+  @override
+  String get tplOther => 'Other';
+
+  @override
+  String get tplBirthday => 'Birthday';
+
+  @override
+  String get tplPayment => 'Payment';
+
+  @override
+  String get tplWork => 'Work';
+
+  @override
+  String get tplShopping => 'Shopping';
+
+  @override
+  String get tplList => 'List';
+
+  @override
+  String get placeTitle => 'Place';
+
+  @override
+  String get placeHint => 'Address or name';
+
+  @override
+  String get mapsOpen => 'Open maps';
+
+  @override
+  String get mapsPaste => 'Paste link';
+
+  @override
+  String get mapsSaved => 'link saved';
+
+  @override
+  String get mapsRemove => 'Remove map link';
+
+  @override
+  String get mapsClipboardEmpty =>
+      'No map link in the clipboard. Copy it in the maps app: Share → Copy link.';
+
+  @override
+  String get mapsHelp =>
+      'In maps: pick a place → Share → Copy link, then come back and tap \"Paste link\".';
+
+  @override
+  String get colorInCalendar => 'Color on the calendar';
+
+  @override
+  String get reminder => 'Reminder';
+
+  @override
+  String get remAtStart => 'At start';
+
+  @override
+  String get remEachDay => 'Every day';
+
+  @override
+  String get remAtEnd => 'At end';
+
+  @override
+  String get remTime => 'Reminder time';
+
+  @override
+  String remByTaskTime(Object time) {
+    return 'at $time · by task time';
+  }
+
+  @override
+  String get remWhen => 'When to remind';
+
+  @override
+  String get remOnDay => 'On the day';
+
+  @override
+  String get remDayBefore => '1 day before';
+
+  @override
+  String get remDays2 => '2 days before';
+
+  @override
+  String get remDays3 => '3 days before';
+
+  @override
+  String get remWeekBefore => 'A week before';
+
+  @override
+  String get taskSubtasks => 'Subtasks';
+
+  @override
+  String get pickPeriod => 'Select a period';
+
+  @override
+  String get paymentsEmpty => 'No tasks with the \"Payment\" template';
+
+  @override
+  String get resetToday => 'today';
+
+  @override
+  String get carriedToToday => 'Carried to today';
+
+  @override
+  String get carryAllToToday => 'Carry all to today';
+
+  @override
+  String get quickToday => 'today';
+
+  @override
+  String get quickTomorrow => 'tomorrow';
+
+  @override
+  String get onDate => 'On a date';
+
+  @override
+  String scheduledFor(Object date) {
+    return 'Scheduled for $date';
+  }
+
+  @override
+  String get untitled => '(untitled)';
+
+  @override
+  String get daySheetEmpty => 'no tasks';
+
+  @override
+  String get importQuestion => 'Import?';
+
+  @override
+  String get importWarning =>
+      'All current tasks will be replaced with data from the file. This can\'t be undone.';
+
+  @override
+  String exportFailed(Object error) {
+    return 'Failed: $error';
+  }
+
+  @override
+  String importFailed(Object error) {
+    return 'Import error: $error';
+  }
+
+  @override
+  String get backupSubject => 'DayLane — backup';
+
+  @override
+  String get tripTitle => 'Trip';
+
+  @override
+  String get tripShowInCalendar => 'Show in calendar';
+
+  @override
+  String get tripEditTask => 'Edit task';
+
+  @override
+  String get tripPoints => 'Trip points';
+
+  @override
+  String get tripStages => 'Stages';
+
+  @override
+  String get tripAddStage => 'Add stage';
+
+  @override
+  String get tripStagesHint =>
+      'Break the trip into stages: \"Stay\" — where you sleep (counted by nights, check-in→check-out), \"Place\" — where you go. Afterwards — wrap-up notes.';
+
+  @override
+  String get tripTicketsBookings => 'Tickets, bookings, documents';
+
+  @override
+  String get tripNotes => 'Trip notes';
+
+  @override
+  String get tripOpenAsRoute => 'Open as route';
+
+  @override
+  String get tripRouteThroughAll => 'through all points in order';
+
+  @override
+  String tripCheckInOn(Object date) {
+    return 'check-in $date';
+  }
+
+  @override
+  String tripStaysCovered(int n) {
+    return 'Stays cover all nights ($n)';
+  }
+
+  @override
+  String tripNoStay(Object list) {
+    return 'No stay: $list';
+  }
+
+  @override
+  String get tripStageStay => 'Stay';
+
+  @override
+  String get tripStagePlace => 'Place';
+
+  @override
+  String get tripNewStage => 'New stage';
+
+  @override
+  String get tripStage => 'Stage';
+
+  @override
+  String get tripStayHint => 'Hotel, apartment…';
+
+  @override
+  String get tripPlaceHint => 'Where to go: café, museum…';
+
+  @override
+  String get tripCheckInOut => 'Check-in — check-out';
+
+  @override
+  String get tripDays => 'Days';
+
+  @override
+  String tripStayNote(Object nights) {
+    return '$nights · no night on the checkout day — so a same-day move dovetails';
+  }
+
+  @override
+  String get tripPlaceLabel => 'Place (hotel, museum…)';
+
+  @override
+  String get tripPlaceOnMap => 'place on the map';
+
+  @override
+  String tripAttachments(int n) {
+    return 'attachments: $n';
+  }
+
+  @override
+  String get tripLinksFilesLabel =>
+      'Links and files (booking, ticket, document)';
+
+  @override
+  String get tripNotesHint => 'Notes (wrap-up: how it went, what you liked)';
+
+  @override
+  String tripDayN(int n) {
+    return 'day $n';
+  }
+
+  @override
+  String tripDaysRange(int a, int b) {
+    return 'days $a–$b';
+  }
+
+  @override
+  String tripCheckInOutMeta(Object a, Object b, Object nights) {
+    return 'check-in $a → check-out $b · $nights';
+  }
+
+  @override
+  String nightsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count nights',
+      one: '1 night',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tripStagesCount(int n) {
+    return ' · stages: $n';
+  }
+
+  @override
+  String get tripsTitle => 'Trips';
+
+  @override
+  String get tripsNew => 'New trip';
+
+  @override
+  String get tripsEmpty =>
+      'No trips yet.\nCreate a trip — it\'s a period with a journal: stages by day, places and notes.';
+
+  @override
+  String get tripsNow => 'Now';
+
+  @override
+  String get tripsUpcoming => 'Upcoming';
+
+  @override
+  String get tripsPast => 'Past';
+
+  @override
+  String get carriedOverChip => 'carried';
+
+  @override
+  String get chipOnMap => 'on the map';
+
+  @override
+  String get moveToUndated => 'To undated';
+
+  @override
+  String get moveToUndatedSubtitle =>
+      'remove from the day, \"waiting for its time\"';
+
+  @override
+  String get movedToUndated => 'Moved to Undated';
+
+  @override
+  String get addItemShort => 'item';
+
+  @override
+  String get newItem => 'New item';
+
+  @override
+  String get newItemHint => 'What to do?';
+
+  @override
+  String get tasksEmptyDefault => 'No tasks yet';
+
+  @override
+  String get noDate => 'no date';
+
+  @override
+  String get bucketOverdue => 'Overdue';
+
+  @override
+  String get bucketSoon => 'Upcoming days';
+
+  @override
+  String get bucketLater => 'Later';
+
+  @override
+  String get bucketDone => 'Done';
 }

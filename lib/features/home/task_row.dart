@@ -9,6 +9,7 @@ import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
 import '../../domain/scheduling.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/links.dart';
 import '../../services/maps.dart';
 import '../task_editor/task_editor_screen.dart';
@@ -151,11 +152,12 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                   _CarryButton(
                     onTap: () async {
                       final messenger = ScaffoldMessenger.of(context);
+                      final carried =
+                          AppLocalizations.of(context).carriedToToday;
                       final undo = await ref
                           .read(repositoryProvider)
                           .carryToTodayTask(t);
-                      showUndoSnackOn(
-                          messenger, 'Перенесено на сегодня', undo);
+                      showUndoSnackOn(messenger, carried, undo);
                     },
                   ),
               ],
@@ -199,7 +201,8 @@ class _TaskRowState extends ConsumerState<TaskRow> {
       chips.add(Icon(Icons.notifications_none, size: 14, color: dl.accent));
     }
     if (t.carriedOver) {
-      chips.add(_chip(Icons.autorenew, 'перенесено', dl.accent,
+      chips.add(_chip(Icons.autorenew,
+          AppLocalizations.of(context).carriedOverChip, dl.accent,
           TextStyle(fontSize: 12, color: dl.accent)));
     }
     if (t.placeName.isNotEmpty || t.placeUrl.isNotEmpty) {
@@ -208,7 +211,9 @@ class _TaskRowState extends ConsumerState<TaskRow> {
         onTap: () => openInMaps(url: t.placeUrl, query: t.placeName),
         child: _chip(
             Icons.place_rounded,
-            t.placeName.isNotEmpty ? t.placeName : 'на карте',
+            t.placeName.isNotEmpty
+                ? t.placeName
+                : AppLocalizations.of(context).chipOnMap,
             dl.accent,
             TextStyle(fontSize: 12, color: dl.accent)),
       ));
@@ -267,14 +272,16 @@ class _TaskRowState extends ConsumerState<TaskRow> {
             ),
             ListTile(
               leading: Icon(Icons.bookmark_border_rounded, color: dl.inkSoft),
-              title: const Text('В отложенные'),
-              subtitle: const Text('снять с дня, «ждёт своего часа»',
-                  style: TextStyle(fontSize: 12)),
+              title: Text(AppLocalizations.of(context).moveToUndated),
+              subtitle: Text(
+                  AppLocalizations.of(context).moveToUndatedSubtitle,
+                  style: const TextStyle(fontSize: 12)),
               onTap: () => Navigator.of(context).pop('defer'),
             ),
             ListTile(
               leading: Icon(Icons.delete_outline_rounded, color: dl.danger),
-              title: Text('Удалить', style: TextStyle(color: dl.danger)),
+              title: Text(AppLocalizations.of(context).commonDelete,
+                  style: TextStyle(color: dl.danger)),
               onTap: () => Navigator.of(context).pop('delete'),
             ),
           ],
@@ -285,14 +292,15 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     // Messenger захватываем сейчас: после операции строка дела уже
     // размонтирована (дело ушло из секции), context станет недоступен.
     final messenger = ScaffoldMessenger.of(context);
+    final l = AppLocalizations.of(context);
     final repo = ref.read(repositoryProvider);
     switch (action) {
       case 'defer':
         final undo = await repo.moveToDeferred(t);
-        showUndoSnackOn(messenger, 'Перенесено в «Отложенные»', undo);
+        showUndoSnackOn(messenger, l.movedToUndated, undo);
       case 'delete':
         final undo = await repo.deleteTask(t.id!);
-        showUndoSnackOn(messenger, 'Дело удалено', undo);
+        showUndoSnackOn(messenger, l.taskDeleted, undo);
     }
   }
 }
@@ -351,7 +359,8 @@ class _CarryButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
       ),
       icon: const Icon(Icons.east_rounded, size: 16),
-      label: const Text('сегодня', style: TextStyle(fontSize: 13)),
+      label: Text(AppLocalizations.of(context).quickToday,
+          style: const TextStyle(fontSize: 13)),
     );
   }
 }
@@ -477,7 +486,7 @@ class SubtaskChecklist extends ConsumerWidget {
                 children: [
                   Icon(Icons.add_rounded, size: 17, color: dl.accent),
                   const SizedBox(width: 8),
-                  Text('пункт',
+                  Text(AppLocalizations.of(context).addItemShort,
                       style: TextStyle(fontSize: 13, color: dl.accent)),
                 ],
               ),
@@ -489,25 +498,26 @@ class SubtaskChecklist extends ConsumerWidget {
   }
 
   Future<void> _addSubtask(BuildContext context, WidgetRef ref) async {
+    final l = AppLocalizations.of(context);
     final ctrl = TextEditingController();
     final title = await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Новый пункт'),
+        title: Text(l.newItem),
         content: TextField(
           controller: ctrl,
           autofocus: true,
           textCapitalization: TextCapitalization.sentences,
-          decoration: const InputDecoration(hintText: 'Что сделать?'),
+          decoration: InputDecoration(hintText: l.newItemHint),
           onSubmitted: (v) => Navigator.pop(context, v.trim()),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Отмена')),
+              child: Text(l.commonCancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, ctrl.text.trim()),
-              child: const Text('Добавить')),
+              child: Text(l.commonAdd)),
         ],
       ),
     );

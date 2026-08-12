@@ -7,6 +7,7 @@ import '../../core/date_utils.dart';
 import '../../core/theme.dart';
 import '../../domain/models.dart';
 import '../../domain/trip_stays.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/links.dart';
 import '../../services/maps.dart';
 import '../common/links_editor.dart';
@@ -21,6 +22,7 @@ class TripScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final tasks = ref.watch(tasksProvider).value ?? const [];
     final trip = tasks.where((t) => t.id == taskId).firstOrNull;
     if (trip == null) {
@@ -32,10 +34,10 @@ class TripScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Путешествие', style: context.serif.copyWith(fontSize: 18)),
+        title: Text(l.tripTitle, style: context.serif.copyWith(fontSize: 18)),
         actions: [
           IconButton(
-            tooltip: 'Показать в календаре',
+            tooltip: l.tripShowInCalendar,
             icon: const Icon(Icons.event_rounded),
             onPressed: () {
               ref.read(focusedDateProvider.notifier).set(trip.startDate);
@@ -43,7 +45,7 @@ class TripScreen extends ConsumerWidget {
             },
           ),
           IconButton(
-            tooltip: 'Изменить дело',
+            tooltip: l.tripEditTask,
             icon: const Icon(Icons.edit_rounded),
             onPressed: () => openTaskEditor(context, trip),
           ),
@@ -67,14 +69,13 @@ class TripScreen extends ConsumerWidget {
                   visualDensity: VisualDensity.compact,
                 ),
                 icon: const Icon(Icons.map_rounded, size: 16),
-                label: const Text('Точки поездки',
-                    style: TextStyle(fontSize: 13)),
+                label: Text(l.tripPoints, style: const TextStyle(fontSize: 13)),
               ),
             ),
           const SizedBox(height: 16),
           Row(
             children: [
-              Text('Этапы',
+              Text(l.tripStages,
                   style: context.serif.copyWith(
                       fontSize: 17,
                       fontStyle: FontStyle.italic,
@@ -84,7 +85,7 @@ class TripScreen extends ConsumerWidget {
                 onPressed: () => _editStage(context, ref, trip, null),
                 style: TextButton.styleFrom(foregroundColor: dl.accent),
                 icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Добавить этап'),
+                label: Text(l.tripAddStage),
               ),
             ],
           ),
@@ -92,9 +93,7 @@ class TripScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
-                'Разбейте поездку на этапы: «Жильё» — где ночуем (считается '
-                'по ночам, заезд→выезд), «Место» — куда идём. После — заметки '
-                'по итогу.',
+                l.tripStagesHint,
                 style: TextStyle(color: dl.inkFaint, fontSize: 13),
               ),
             )
@@ -107,7 +106,7 @@ class TripScreen extends ConsumerWidget {
                 onTap: () => _editStage(context, ref, trip, s),
               ),
           const SizedBox(height: 18),
-          Text('Ссылки и файлы',
+          Text(l.noteLinksFiles,
               style: context.serif.copyWith(
                   fontSize: 17, fontStyle: FontStyle.italic, color: dl.ink)),
           const SizedBox(height: 6),
@@ -120,7 +119,7 @@ class TripScreen extends ConsumerWidget {
               border: Border.all(color: dl.line),
             ),
             child: LinksEditor(
-              label: 'Билеты, брони, документы',
+              label: l.tripTicketsBookings,
               links: parseLinks(trip.links),
               onChanged: (v) => ref
                   .read(repositoryProvider)
@@ -129,7 +128,7 @@ class TripScreen extends ConsumerWidget {
           ),
           if (trip.note.isNotEmpty) ...[
             const SizedBox(height: 16),
-            Text('Заметки поездки',
+            Text(l.tripNotes,
                 style: context.serif.copyWith(
                     fontSize: 17, fontStyle: FontStyle.italic, color: dl.ink)),
             const SizedBox(height: 6),
@@ -154,6 +153,7 @@ class TripScreen extends ConsumerWidget {
   /// (или поиском по названию, если ссылки нет).
   void _showPoints(BuildContext context, List<TripStageModel> stages) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     // Все этапы поездки: у этапа без заданного места точкой служит название.
     final points = stages
         .where((s) => s.hasPlace || s.title.trim().isNotEmpty)
@@ -190,7 +190,7 @@ class TripScreen extends ConsumerWidget {
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('Точки поездки',
+              child: Text(l.tripPoints,
                   style: context.serif.copyWith(fontSize: 17, color: dl.ink)),
             ),
             if (routable >= 2) ...[
@@ -198,10 +198,10 @@ class TripScreen extends ConsumerWidget {
                 dense: true,
                 leading:
                     Icon(Icons.route_rounded, size: 20, color: dl.accent),
-                title: Text('Открыть как маршрут',
+                title: Text(l.tripOpenAsRoute,
                     style: TextStyle(
                         color: dl.accent, fontWeight: FontWeight.w500)),
-                subtitle: Text('через все точки по порядку',
+                subtitle: Text(l.tripRouteThroughAll,
                     style: TextStyle(fontSize: 12, color: dl.inkFaint)),
                 onTap: openRoute,
               ),
@@ -220,7 +220,7 @@ class TripScreen extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis),
                 subtitle: Text(
                     s.isStay
-                        ? 'заезд ${formatDayMonth(s.startDate)}'
+                        ? l.tripCheckInOn(formatDayMonth(s.startDate))
                         : formatDayMonth(s.startDate),
                     style: TextStyle(fontSize: 12, color: dl.inkFaint)),
                 trailing:
@@ -239,13 +239,14 @@ class TripScreen extends ConsumerWidget {
   Widget _staysBanner(
       BuildContext context, TaskModel trip, List<TripStageModel> stages) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final nights = tripNights(trip);
     if (nights.isEmpty) return const SizedBox.shrink();
     final gaps = uncoveredNights(trip, stages);
     final ok = gaps.isEmpty;
     final text = ok
-        ? 'Жильё на все ночи (${nights.length}) выбрано'
-        : 'Нет жилья: ${groupConsecutive(gaps).map((g) => g.from == g.to ? formatDayMonth(g.from) : formatDateRange(g.from, g.to)).join(', ')}';
+        ? l.tripStaysCovered(nights.length)
+        : l.tripNoStay(groupConsecutive(gaps).map((g) => g.from == g.to ? formatDayMonth(g.from) : formatDateRange(g.from, g.to)).join(', '));
 
     return Padding(
       padding: const EdgeInsets.only(top: 10),
@@ -301,7 +302,7 @@ class TripScreen extends ConsumerWidget {
           const SizedBox(height: 6),
           Text(
             '${formatDateRange(trip.startDate, trip.endDate)}'
-            ' · ${trip.durationDays} дн.',
+            ' · ${AppLocalizations.of(context).daysAbbrev(trip.durationDays)}',
             style: TextStyle(fontSize: 13, color: dl.inkSoft),
           ),
         ],
@@ -342,17 +343,17 @@ class _StageCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final done = stage.isDone;
     final String meta;
     if (stage.isStay) {
       // Жильё — заезд→выезд и число ночей.
-      meta = 'заезд ${formatDayMonth(stage.startDate)} → выезд '
-          '${formatDayMonth(stage.endDate)} · '
-          '${_StageSheetState._nightsLabel(stage.nights)}';
+      meta = l.tripCheckInOutMeta(formatDayMonth(stage.startDate),
+          formatDayMonth(stage.endDate), l.nightsLabel(stage.nights));
     } else {
       final d1 = daysBetween(trip.startDate, stage.startDate) + 1;
       final d2 = daysBetween(trip.startDate, stage.endDate) + 1;
-      final dayLabel = d1 == d2 ? 'день $d1' : 'дни $d1–$d2';
+      final dayLabel = d1 == d2 ? l.tripDayN(d1) : l.tripDaysRange(d1, d2);
       final time =
           stage.timeMinutes == null ? '' : ' · ${formatMinutesOfDay(stage.timeMinutes!)}';
       meta =
@@ -458,7 +459,7 @@ class _StageCard extends ConsumerWidget {
                                     child: Text(
                                       stage.placeName.isNotEmpty
                                           ? stage.placeName
-                                          : 'место на карте',
+                                          : l.tripPlaceOnMap,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
@@ -492,7 +493,9 @@ class _StageCard extends ConsumerWidget {
                                 Icon(Icons.attach_file_rounded,
                                     size: 14, color: dl.inkSoft),
                                 const SizedBox(width: 4),
-                                Text('вложений: ${parseLinks(stage.links).length}',
+                                Text(
+                                    l.tripAttachments(
+                                        parseLinks(stage.links).length),
                                     style: TextStyle(
                                         fontSize: 12, color: dl.inkSoft)),
                               ],
@@ -539,6 +542,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
   bool _skipAutosave = false;
 
   bool get _isStay => _kind == TripStageKind.stay;
+  AppLocalizations get _l => AppLocalizations.of(context);
 
   @override
   void initState() {
@@ -585,7 +589,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.existing == null ? 'Новый этап' : 'Этап',
+            Text(widget.existing == null ? _l.tripNewStage : _l.tripStage,
                 style: context.serif.copyWith(fontSize: 18, color: dl.ink)),
             const SizedBox(height: 10),
             TextField(
@@ -594,9 +598,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
               style: context.serif.copyWith(fontSize: 17, color: dl.ink),
               textCapitalization: TextCapitalization.sentences,
               decoration: InputDecoration(
-                hintText: _isStay
-                    ? 'Гостиница, квартира…'
-                    : 'Куда идём: кафе, музей…',
+                hintText: _isStay ? _l.tripStayHint : _l.tripPlaceHint,
                 hintStyle:
                     context.serif.copyWith(fontSize: 17, color: dl.inkFaint),
                 isDense: true,
@@ -604,15 +606,15 @@ class _StageSheetState extends ConsumerState<StageSheet> {
             ),
             const SizedBox(height: 12),
             SegmentedButton<TripStageKind>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                     value: TripStageKind.stay,
-                    icon: Icon(Icons.hotel_rounded, size: 16),
-                    label: Text('Жильё')),
+                    icon: const Icon(Icons.hotel_rounded, size: 16),
+                    label: Text(_l.tripStageStay)),
                 ButtonSegment(
                     value: TripStageKind.place,
-                    icon: Icon(Icons.place_rounded, size: 16),
-                    label: Text('Место')),
+                    icon: const Icon(Icons.place_rounded, size: 16),
+                    label: Text(_l.tripStagePlace)),
               ],
               selected: {_kind},
               onSelectionChanged: (s) => setState(() {
@@ -626,7 +628,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
               }),
             ),
             const SizedBox(height: 12),
-            Text(_isStay ? 'Заезд — выезд' : 'Дни',
+            Text(_isStay ? _l.tripCheckInOut : _l.tripDays,
                 style: TextStyle(fontSize: 14, color: dl.inkSoft)),
             const SizedBox(height: 6),
             Row(
@@ -666,8 +668,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  '${_nightsLabel(daysBetween(_start, _end))} · в ночь выезда '
-                  'уже не ночуем — поэтому переезд в один день стыкуется',
+                  _l.tripStayNote(_l.nightsLabel(daysBetween(_start, _end))),
                   style: TextStyle(fontSize: 11.5, color: dl.inkFaint),
                 ),
               ),
@@ -675,11 +676,11 @@ class _StageSheetState extends ConsumerState<StageSheet> {
             TextField(
               controller: _place,
               decoration: InputDecoration(
-                labelText: 'Место (гостиница, музей…)',
+                labelText: _l.tripPlaceLabel,
                 isDense: true,
                 suffixIcon: _placeUrl.isNotEmpty
                     ? IconButton(
-                        tooltip: 'Убрать ссылку на карты',
+                        tooltip: _l.mapsRemove,
                         icon: Icon(Icons.link_off_rounded,
                             size: 18, color: dl.inkFaint),
                         onPressed: () => setState(() => _placeUrl = ''),
@@ -702,8 +703,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
                     visualDensity: VisualDensity.compact,
                   ),
                   icon: const Icon(Icons.map_rounded, size: 16),
-                  label: const Text('Открыть карты',
-                      style: TextStyle(fontSize: 13)),
+                  label: Text(_l.mapsOpen, style: const TextStyle(fontSize: 13)),
                 ),
                 OutlinedButton.icon(
                   onPressed: _pasteLink,
@@ -713,8 +713,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
                     visualDensity: VisualDensity.compact,
                   ),
                   icon: const Icon(Icons.content_paste_rounded, size: 16),
-                  label: const Text('Вставить ссылку',
-                      style: TextStyle(fontSize: 13)),
+                  label: Text(_l.mapsPaste, style: const TextStyle(fontSize: 13)),
                 ),
                 if (_placeUrl.isNotEmpty)
                   Row(
@@ -722,7 +721,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
                     children: [
                       Icon(Icons.link_rounded, size: 14, color: dl.accent),
                       const SizedBox(width: 3),
-                      Text('ссылка сохранена',
+                      Text(_l.mapsSaved,
                           style: TextStyle(fontSize: 12, color: dl.accent)),
                     ],
                   ),
@@ -730,15 +729,14 @@ class _StageSheetState extends ConsumerState<StageSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              'В картах: выберите место → Поделиться → Копировать ссылку, '
-              'затем вернитесь и нажмите «Вставить ссылку».',
+              _l.mapsHelp,
               style: TextStyle(fontSize: 11.5, color: dl.inkFaint),
             ),
             if (!_isStay) ...[
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Text('Время',
+                  Text(_l.fieldTime,
                       style: TextStyle(fontSize: 14, color: dl.inkSoft)),
                   const Spacer(),
                   OutlinedButton(
@@ -752,7 +750,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
                     ),
                     child: Text(
                         _time == null
-                            ? 'не указано'
+                            ? _l.timeUnset
                             : formatMinutesOfDay(_time!),
                         style: const TextStyle(fontSize: 13)),
                   ),
@@ -774,14 +772,14 @@ class _StageSheetState extends ConsumerState<StageSheet> {
               minLines: 2,
               keyboardType: TextInputType.multiline,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Заметки (по итогу: как было, что понравилось)',
+              decoration: InputDecoration(
+                labelText: _l.tripNotesHint,
                 alignLabelWithHint: true,
               ),
             ),
             const SizedBox(height: 14),
             LinksEditor(
-              label: 'Ссылки и файлы (бронь, билет, документ)',
+              label: _l.tripLinksFilesLabel,
               links: _links,
               onChanged: (v) => setState(() => _links = v),
             ),
@@ -793,7 +791,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
                     onPressed: _delete,
                     style: TextButton.styleFrom(foregroundColor: dl.danger),
                     icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                    label: const Text('Удалить'),
+                    label: Text(_l.commonDelete),
                   ),
                 const Spacer(),
                 FilledButton(
@@ -802,7 +800,7 @@ class _StageSheetState extends ConsumerState<StageSheet> {
                       backgroundColor: dl.accent,
                       foregroundColor:
                           Theme.of(context).colorScheme.onPrimary),
-                  child: const Text('Готово'),
+                  child: Text(_l.commonDone),
                 ),
               ],
             ),
@@ -811,17 +809,6 @@ class _StageSheetState extends ConsumerState<StageSheet> {
       ),
       ),
     );
-  }
-
-  /// «1 ночь / 2 ночи / 5 ночей».
-  static String _nightsLabel(int n) {
-    final mod10 = n % 10;
-    final mod100 = n % 100;
-    if (mod10 == 1 && mod100 != 11) return '$n ночь';
-    if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) {
-      return '$n ночи';
-    }
-    return '$n ночей';
   }
 
   Widget _datePill(DateTime value, ValueChanged<DateTime> onPicked) {
@@ -876,9 +863,8 @@ class _StageSheetState extends ConsumerState<StageSheet> {
         }
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('В буфере нет ссылки на карты. Скопируйте её '
-              'в приложении карт: Поделиться → Копировать ссылку.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(_l.mapsClipboardEmpty)));
     }
   }
 

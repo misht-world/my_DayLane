@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../core/constants.dart';
 import '../core/theme.dart';
@@ -55,6 +56,12 @@ class _DayLaneAppState extends ConsumerState<DayLaneApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // Форматирование дат (intl DateFormat без явной локали) следует за языком
+      // приложения — задаём глобальную локаль intl из разрешённой локали.
+      builder: (context, child) {
+        Intl.defaultLocale = Localizations.localeOf(context).languageCode;
+        return child ?? const SizedBox.shrink();
+      },
       home: const HomeScreen(),
     );
   }

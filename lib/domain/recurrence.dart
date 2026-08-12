@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../core/date_utils.dart';
 import 'models.dart';
 
@@ -69,6 +71,26 @@ List<DateTime> nextOccurrences(TaskModel t, DateTime from, int count) {
 /// Человекочитаемое описание правила повторения.
 String recurrenceSummary(TaskModel t) {
   final n = t.recurrenceInterval;
+  final en = (Intl.defaultLocale ?? 'ru').startsWith('en');
+  if (en) {
+    String every(String unit) => n == 1 ? 'every $unit' : 'every $n ${unit}s';
+    switch (t.recurrenceType) {
+      case RecurrenceType.none:
+        return 'does not repeat';
+      case RecurrenceType.days:
+        return n == 1 ? 'every day' : 'every $n days';
+      case RecurrenceType.weeks:
+        return n == 1 ? 'every week' : 'every $n weeks';
+      case RecurrenceType.months:
+        return '${every('month')}, on the ${t.startDate.day}';
+      case RecurrenceType.years:
+        return '${every('year')}, ${formatDayMonth(t.startDate)}';
+      case RecurrenceType.monthLastDay:
+        return '${every('month')}, last day';
+      case RecurrenceType.monthBeforeEnd:
+        return '${every('month')}, ${t.recurrenceAnchor} d. before the end';
+    }
+  }
   String every(String unitOne, String unitFew) =>
       n == 1 ? 'каждый $unitOne' : 'каждые $n $unitFew';
   switch (t.recurrenceType) {

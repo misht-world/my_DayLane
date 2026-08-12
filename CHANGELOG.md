@@ -4,6 +4,16 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.16.0] — 2026-08-12
+
+### Added
+- **English localization of the whole app.** All remaining screens now follow
+  the app language: the task card, "All tasks" / "Payments", trips (journal,
+  list, stage sheet), the calendar (month name and weekday headers), task meta
+  labels, and all dialogs, snackbars and the shared links widget. Dates and
+  month/weekday names format per the selected language, and Russian plurals
+  (nights) are handled correctly. Switch it under Settings → Language.
+
 ## [1.15.0] — 2026-08-12
 
 ### Added

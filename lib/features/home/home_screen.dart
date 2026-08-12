@@ -112,8 +112,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               MaterialPageRoute(
                 builder: (_) => TasksListScreen(
                   title: l.tooltipPayments,
-                  emptyText: 'Нет дел с шаблоном «Оплата»',
-                  // Шаблон «Оплata» — индекс 1 в kTaskTemplates.
+                  emptyText: l.paymentsEmpty,
+                  // Шаблон «Оплата» — индекс 1 в kTaskTemplates.
                   filter: (t) => t.iconId == 1,
                 ),
               ),
@@ -231,7 +231,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     children: [
                       Icon(Icons.restore_rounded, size: 15, color: dl.accent),
                       const SizedBox(width: 3),
-                      Text('сегодня',
+                      Text(AppLocalizations.of(context).resetToday,
                           style: TextStyle(fontSize: 12, color: dl.accent)),
                     ],
                   ),
@@ -302,7 +302,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 : _headerAction(
                     icon: Icons.add_rounded,
                     filled: true,
-                    tooltip: 'Добавить дело',
+                    tooltip: AppLocalizations.of(context).tooltipAddTask,
                     onTap: () =>
                         openTaskEditor(context, null, initialDate: day),
                   ),
@@ -331,7 +331,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       .carryAll(tasks);
                                   if (!mounted) return;
                                   showUndoSnack(context,
-                                      'Перенесено на сегодня', undo);
+                                      AppLocalizations.of(context)
+                                          .carriedToToday,
+                                      undo);
                                 },
                                 style: FilledButton.styleFrom(
                                   backgroundColor: dl.accent,
@@ -345,8 +347,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 icon: const Icon(
                                     Icons.subdirectory_arrow_left_rounded,
                                     size: 16),
-                                label: const Text('Перенести всё на сегодня',
-                                    style: TextStyle(fontSize: 13)),
+                                label: Text(
+                                    AppLocalizations.of(context)
+                                        .carryAllToToday,
+                                    style: const TextStyle(fontSize: 13)),
                               ),
                             ),
                           ),
@@ -653,8 +657,9 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                   // Долгий тап — удалить вручную (с отменой).
                   onLongPress: () async {
                     final messenger = ScaffoldMessenger.of(context);
+                    final deleted = AppLocalizations.of(context).taskDeleted;
                     final undo = await repo.deleteTask(task.id!);
-                    showUndoSnackOn(messenger, 'Дело удалено', undo);
+                    showUndoSnackOn(messenger, deleted, undo);
                   },
                   behavior: HitTestBehavior.opaque,
                   child: Text(task.title,
@@ -692,13 +697,14 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
                 ),
               // У выполненного отложенного даты назначать незачем.
               if (!task.isDone) ...[
-                _quick(context, 'сегодня', () => _schedule(task, today)),
-                _quick(context, 'завтра',
+                _quick(context, AppLocalizations.of(context).quickToday,
+                    () => _schedule(task, today)),
+                _quick(context, AppLocalizations.of(context).quickTomorrow,
                     () => _schedule(task, addDays(today, 1))),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   icon: Icon(Icons.event_rounded, size: 18, color: dl.inkSoft),
-                  tooltip: 'На дату',
+                  tooltip: AppLocalizations.of(context).onDate,
                   onPressed: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -722,9 +728,10 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
   Future<void> _schedule(TaskModel task, DateTime date) async {
     // Строка уйдёт из «Отложенных» — messenger берём заранее.
     final messenger = ScaffoldMessenger.of(context);
+    final label = AppLocalizations.of(context).scheduledFor(formatDayMonth(date));
     final undo =
         await ref.read(repositoryProvider).scheduleDeferred(task, date);
-    showUndoSnackOn(messenger, 'Назначено на ${formatDayMonth(date)}', undo);
+    showUndoSnackOn(messenger, label, undo);
   }
 
   Widget _quick(BuildContext context, String label, VoidCallback onTap) {
@@ -980,7 +987,9 @@ class _NoteItemRowState extends ConsumerState<_NoteItemRow> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        n.title.isEmpty ? '(без названия)' : n.title,
+                        n.title.isEmpty
+                            ? AppLocalizations.of(context).untitled
+                            : n.title,
                         style: TextStyle(
                           fontSize: 14.5,
                           color: n.isDone ? dl.inkFaint : dl.ink,

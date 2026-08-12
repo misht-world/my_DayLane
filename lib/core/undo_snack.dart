@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import '../data/repository.dart';
 
@@ -21,7 +22,11 @@ void showUndoSnackOn(
     content: Text(message),
     duration: const Duration(days: 1), // ручное авто-скрытие ниже
     behavior: SnackBarBehavior.floating,
-    action: SnackBarAction(label: 'Отменить', onPressed: () => undo()),
+    action: SnackBarAction(
+        label: (Intl.defaultLocale ?? 'ru').startsWith('en')
+            ? 'Undo'
+            : 'Отменить',
+        onPressed: () => undo()),
   ));
   // Свой таймер авто-скрытия: встроенный таймер SnackBar не срабатывает,
   // если на устройстве отключены/уменьшены анимации (баг Flutter) — плашка

@@ -63,3 +63,13 @@ String noteAddLabel(AppLocalizations l, int c) => switch (c) {
 /// Варианты сегмента «Кому» (0 = не указано, 1 = взрослые, 2 = детские).
 List<String> noteAudienceOptions(AppLocalizations l) =>
     [l.audienceUnset, l.audienceAdults, l.audienceKids];
+
+/// Локализованное имя шаблона дела (iconId 0..4; иначе «Другое»).
+String taskTemplateName(AppLocalizations l, int i) => switch (i) {
+      0 => l.tplBirthday,
+      1 => l.tplPayment,
+      2 => l.tplWork,
+      3 => l.tplShopping,
+      4 => l.tplList,
+      _ => l.tplOther,
+    };

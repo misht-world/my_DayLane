@@ -134,12 +134,12 @@ class SettingsScreen extends ConsumerWidget {
 
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l = AppLocalizations.of(context);
     try {
       final file = await ref.read(backupServiceProvider).exportToFile();
-      await Share.shareXFiles([XFile(file.path)],
-          subject: 'DayLane — резервная копия');
+      await Share.shareXFiles([XFile(file.path)], subject: l.backupSubject);
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Не удалось: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l.exportFailed(e))));
     }
   }
 
@@ -157,16 +157,15 @@ class SettingsScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Импортировать?'),
-        content: const Text(
-            'Все текущие дела будут заменены данными из файла. Действие нельзя отменить.'),
+        title: Text(l.importQuestion),
+        content: Text(l.importWarning),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Отмена')),
+              child: Text(l.commonCancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('Заменить')),
+              child: Text(l.commonReplace)),
         ],
       ),
     );
@@ -179,7 +178,7 @@ class SettingsScreen extends ConsumerWidget {
       messenger.showSnackBar(
           SnackBar(content: Text(l.settingsImported(n))));
     } catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text('Ошибка импорта: $e')));
+      messenger.showSnackBar(SnackBar(content: Text(l.importFailed(e))));
     }
   }
 

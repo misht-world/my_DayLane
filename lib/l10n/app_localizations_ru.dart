@@ -306,4 +306,480 @@ class AppLocalizationsRu extends AppLocalizations {
   String settingsImported(int count) {
     return 'Импортировано дел: $count';
   }
+
+  @override
+  String get commonReplace => 'Заменить';
+
+  @override
+  String get commonUndo => 'Отменить';
+
+  @override
+  String daysAbbrev(int count) {
+    return '$count дн.';
+  }
+
+  @override
+  String get taskTitle => 'Дело';
+
+  @override
+  String get taskTitleHint => 'Что нужно сделать?';
+
+  @override
+  String get taskDefer => 'Отложить (без даты)';
+
+  @override
+  String get taskDeferSubtitle => 'дело попадёт в «Дела без даты»';
+
+  @override
+  String get taskNoteHint => 'Заметка к делу';
+
+  @override
+  String get taskDelete => 'Удалить дело';
+
+  @override
+  String get taskDeleted => 'Дело удалено';
+
+  @override
+  String get kindOneDay => 'Один день';
+
+  @override
+  String get kindPeriod => 'Период';
+
+  @override
+  String get kindTrip => 'Путешествие';
+
+  @override
+  String get fieldDate => 'Дата';
+
+  @override
+  String get fieldTime => 'Время';
+
+  @override
+  String get timeUnset => 'не указано';
+
+  @override
+  String get fieldDates => 'Даты';
+
+  @override
+  String get linkStart => 'Начало';
+
+  @override
+  String get linkEnd => 'Конец';
+
+  @override
+  String get duration => 'Длительность';
+
+  @override
+  String linkedAfter(Object title, Object date) {
+    return 'после «$title»  ·  $date';
+  }
+
+  @override
+  String linkedBefore(Object title, Object date) {
+    return 'до «$title»  ·  $date';
+  }
+
+  @override
+  String get linkToTask => 'Привязать к делу';
+
+  @override
+  String get linkToTaskSubtitle =>
+      'даты сдвигаются за связанным делом автоматически';
+
+  @override
+  String get segStartAfter => 'Начать после';
+
+  @override
+  String get segFinishBefore => 'Закончить до';
+
+  @override
+  String get pickAfterTitle => 'Начать после дела';
+
+  @override
+  String get pickBeforeTitle => 'Закончить до дела';
+
+  @override
+  String get noEligibleParents => 'Нет подходящих дел для привязки';
+
+  @override
+  String get recurNone => 'Без повторения';
+
+  @override
+  String get recurDays => 'Каждый день / N дней';
+
+  @override
+  String get recurWeeks => 'Каждую неделю / N недель';
+
+  @override
+  String get recurMonths => 'Каждый месяц (по числу)';
+
+  @override
+  String get recurYears => 'Каждый год (по дате)';
+
+  @override
+  String get recurMonthLast => 'Последний день месяца';
+
+  @override
+  String get recurMonthBeforeEnd => 'За K дней до конца месяца';
+
+  @override
+  String get recurRepeat => 'Повторение';
+
+  @override
+  String get recurInterval => 'Интервал';
+
+  @override
+  String recurEvery(Object n, Object unit) {
+    return 'каждые $n $unit';
+  }
+
+  @override
+  String get recurDaysToEnd => 'Дней до конца';
+
+  @override
+  String get unitDays => 'дн.';
+
+  @override
+  String get unitWeeks => 'нед.';
+
+  @override
+  String get unitYears => 'г.';
+
+  @override
+  String get unitMonths => 'мес.';
+
+  @override
+  String get tplTemplate => 'Шаблон';
+
+  @override
+  String get tplOther => 'Другое';
+
+  @override
+  String get tplBirthday => 'День рождения';
+
+  @override
+  String get tplPayment => 'Оплата';
+
+  @override
+  String get tplWork => 'Работа';
+
+  @override
+  String get tplShopping => 'Покупки';
+
+  @override
+  String get tplList => 'Список';
+
+  @override
+  String get placeTitle => 'Место';
+
+  @override
+  String get placeHint => 'Адрес или название';
+
+  @override
+  String get mapsOpen => 'Открыть карты';
+
+  @override
+  String get mapsPaste => 'Вставить ссылку';
+
+  @override
+  String get mapsSaved => 'ссылка сохранена';
+
+  @override
+  String get mapsRemove => 'Убрать ссылку на карты';
+
+  @override
+  String get mapsClipboardEmpty =>
+      'В буфере нет ссылки на карты. Скопируйте её в приложении карт: Поделиться → Копировать ссылку.';
+
+  @override
+  String get mapsHelp =>
+      'В картах: выберите место → Поделиться → Копировать ссылку, затем вернитесь и нажмите «Вставить ссылку».';
+
+  @override
+  String get colorInCalendar => 'Цвет в календаре';
+
+  @override
+  String get reminder => 'Напоминание';
+
+  @override
+  String get remAtStart => 'В начале';
+
+  @override
+  String get remEachDay => 'Каждый день';
+
+  @override
+  String get remAtEnd => 'В конце';
+
+  @override
+  String get remTime => 'Время напоминания';
+
+  @override
+  String remByTaskTime(Object time) {
+    return 'в $time · по времени дела';
+  }
+
+  @override
+  String get remWhen => 'Когда напомнить';
+
+  @override
+  String get remOnDay => 'В день';
+
+  @override
+  String get remDayBefore => 'За день';
+
+  @override
+  String get remDays2 => 'За 2 дня';
+
+  @override
+  String get remDays3 => 'За 3 дня';
+
+  @override
+  String get remWeekBefore => 'За неделю';
+
+  @override
+  String get taskSubtasks => 'Подпункты';
+
+  @override
+  String get pickPeriod => 'Выберите период';
+
+  @override
+  String get paymentsEmpty => 'Нет дел с шаблоном «Оплата»';
+
+  @override
+  String get resetToday => 'сегодня';
+
+  @override
+  String get carriedToToday => 'Перенесено на сегодня';
+
+  @override
+  String get carryAllToToday => 'Перенести всё на сегодня';
+
+  @override
+  String get quickToday => 'сегодня';
+
+  @override
+  String get quickTomorrow => 'завтра';
+
+  @override
+  String get onDate => 'На дату';
+
+  @override
+  String scheduledFor(Object date) {
+    return 'Назначено на $date';
+  }
+
+  @override
+  String get untitled => '(без названия)';
+
+  @override
+  String get daySheetEmpty => 'дел нет';
+
+  @override
+  String get importQuestion => 'Импортировать?';
+
+  @override
+  String get importWarning =>
+      'Все текущие дела будут заменены данными из файла. Действие нельзя отменить.';
+
+  @override
+  String exportFailed(Object error) {
+    return 'Не удалось: $error';
+  }
+
+  @override
+  String importFailed(Object error) {
+    return 'Ошибка импорта: $error';
+  }
+
+  @override
+  String get backupSubject => 'DayLane — резервная копия';
+
+  @override
+  String get tripTitle => 'Путешествие';
+
+  @override
+  String get tripShowInCalendar => 'Показать в календаре';
+
+  @override
+  String get tripEditTask => 'Изменить дело';
+
+  @override
+  String get tripPoints => 'Точки поездки';
+
+  @override
+  String get tripStages => 'Этапы';
+
+  @override
+  String get tripAddStage => 'Добавить этап';
+
+  @override
+  String get tripStagesHint =>
+      'Разбейте поездку на этапы: «Жильё» — где ночуем (считается по ночам, заезд→выезд), «Место» — куда идём. После — заметки по итогу.';
+
+  @override
+  String get tripTicketsBookings => 'Билеты, брони, документы';
+
+  @override
+  String get tripNotes => 'Заметки поездки';
+
+  @override
+  String get tripOpenAsRoute => 'Открыть как маршрут';
+
+  @override
+  String get tripRouteThroughAll => 'через все точки по порядку';
+
+  @override
+  String tripCheckInOn(Object date) {
+    return 'заезд $date';
+  }
+
+  @override
+  String tripStaysCovered(int n) {
+    return 'Жильё на все ночи ($n) выбрано';
+  }
+
+  @override
+  String tripNoStay(Object list) {
+    return 'Нет жилья: $list';
+  }
+
+  @override
+  String get tripStageStay => 'Жильё';
+
+  @override
+  String get tripStagePlace => 'Место';
+
+  @override
+  String get tripNewStage => 'Новый этап';
+
+  @override
+  String get tripStage => 'Этап';
+
+  @override
+  String get tripStayHint => 'Гостиница, квартира…';
+
+  @override
+  String get tripPlaceHint => 'Куда идём: кафе, музей…';
+
+  @override
+  String get tripCheckInOut => 'Заезд — выезд';
+
+  @override
+  String get tripDays => 'Дни';
+
+  @override
+  String tripStayNote(Object nights) {
+    return '$nights · в ночь выезда уже не ночуем — поэтому переезд в один день стыкуется';
+  }
+
+  @override
+  String get tripPlaceLabel => 'Место (гостиница, музей…)';
+
+  @override
+  String get tripPlaceOnMap => 'место на карте';
+
+  @override
+  String tripAttachments(int n) {
+    return 'вложений: $n';
+  }
+
+  @override
+  String get tripLinksFilesLabel => 'Ссылки и файлы (бронь, билет, документ)';
+
+  @override
+  String get tripNotesHint => 'Заметки (по итогу: как было, что понравилось)';
+
+  @override
+  String tripDayN(int n) {
+    return 'день $n';
+  }
+
+  @override
+  String tripDaysRange(int a, int b) {
+    return 'дни $a–$b';
+  }
+
+  @override
+  String tripCheckInOutMeta(Object a, Object b, Object nights) {
+    return 'заезд $a → выезд $b · $nights';
+  }
+
+  @override
+  String nightsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count ночи',
+      many: '$count ночей',
+      few: '$count ночи',
+      one: '$count ночь',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String tripStagesCount(int n) {
+    return ' · этапов: $n';
+  }
+
+  @override
+  String get tripsTitle => 'Путешествия';
+
+  @override
+  String get tripsNew => 'Новое путешествие';
+
+  @override
+  String get tripsEmpty =>
+      'Пока нет путешествий.\nСоздайте поездку — это период с дневником: этапы по дням, места и заметки.';
+
+  @override
+  String get tripsNow => 'Сейчас';
+
+  @override
+  String get tripsUpcoming => 'Предстоящие';
+
+  @override
+  String get tripsPast => 'Прошедшие';
+
+  @override
+  String get carriedOverChip => 'перенесено';
+
+  @override
+  String get chipOnMap => 'на карте';
+
+  @override
+  String get moveToUndated => 'В «Дела без даты»';
+
+  @override
+  String get moveToUndatedSubtitle => 'снять с дня, «ждёт своего часа»';
+
+  @override
+  String get movedToUndated => 'Перенесено в «Дела без даты»';
+
+  @override
+  String get addItemShort => 'пункт';
+
+  @override
+  String get newItem => 'Новый пункт';
+
+  @override
+  String get newItemHint => 'Что сделать?';
+
+  @override
+  String get tasksEmptyDefault => 'Пока нет дел';
+
+  @override
+  String get noDate => 'без даты';
+
+  @override
+  String get bucketOverdue => 'Просрочено';
+
+  @override
+  String get bucketSoon => 'Ближайшие дни';
+
+  @override
+  String get bucketLater => 'Позже';
+
+  @override
+  String get bucketDone => 'Выполнено';
 }

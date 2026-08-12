@@ -8,6 +8,7 @@ import '../../core/theme.dart';
 import '../../domain/models.dart';
 import '../../domain/recurrence.dart';
 import '../../domain/scheduling.dart';
+import '../../l10n/app_localizations.dart';
 import '../calendar/calendar_view.dart';
 import '../task_editor/task_editor_screen.dart';
 
@@ -17,22 +18,24 @@ import '../task_editor/task_editor_screen.dart';
 class TasksListScreen extends ConsumerWidget {
   const TasksListScreen({
     super.key,
-    this.title = 'Все дела',
+    this.title,
     this.filter,
-    this.emptyText = 'Пока нет дел',
+    this.emptyText,
   });
 
-  /// Заголовок экрана.
-  final String title;
+  /// Заголовок экрана. null → локализованное «Все дела».
+  final String? title;
 
   /// Фильтр дел. По умолчанию — все, кроме путешествий (у них свой список).
   final bool Function(TaskModel)? filter;
 
-  final String emptyText;
+  /// Текст пустого состояния. null → локализованное «Пока нет дел».
+  final String? emptyText;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     // В общий список дел не попадают путешествия, заметки и оплаты
     // (у оплат — свой отдельный список, шаблон «Оплата» = iconId 1).
     final f = filter ?? (t) => !t.isTrip && !t.isNote && t.iconId != 1;
@@ -83,22 +86,23 @@ class TasksListScreen extends ConsumerWidget {
       });
     }
 
-    const titles = {
-      kOverdue: 'Просрочено',
-      kToday: 'Сегодня',
-      kTomorrow: 'Завтра',
-      kSoon: 'Ближайшие дни',
-      kLater: 'Позже',
-      kDeferred: 'Отложенные',
-      kDone: 'Выполнено',
+    final titles = {
+      kOverdue: l.bucketOverdue,
+      kToday: l.sectionToday,
+      kTomorrow: l.sectionTomorrow,
+      kSoon: l.bucketSoon,
+      kLater: l.bucketLater,
+      kDeferred: l.notesUndated,
+      kDone: l.bucketDone,
     };
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(title, style: context.serif.copyWith(fontSize: 18)),
+        title: Text(title ?? l.tooltipAllTasks,
+            style: context.serif.copyWith(fontSize: 18)),
         actions: [
           IconButton(
-            tooltip: 'Новое дело',
+            tooltip: l.tooltipAddTask,
             icon: const Icon(Icons.add_rounded),
             onPressed: () => openTaskEditor(context, null),
           ),
@@ -113,7 +117,7 @@ class TasksListScreen extends ConsumerWidget {
                   children: [
                     Icon(Icons.checklist_rounded, size: 40, color: dl.inkFaint),
                     const SizedBox(height: 12),
-                    Text(emptyText,
+                    Text(emptyText ?? l.tasksEmptyDefault,
                         style: TextStyle(color: dl.inkSoft, fontSize: 14)),
                   ],
                 ),
@@ -216,7 +220,7 @@ class _TaskTile extends ConsumerWidget {
                               task.isDone ? TextDecoration.lineThrough : null,
                         )),
                     const SizedBox(height: 2),
-                    Text(_subtitle(),
+                    Text(_subtitle(AppLocalizations.of(context)),
                         style: TextStyle(fontSize: 12.5, color: dl.inkSoft)),
                   ],
                 ),
@@ -235,14 +239,14 @@ class _TaskTile extends ConsumerWidget {
     );
   }
 
-  String _subtitle() {
-    if (task.deferred) return 'без даты';
+  String _subtitle(AppLocalizations l) {
+    if (task.deferred) return l.noDate;
     if (task.isRecurring) {
       return '${recurrenceSummary(task)} · ${formatDayMonth(refDate)}';
     }
     if (task.isPeriod) {
       return '${formatDateRange(task.startDate, task.endDate)}'
-          ' · ${task.durationDays} дн.';
+          ' · ${l.daysAbbrev(task.durationDays)}';
     }
     final time = task.timeOfDayMinutes;
     return time == null
