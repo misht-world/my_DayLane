@@ -11,7 +11,6 @@ import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
 import '../calendar/calendar_view.dart';
 import '../notes/note_editor.dart';
-import '../notes/notes_list.dart';
 import '../settings/settings_screen.dart';
 import '../task_editor/task_editor_screen.dart';
 import '../tasks/tasks_list_screen.dart';
@@ -30,7 +29,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  bool _showYesterday = false;
   bool _showTomorrow = false;
   bool _showToday = true;
   bool _showDeferred = false;
@@ -49,17 +47,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 children: [
                   _topBar(context),
                   _hero(context, focused),
-                  _section(
-                    kind: _Horizon.yesterday,
-                    label: 'Вчера',
-                    day: addDays(focused, -1),
-                    tasks: sections.yesterday,
-                    expanded: _showYesterday,
-                    onToggle: () =>
-                        setState(() => _showYesterday = !_showYesterday),
-                    danger: sections.yesterdayCount > 0,
-                    emptyText: 'всё разобрано',
-                  ),
                   _section(
                     kind: _Horizon.today,
                     label: 'Сегодня',
@@ -293,7 +280,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         isYesterday && tasks.any((t) => t.isSingle && !t.isDone);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -393,7 +380,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       onTap: onToggle,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(4, 10, 6, 8),
+        padding: const EdgeInsets.fromLTRB(4, 6, 6, 6),
         child: LayoutBuilder(builder: (context, c) {
           // Раскрыто — длинный штрих от начала строки почти до «+» (справа
           // резервируем место под «+» и шеврон). Свёрнуто — мазок по слову.
@@ -485,44 +472,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// Секция «Заметки»: плитки категорий (только с активными записями) плюс
-  /// «Дела без даты». Пустые/полностью выполненные категории не показываются;
-  /// добавить/восстановить категорию — через «+».
+  /// Секция «Заметки»: раскрывающиеся списки категорий (только с активными
+  /// записями) плюс «Дела без даты». Категория раскрывается прямо здесь —
+  /// записи с чек-боксами; пустые/выполненные категории скрыты, добавление
+  /// и «возврат» категории — через «+».
   Widget _notesSection(BuildContext context) {
     final dl = context.dl;
     final counts = ref.watch(noteActiveCountsProvider);
     final undated = ref.watch(deferredTasksProvider);
     final undatedOpen = ref.watch(deferredOpenCountProvider);
 
-    final tiles = <Widget>[];
-    for (var c = 0; c < kNoteCategories.length; c++) {
-      final n = counts[c] ?? 0;
-      if (n == 0) continue;
-      final cat = kNoteCategories[c];
-      tiles.add(_noteTile(
-        icon: cat.icon,
-        label: cat.name,
-        color: TaskPalette.byId(cat.colorId),
-        count: n,
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => NotesListScreen(category: c))),
-      ));
-    }
-    if (undated.isNotEmpty) {
-      tiles.add(_noteTile(
-        icon: Icons.schedule_rounded,
-        label: 'Дела без даты',
-        color: dl.inkSoft,
-        count: undatedOpen,
-        onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const _UndatedTasksScreen())),
-      ));
-    }
-    final total =
-        counts.values.fold<int>(0, (a, b) => a + b) + undatedOpen;
+    final activeCats = [
+      for (var c = 0; c < kNoteCategories.length; c++)
+        if ((counts[c] ?? 0) > 0) c
+    ];
+    final total = counts.values.fold<int>(0, (a, b) => a + b) + undatedOpen;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 0),
+      padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -541,60 +508,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
           if (_showDeferred)
             Padding(
-              padding: const EdgeInsets.fromLTRB(6, 4, 6, 4),
-              child: tiles.isEmpty
+              padding: const EdgeInsets.fromLTRB(6, 2, 6, 0),
+              child: (activeCats.isEmpty && undated.isEmpty)
                   ? Padding(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       child: Text('пусто — добавьте через «+»',
                           style: TextStyle(color: dl.inkFaint, fontSize: 14)),
                     )
-                  : Wrap(spacing: 8, runSpacing: 8, children: tiles),
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (final c in activeCats)
+                          _NoteCategoryTile(category: c),
+                        if (undated.isNotEmpty) const _UndatedGroup(),
+                      ],
+                    ),
             ),
         ],
-      ),
-    );
-  }
-
-  /// Плитка категории заметок: иконка, название, бейдж со счётчиком.
-  Widget _noteTile({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required int count,
-    required VoidCallback onTap,
-  }) {
-    final dl = context.dl;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: dl.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: dl.line),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 8),
-            Text(label, style: TextStyle(fontSize: 14, color: dl.ink)),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.14),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text('$count',
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: color,
-                      fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -808,48 +738,342 @@ class _DeferredRowState extends ConsumerState<_DeferredRow> {
   }
 }
 
-/// Экран «Дела без даты» (бывшие «Отложенные») — открывается плиткой из
-/// раздела «Заметки». Строки с быстрым назначением даты и раскрытием подпунктов.
-class _UndatedTasksScreen extends ConsumerWidget {
-  const _UndatedTasksScreen();
+/// Раскрывающаяся категория заметок на главном: заголовок с иконкой и
+/// счётчиком; при раскрытии — записи с чек-боксами. Медиа-категории
+/// (книги/фильмы/музыка) авто-группируются по аудитории, покупки — по разделу.
+/// Выполненные уходят в свёрнутый архив внизу.
+class _NoteCategoryTile extends ConsumerStatefulWidget {
+  const _NoteCategoryTile({required this.category});
+  final int category;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NoteCategoryTile> createState() => _NoteCategoryTileState();
+}
+
+class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
+  bool _open = false;
+  bool _showDone = false;
+
+  @override
+  Widget build(BuildContext context) {
     final dl = context.dl;
-    final tasks = ref.watch(deferredTasksProvider);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Дела без даты',
-            style: context.serif.copyWith(fontSize: 18)),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => openTaskEditor(context, null, deferred: true),
-        backgroundColor: dl.accent,
-        foregroundColor: Theme.of(context).colorScheme.onPrimary,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Добавить'),
-      ),
-      body: tasks.isEmpty
-          ? Center(
-              child: Text('пусто — «ждут своего часа»',
-                  style: TextStyle(color: dl.inkFaint, fontSize: 15)))
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 96),
+    final cat = kNoteCategories[widget.category];
+    final color = TaskPalette.byId(cat.colorId);
+    final notes = ref.watch(notesByCategoryProvider(widget.category));
+    final active = notes.where((n) => !n.isDone).toList();
+    final done = notes.where((n) => n.isDone).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _open = !_open),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Row(
               children: [
-                for (var i = 0; i < tasks.length; i++) ...[
-                  if (i > 0)
-                    Row(children: [
-                      Container(
-                          width: 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle, color: dl.ink)),
-                      Expanded(child: Container(height: 1, color: dl.ink)),
-                    ]),
-                  _DeferredRow(task: tasks[i]),
-                ],
+                Icon(cat.icon, size: 19, color: color),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(cat.name,
+                        style: context.serif
+                            .copyWith(fontSize: 16, color: dl.ink))),
+                Text('${active.length}',
+                    style: TextStyle(fontSize: 12, color: dl.inkSoft)),
+                const SizedBox(width: 4),
+                Icon(
+                    _open
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 20,
+                    color: dl.inkFaint),
               ],
             ),
+          ),
+        ),
+        if (_open) ...[
+          Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 2),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: _items(context, active),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () =>
+                    openNoteEditor(context, category: widget.category),
+                style: TextButton.styleFrom(
+                    foregroundColor: dl.accent, padding: EdgeInsets.zero),
+                icon: const Icon(Icons.add_rounded, size: 17),
+                label: Text(cat.addLabel,
+                    style: const TextStyle(fontSize: 13)),
+              ),
+            ),
+          ),
+          if (done.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  InkWell(
+                    onTap: () => setState(() => _showDone = !_showDone),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Row(
+                        children: [
+                          Text('${cat.doneGroup} · ${done.length}',
+                              style:
+                                  TextStyle(fontSize: 13, color: dl.inkSoft)),
+                          const Spacer(),
+                          Icon(
+                              _showDone
+                                  ? Icons.expand_less_rounded
+                                  : Icons.expand_more_rounded,
+                              size: 18,
+                              color: dl.inkFaint),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_showDone)
+                    for (final n in done)
+                      _NoteItemRow(note: n, category: widget.category),
+                ],
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+
+  /// Записи категории: медиа — подсписками по аудитории, покупки — по разделу,
+  /// остальные — сплошным списком. Подзаголовок показываем только если групп
+  /// больше одной (иначе — лишний шум).
+  List<Widget> _items(BuildContext context, List<TaskModel> items) {
+    final cat = kNoteCategories[widget.category];
+    if (cat.hasMedia) {
+      const order = [1, 2, 0];
+      const labels = {1: 'Взрослые', 2: 'Детские', 0: 'Без пометки'};
+      final groups = [
+        for (final a in order)
+          if (items.any((n) => n.audience == a))
+            (a, items.where((n) => n.audience == a).toList())
+      ];
+      return _withHeaders(
+          context, [for (final g in groups) (labels[g.$1]!, g.$2)]);
+    }
+    if (widget.category == 4) {
+      final map = <String, List<TaskModel>>{};
+      for (final n in items) {
+        map.putIfAbsent(n.author.trim(), () => []).add(n);
+      }
+      final keys = map.keys.toList()
+        ..sort((a, b) {
+          if (a.isEmpty) return 1;
+          if (b.isEmpty) return -1;
+          return a.toLowerCase().compareTo(b.toLowerCase());
+        });
+      return _withHeaders(context,
+          [for (final k in keys) (k.isEmpty ? 'Без раздела' : k, map[k]!)]);
+    }
+    return [
+      for (final n in items) _NoteItemRow(note: n, category: widget.category),
+    ];
+  }
+
+  List<Widget> _withHeaders(
+      BuildContext context, List<(String, List<TaskModel>)> groups) {
+    final dl = context.dl;
+    final showHeaders = groups.length > 1;
+    final out = <Widget>[];
+    for (final g in groups) {
+      if (showHeaders) {
+        out.add(Padding(
+          padding: const EdgeInsets.fromLTRB(2, 6, 2, 2),
+          child: Text(g.$1.toUpperCase(),
+              style: TextStyle(
+                  fontSize: 11,
+                  color: dl.inkSoft,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.4)),
+        ));
+      }
+      for (final n in g.$2) {
+        out.add(_NoteItemRow(note: n, category: widget.category));
+      }
+    }
+    return out;
+  }
+}
+
+/// Строка записи-заметки: чек-бокс выполнения, название и подпись; при наличии
+/// пунктов — раскрывается вложенным чек-листом (для этапов проекта и т. п.).
+/// Тап по названию открывает карточку заметки.
+class _NoteItemRow extends ConsumerStatefulWidget {
+  const _NoteItemRow({required this.note, required this.category});
+  final TaskModel note;
+  final int category;
+
+  @override
+  ConsumerState<_NoteItemRow> createState() => _NoteItemRowState();
+}
+
+class _NoteItemRowState extends ConsumerState<_NoteItemRow> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final dl = context.dl;
+    final n = widget.note;
+    final progress = ref.watch(subtaskProgressProvider)[n.id] ?? (0, 0);
+    final hasSubs = progress.$2 > 0;
+    final sub = _subtitle(n);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => ref.read(repositoryProvider).toggleDone(n),
+              child: Padding(
+                padding:
+                    const EdgeInsets.only(right: 10, top: 4, bottom: 4),
+                child: Icon(
+                  n.isDone
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 18,
+                  color: n.isDone ? dl.accent : dl.inkFaint,
+                ),
+              ),
+            ),
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => openNoteEditor(context, existing: n),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        n.title.isEmpty ? '(без названия)' : n.title,
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          color: n.isDone ? dl.inkFaint : dl.ink,
+                          decoration:
+                              n.isDone ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      if (sub != null)
+                        Text(sub,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                TextStyle(fontSize: 12, color: dl.inkFaint)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            if (hasSubs) ...[
+              Text('${progress.$1}/${progress.$2}',
+                  style: TextStyle(fontSize: 12, color: dl.inkSoft)),
+              IconButton(
+                visualDensity: VisualDensity.compact,
+                icon: Icon(
+                    _open
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 20,
+                    color: dl.inkFaint),
+                onPressed: () => setState(() => _open = !_open),
+              ),
+            ],
+          ],
+        ),
+        if (_open && hasSubs) SubtaskChecklist(taskId: n.id!),
+      ],
+    );
+  }
+
+  /// Подпись: медиа — автор · год; покупки/остальные — первая строка примечания.
+  String? _subtitle(TaskModel n) {
+    if (kNoteCategories[widget.category].hasMedia) {
+      final parts = <String>[
+        if (n.author.trim().isNotEmpty) n.author.trim(),
+        if (n.year != null) '${n.year}',
+      ];
+      return parts.isEmpty ? null : parts.join(' · ');
+    }
+    final note = n.note.trim();
+    return note.isEmpty ? null : note.split('\n').first;
+  }
+}
+
+/// Раскрывающаяся группа «Дела без даты» — записи с быстрым назначением даты.
+class _UndatedGroup extends ConsumerStatefulWidget {
+  const _UndatedGroup();
+
+  @override
+  ConsumerState<_UndatedGroup> createState() => _UndatedGroupState();
+}
+
+class _UndatedGroupState extends ConsumerState<_UndatedGroup> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final dl = context.dl;
+    final tasks = ref.watch(deferredTasksProvider);
+    final open = ref.watch(deferredOpenCountProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        InkWell(
+          onTap: () => setState(() => _open = !_open),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 7),
+            child: Row(
+              children: [
+                Icon(Icons.schedule_rounded, size: 19, color: dl.inkSoft),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text('Дела без даты',
+                        style: context.serif
+                            .copyWith(fontSize: 16, color: dl.ink))),
+                Text('$open',
+                    style: TextStyle(fontSize: 12, color: dl.inkSoft)),
+                const SizedBox(width: 4),
+                Icon(
+                    _open
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 20,
+                    color: dl.inkFaint),
+              ],
+            ),
+          ),
+        ),
+        if (_open)
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final t in tasks) _DeferredRow(task: t),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

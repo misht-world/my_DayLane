@@ -80,7 +80,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
           onTap: () => _openEditor(context),
           onLongPress: () => _showActions(context),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
             child: Row(
               children: [
                 _Checkbox(
@@ -393,7 +393,7 @@ class _TripDayStages extends ConsumerWidget {
         : ' · ${formatMinutesOfDay(s.timeMinutes!)}';
     final label = s.placeName.isNotEmpty ? s.placeName : s.title;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           GestureDetector(
@@ -457,7 +457,7 @@ class SubtaskChecklist extends ConsumerWidget {
       }
     }
     return Padding(
-      padding: const EdgeInsets.only(left: 34, bottom: 6),
+      padding: const EdgeInsets.only(left: 34, bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -522,7 +522,7 @@ class SubtaskChecklist extends ConsumerWidget {
       BuildContext context, WidgetRef ref, SubtaskModel s, TaskModel? task) {
     final dl = context.dl;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(
         children: [
           GestureDetector(
