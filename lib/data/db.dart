@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
+import 'package:drift/native.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../domain/models.dart';
 
@@ -278,8 +283,20 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteStage(int id) =>
       (delete(tripStages)..where((s) => s.id.equals(id))).go();
 
-  static QueryExecutor _open() =>
-      driftDatabase(name: 'daylane');
+  static QueryExecutor _open() {
+    // Мобильные — как было (не менять путь, чтобы не потерять данные).
+    if (Platform.isAndroid || Platform.isIOS) {
+      return driftDatabase(name: 'daylane');
+    }
+    // Десктоп (Windows/…): drift_flutter выбирает каталог, но НЕ создаёт его —
+    // иначе SqliteException(14) «unable to open database file». Создаём сами.
+    return LazyDatabase(() async {
+      final dir = await getApplicationSupportDirectory();
+      await dir.create(recursive: true);
+      return NativeDatabase.createInBackground(
+          File(p.join(dir.path, 'daylane.sqlite')));
+    });
+  }
 }
 
 /// Маппинг строки БД в доменную модель.
