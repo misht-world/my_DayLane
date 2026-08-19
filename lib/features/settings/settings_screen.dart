@@ -12,6 +12,7 @@ import '../../core/theme.dart';
 import '../../data/db.dart';
 import '../../l10n/app_localizations.dart';
 import '../../services/notifications.dart';
+import 'sync_settings.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -106,6 +107,7 @@ class SettingsScreen extends ConsumerWidget {
                       NotificationService.instance.requestPermissions(),
                 ),
                 const Divider(height: 1),
+                if (kConnected) const SyncSettingsSection(),
                 _sectionLabel(context, l.settingsData),
                 ListTile(
                   leading: Icon(Icons.ios_share_rounded, color: dl.inkSoft),

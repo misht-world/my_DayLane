@@ -69,8 +69,11 @@ void main() {
     );
 
     // Прогон через настоящую (де)сериализацию строки, как в транспорте.
+    // Зависимость dependsOnTaskId=7 переводится в syncUid и обратно по картам.
     final back = aggregateFromJson(
-        jsonDecode(jsonEncode(aggregateToJson(agg))) as Map<String, dynamic>);
+        jsonDecode(jsonEncode(aggregateToJson(agg, {7: 'dep-uid'})))
+            as Map<String, dynamic>,
+        {'dep-uid': 7});
 
     final a = agg.task;
     final b = back.task;
@@ -125,6 +128,53 @@ void main() {
     expect(st.links, 'l1');
     expect(st.sortIndex, 2);
     expect(back.recurrenceDones, [DateTime(2026, 6, 3), DateTime(2026, 6, 5)]);
+  });
+
+  test('SyncState round-trip (агрегаты + надгробия)', () {
+    final state = SyncState(
+      aggregates: {
+        'u1': TaskAggregate(
+          task: TaskModel(
+            syncUid: 'u1',
+            title: 'A',
+            kind: TaskKind.single,
+            startDate: DateTime(2026, 1, 1),
+            endDate: DateTime(2026, 1, 1),
+            createdAt: DateTime(2026, 1, 1),
+            updatedAt: DateTime(2026, 1, 5),
+          ),
+        ),
+      },
+      tombstones: {'u2': DateTime(2026, 2, 1)},
+    );
+
+    final back = syncStateFromJson(
+        jsonDecode(jsonEncode(syncStateToJson(state))) as Map<String, dynamic>);
+
+    expect(back.aggregates.keys, ['u1']);
+    expect(back.aggregates['u1']!.task.title, 'A');
+    expect(back.aggregates['u1']!.updatedAt, DateTime(2026, 1, 5));
+    expect(back.tombstones, {'u2': DateTime(2026, 2, 1)});
+  });
+
+  test('зависимость на неизвестный локально syncUid → null', () {
+    final agg = TaskAggregate(
+      task: TaskModel(
+        syncUid: 'u',
+        title: 't',
+        kind: TaskKind.single,
+        startDate: DateTime(2026, 1, 1),
+        endDate: DateTime(2026, 1, 1),
+        dependsOnTaskId: 99,
+        createdAt: DateTime(2026, 1, 1),
+        updatedAt: DateTime(2026, 1, 2),
+      ),
+    );
+    // Экспорт знает uid зависимости, но на импорте такой задачи локально нет.
+    final back = aggregateFromJson(
+        jsonDecode(jsonEncode(aggregateToJson(agg, {99: 'parent-uid'})))
+            as Map<String, dynamic>);
+    expect(back.task.dependsOnTaskId, isNull);
   });
 
   test('минимальный JSON (только обязательное) не падает', () {

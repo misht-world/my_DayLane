@@ -165,3 +165,40 @@ SyncPlan planSync(SyncState local, SyncState remote) {
     pushTombstones: pushTombstones,
   );
 }
+
+/// Авторитетное слияние двух состояний в одно (для записи на удалённую сторону):
+/// по каждому `uid` берётся более позднее событие — живой агрегат или надгробие.
+/// Симметрично [planSync] (та же LWW-логика), но на выходе — цельное состояние.
+SyncState mergeStates(SyncState local, SyncState remote) {
+  final aggregates = <String, TaskAggregate>{};
+  final tombstones = <String, DateTime>{};
+
+  final uids = <String>{
+    ...local.aggregates.keys,
+    ...local.tombstones.keys,
+    ...remote.aggregates.keys,
+    ...remote.tombstones.keys,
+  }..removeWhere((u) => u.isEmpty);
+
+  for (final uid in uids) {
+    final l = _sideOf(uid, local);
+    final r = _sideOf(uid, remote);
+    // Побеждает сторона с более поздним событием; при равенстве — локальная.
+    final _Side win;
+    if (!r.present) {
+      win = l;
+    } else if (!l.present) {
+      win = r;
+    } else {
+      win = l.ts!.isBefore(r.ts!) ? r : l;
+    }
+    if (!win.present) continue;
+    if (win.dead) {
+      tombstones[uid] = win.deletedAt!;
+    } else {
+      aggregates[uid] = win.aggregate!;
+    }
+  }
+
+  return SyncState(aggregates: aggregates, tombstones: tombstones);
+}

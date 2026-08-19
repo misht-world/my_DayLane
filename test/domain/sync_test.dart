@@ -123,4 +123,35 @@ void main() {
       expect(plan.applyLocally.map((a) => a.uid), ['fromRemote']);
     });
   });
+
+  group('mergeStates', () {
+    test('объединяет обе стороны, побеждает более свежее', () {
+      final merged = mergeStates(
+        _state(alive: [_agg('a', 300), _agg('onlyLocal', 100)]),
+        _state(alive: [_agg('a', 200), _agg('onlyRemote', 100)]),
+      );
+      expect(merged.aggregates.keys.toSet(),
+          {'a', 'onlyLocal', 'onlyRemote'});
+      expect(merged.aggregates['a']!.updatedAt, _d(300)); // локальная новее
+      expect(merged.tombstones, isEmpty);
+    });
+
+    test('надгробие новее живого — в результате надгробие', () {
+      final merged = mergeStates(
+        _state(dead: {'a': 300}),
+        _state(alive: [_agg('a', 200)]),
+      );
+      expect(merged.aggregates, isEmpty);
+      expect(merged.tombstones, {'a': _d(300)});
+    });
+
+    test('живой новее надгробия — в результате живой (воскрешение)', () {
+      final merged = mergeStates(
+        _state(dead: {'a': 200}),
+        _state(alive: [_agg('a', 300)]),
+      );
+      expect(merged.aggregates['a']!.updatedAt, _d(300));
+      expect(merged.tombstones, isEmpty);
+    });
+  });
 }

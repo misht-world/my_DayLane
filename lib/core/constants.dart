@@ -6,6 +6,11 @@ const String kAppName = 'DayLane';
 /// Версия приложения (синхронизировать с `version:` в pubspec.yaml).
 const String kAppVersion = '1.16.0';
 
+/// «Подключённая» редакция: включает синхронизацию через GitHub и прочие
+/// онлайн-функции. Чистая офлайн-DayLane собирается без этого флага и остаётся
+/// нетронутой. Включение: `flutter build ... --dart-define=connected=true`.
+const bool kConnected = bool.fromEnvironment('connected');
+
 /// Фиксированная палитра цветов дел. `colorId` — индекс в этом списке.
 /// Цвета подобраны так, чтобы читаться и в светлой, и в тёмной теме.
 class TaskPalette {

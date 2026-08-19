@@ -13,7 +13,47 @@ DateTime _dt(Object? v) => DateTime.fromMillisecondsSinceEpoch(v as int);
 DateTime? _dtN(Object? v) =>
     v == null ? null : DateTime.fromMillisecondsSinceEpoch(v as int);
 
-Map<String, dynamic> aggregateToJson(TaskAggregate a) {
+/// Версия формата файла состояния синхронизации (`state.json` в репозитории).
+const int kSyncFormat = 1;
+
+/// Всё состояние синхронизации → JSON (единый файл `state.json`): живые агрегаты
+/// по `syncUid` и надгробия. Из этого файла ПК и телефон и обмениваются.
+/// [idToUid] переводит локальный id зависимости («Начать после/до дела») в
+/// стабильный `syncUid` — локальные id на разных устройствах разные.
+Map<String, dynamic> syncStateToJson(SyncState s,
+        [Map<int, String> idToUid = const {}]) =>
+    {
+      'format': kSyncFormat,
+      'tasks': {
+        for (final e in s.aggregates.entries)
+          e.key: aggregateToJson(e.value, idToUid),
+      },
+      'tombstones': {
+        for (final e in s.tombstones.entries)
+          e.key: e.value.millisecondsSinceEpoch,
+      },
+    };
+
+/// [uidToId] переводит `syncUid` зависимости обратно в локальный id этого
+/// устройства (null, если такой задачи локально ещё нет).
+SyncState syncStateFromJson(Map<String, dynamic> j,
+    [Map<String, int> uidToId = const {}]) {
+  final tasks = (j['tasks'] as Map?) ?? const {};
+  final tombs = (j['tombstones'] as Map?) ?? const {};
+  return SyncState(
+    aggregates: {
+      for (final e in tasks.entries)
+        e.key as String: aggregateFromJson(
+            (e.value as Map).cast<String, dynamic>(), uidToId),
+    },
+    tombstones: {
+      for (final e in tombs.entries) e.key as String: _dt(e.value),
+    },
+  );
+}
+
+Map<String, dynamic> aggregateToJson(TaskAggregate a,
+    [Map<int, String> idToUid = const {}]) {
   final t = a.task;
   return {
     'task': {
@@ -23,7 +63,9 @@ Map<String, dynamic> aggregateToJson(TaskAggregate a) {
       'startDate': _ms(t.startDate),
       'endDate': _ms(t.endDate),
       'durationDays': t.durationDays,
-      'dependsOnTaskId': t.dependsOnTaskId,
+      // Зависимость — по syncUid (кросс-устройственно), не по локальному id.
+      'dependsOnUid':
+          t.dependsOnTaskId == null ? null : idToUid[t.dependsOnTaskId],
       'dependsBefore': t.dependsBefore,
       'timeOfDayMinutes': t.timeOfDayMinutes,
       'reminderEnabled': t.reminderEnabled,
@@ -76,8 +118,10 @@ Map<String, dynamic> aggregateToJson(TaskAggregate a) {
   };
 }
 
-TaskAggregate aggregateFromJson(Map<String, dynamic> j) {
+TaskAggregate aggregateFromJson(Map<String, dynamic> j,
+    [Map<String, int> uidToId = const {}]) {
   final t = j['task'] as Map<String, dynamic>;
+  final depUid = t['dependsOnUid'] as String?;
   final task = TaskModel(
     syncUid: t['syncUid'] as String? ?? '',
     title: t['title'] as String? ?? '',
@@ -85,7 +129,8 @@ TaskAggregate aggregateFromJson(Map<String, dynamic> j) {
     startDate: _dt(t['startDate']),
     endDate: _dt(t['endDate']),
     durationDays: t['durationDays'] as int? ?? 1,
-    dependsOnTaskId: t['dependsOnTaskId'] as int?,
+    // Переводим syncUid зависимости в локальный id (null, если её тут ещё нет).
+    dependsOnTaskId: depUid == null ? null : uidToId[depUid],
     dependsBefore: t['dependsBefore'] as bool? ?? false,
     timeOfDayMinutes: t['timeOfDayMinutes'] as int?,
     reminderEnabled: t['reminderEnabled'] as bool? ?? false,

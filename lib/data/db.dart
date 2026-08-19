@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../domain/models.dart';
+import '../domain/sync.dart';
 
 part 'db.g.dart';
 part 'task_dao.dart';
@@ -326,6 +327,90 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> removeTombstone(String uid) =>
       (delete(tombstones)..where((t) => t.uid.equals(uid))).go();
+
+  /// Полный локальный снимок для синхронизации: все дела как агрегаты
+  /// (с подпунктами/этапами/отметками) плюс надгробия. Дела без `syncUid`
+  /// отфильтровываются в [SyncState.fromLists].
+  Future<SyncState> readSyncState() async {
+    final taskRows = await select(tasks).get();
+    final subRows = await select(subtasks).get();
+    final stageRows = await select(tripStages).get();
+    final doneRows = await select(recurrenceDones).get();
+    final tombRows = await select(tombstones).get();
+
+    final subsBy = <int, List<SubtaskModel>>{};
+    for (final s in subRows) {
+      (subsBy[s.taskId] ??= []).add(s.toModel());
+    }
+    final stagesBy = <int, List<TripStageModel>>{};
+    for (final s in stageRows) {
+      (stagesBy[s.taskId] ??= []).add(s.toModel());
+    }
+    final donesBy = <int, List<DateTime>>{};
+    for (final d in doneRows) {
+      (donesBy[d.taskId] ??= []).add(d.date);
+    }
+
+    final aggs = [
+      for (final t in taskRows)
+        TaskAggregate(
+          task: t.toModel(),
+          subtasks: subsBy[t.id] ?? const [],
+          stages: stagesBy[t.id] ?? const [],
+          recurrenceDones: donesBy[t.id] ?? const [],
+        ),
+    ];
+    return SyncState.fromLists(
+        aggs, {for (final r in tombRows) r.uid: r.deletedAt});
+  }
+
+  /// Вставляет или полностью замещает дело по `syncUid` данными из агрегата
+  /// (дети заменяются целиком). Снимает надгробие, если было.
+  Future<void> applyRemoteAggregate(TaskAggregate a) async {
+    if (a.uid.isEmpty) return;
+    await transaction(() async {
+      final existing = await (select(tasks)
+            ..where((t) => t.syncUid.equals(a.uid)))
+          .getSingleOrNull();
+      final int taskId;
+      if (existing == null) {
+        taskId = await into(tasks).insert(a.task.toCompanion());
+      } else {
+        taskId = existing.id;
+        await (update(tasks)..where((t) => t.id.equals(taskId)))
+            .write(a.task.toCompanion());
+        await (delete(subtasks)..where((s) => s.taskId.equals(taskId))).go();
+        await (delete(tripStages)..where((s) => s.taskId.equals(taskId))).go();
+        await (delete(recurrenceDones)..where((d) => d.taskId.equals(taskId)))
+            .go();
+      }
+      for (final s in a.subtasks) {
+        await into(subtasks).insert(s
+            .toCompanion()
+            .copyWith(id: const Value.absent(), taskId: Value(taskId)));
+      }
+      for (final s in a.stages) {
+        await into(tripStages).insert(s
+            .toCompanion()
+            .copyWith(id: const Value.absent(), taskId: Value(taskId)));
+      }
+      for (final d in a.recurrenceDones) {
+        await into(recurrenceDones)
+            .insert(RecurrenceDonesCompanion.insert(taskId: taskId, date: d));
+      }
+      await removeTombstone(a.uid);
+    });
+  }
+
+  /// Удаляет дело по `syncUid` (дети — каскадом) и ставит надгробие с меткой
+  /// удаления от удалённой стороны.
+  Future<void> deleteBySyncUid(String uid, DateTime deletedAt) async {
+    if (uid.isEmpty) return;
+    await transaction(() async {
+      await (delete(tasks)..where((t) => t.syncUid.equals(uid))).go();
+      await recordTombstone(uid, deletedAt);
+    });
+  }
 
   static QueryExecutor _open() {
     // Мобильные — как было (не менять путь, чтобы не потерять данные).
