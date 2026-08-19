@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:drift_flutter/drift_flutter.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../domain/models.dart';
 
@@ -16,6 +17,11 @@ part 'subtask_dao.dart';
 @DataClassName('TaskRow')
 class Tasks extends Table {
   IntColumn get id => integer().autoIncrement()();
+
+  /// Стабильный кросс-устройственный идентификатор для синхронизации
+  /// (локальный [id] на разных устройствах разный). Присваивается один раз.
+  TextColumn get syncUid => text().withDefault(const Constant(''))();
+
   TextColumn get title => text()();
   IntColumn get kind => intEnum<TaskKind>()();
   DateTimeColumn get startDate => dateTime()();
@@ -110,6 +116,18 @@ class RecurrenceDones extends Table {
   DateTimeColumn get date => dateTime()();
 }
 
+/// «Надгробия» удалённых дел — для синхронизации (чтобы другое устройство не
+/// «воскресило» удалённую запись). Хранятся по `syncUid`. Локально (pure) пишутся,
+/// но не читаются; используются sync-слоем (connected).
+@DataClassName('TombstoneRow')
+class Tombstones extends Table {
+  TextColumn get uid => text()();
+  DateTimeColumn get deletedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {uid};
+}
+
 /// Настройки приложения (одна строка, id = 1).
 @DataClassName('SettingsRow')
 class AppSettings extends Table {
@@ -132,7 +150,7 @@ class AppSettings extends Table {
 }
 
 @DriftDatabase(
-  tables: [Tasks, Subtasks, AppSettings, RecurrenceDones, TripStages],
+  tables: [Tasks, Subtasks, AppSettings, RecurrenceDones, TripStages, Tombstones],
   daos: [TaskDao, SubtaskDao],
 )
 class AppDatabase extends _$AppDatabase {
@@ -141,7 +159,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -202,6 +220,16 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 13) {
             await m.addColumn(appSettings, appSettings.localeCode);
+          }
+          if (from < 14) {
+            await m.addColumn(tasks, tasks.syncUid);
+            await m.createTable(tombstones);
+            // Бэкофилл стабильных syncUid существующим делам (по одному разу).
+            const gen = Uuid();
+            for (final row in await select(tasks).get()) {
+              await (update(tasks)..where((t) => t.id.equals(row.id)))
+                  .write(TasksCompanion(syncUid: Value(gen.v4())));
+            }
           }
         },
         beforeOpen: (details) async {
@@ -283,6 +311,22 @@ class AppDatabase extends _$AppDatabase {
   Future<void> deleteStage(int id) =>
       (delete(tripStages)..where((s) => s.id.equals(id))).go();
 
+  /// taskId этапа по его id (для бампа `updatedAt` дела при удалении этапа).
+  Future<int?> stageTaskId(int id) => (select(tripStages)
+        ..where((s) => s.id.equals(id)))
+      .map((s) => s.taskId)
+      .getSingleOrNull();
+
+  // ── Tombstones (синхронизация) ─────────────────────────────────
+  Future<void> recordTombstone(String uid, DateTime at) async {
+    if (uid.isEmpty) return;
+    await into(tombstones).insertOnConflictUpdate(
+        TombstonesCompanion(uid: Value(uid), deletedAt: Value(at)));
+  }
+
+  Future<void> removeTombstone(String uid) =>
+      (delete(tombstones)..where((t) => t.uid.equals(uid))).go();
+
   static QueryExecutor _open() {
     // Мобильные — как было (не менять путь, чтобы не потерять данные).
     if (Platform.isAndroid || Platform.isIOS) {
@@ -303,6 +347,7 @@ class AppDatabase extends _$AppDatabase {
 extension TaskRowMapper on TaskRow {
   TaskModel toModel() => TaskModel(
         id: id,
+        syncUid: syncUid,
         title: title,
         kind: kind,
         startDate: startDate,
@@ -353,6 +398,7 @@ extension SubtaskRowMapper on SubtaskRow {
 extension TaskModelMapper on TaskModel {
   TasksCompanion toCompanion() => TasksCompanion(
         id: id == null ? const Value.absent() : Value(id!),
+        syncUid: Value(syncUid),
         title: Value(title),
         kind: Value(kind),
         startDate: Value(startDate),

@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 import '../core/date_utils.dart';
 import '../domain/carry_over.dart';
 import '../domain/dependencies.dart';
@@ -33,6 +35,8 @@ class TaskRepository {
     final toSave = task.copyWith(
       updatedAt: now,
       createdAt: task.id == null ? now : task.createdAt,
+      // Стабильный синк-id присваивается один раз (новому делу или legacy без него).
+      syncUid: task.syncUid.isEmpty ? const Uuid().v4() : task.syncUid,
     );
 
     final int id;
@@ -84,6 +88,10 @@ class TaskRepository {
 
         await _notifications.cancelForTask(id);
         await _tasks.deleteTask(id);
+        // Надгробие для синхронизации (в pure не читается).
+        if (victim != null) {
+          await _db.recordTombstone(victim.syncUid, DateTime.now());
+        }
 
         await _recomputeAndSync(touchedIds: changed.map((t) => t.id!).toSet());
       },
@@ -119,6 +127,8 @@ class TaskRepository {
     return () async {
       if (reinsert != null && reinsert.id != null) {
         await _tasks.insertTask(reinsert);
+        // Восстановили дело — снимаем надгробие, чтобы синк его не «удалил».
+        await _db.removeTombstone(reinsert.syncUid);
         await _subtasks.replaceForTask(reinsert.id!, reinsertSubs);
         for (final d in reinsertDones) {
           await _db.setOccurrenceDone(reinsert.id!, d, true);
@@ -177,6 +187,9 @@ class TaskRepository {
         parent.copyWith(
             isDone: allDone, completedAt: allDone ? now : null, updatedAt: now),
       );
+    } else {
+      // Статус дела не изменился — но подпункт изменился, значит агрегат «свежее».
+      await _tasks.touchUpdatedAt(sub.taskId, now);
     }
   }
 
@@ -189,9 +202,12 @@ class TaskRepository {
         : siblings.map((s) => s.sortIndex).reduce((a, b) => a > b ? a : b) + 1;
     await _subtasks.insertSubtask(
         SubtaskModel(taskId: taskId, title: title, sortIndex: nextSort));
+    final now = DateTime.now();
     final parent = await _tasks.getById(taskId);
     if (parent != null && parent.isDone && !parent.isRecurring) {
-      await _tasks.setDone(taskId, false, DateTime.now());
+      await _tasks.setDone(taskId, false, now);
+    } else {
+      await _tasks.touchUpdatedAt(taskId, now);
     }
   }
 
@@ -199,20 +215,32 @@ class TaskRepository {
   Future<void> toggleOccurrence(
       TaskModel task, DateTime day, bool done) async {
     await _db.setOccurrenceDone(task.id!, day, done);
+    await _tasks.touchUpdatedAt(task.id!, DateTime.now());
   }
 
   // ── Этапы путешествий ─────────────────────────────────────────
   Stream<List<TripStageModel>> watchStages(int taskId) =>
       _db.watchStages(taskId);
 
-  Future<void> saveStage(TripStageModel stage) => stage.id == null
-      ? _db.insertStage(stage)
-      : _db.updateStage(stage);
+  Future<void> saveStage(TripStageModel stage) async {
+    if (stage.id == null) {
+      await _db.insertStage(stage);
+    } else {
+      await _db.updateStage(stage);
+    }
+    await _tasks.touchUpdatedAt(stage.taskId, DateTime.now());
+  }
 
-  Future<void> toggleStageDone(TripStageModel stage, bool done) =>
-      _db.updateStage(stage.copyWith(isDone: done));
+  Future<void> toggleStageDone(TripStageModel stage, bool done) async {
+    await _db.updateStage(stage.copyWith(isDone: done));
+    await _tasks.touchUpdatedAt(stage.taskId, DateTime.now());
+  }
 
-  Future<void> deleteStage(int id) => _db.deleteStage(id);
+  Future<void> deleteStage(int id) async {
+    final taskId = await _db.stageTaskId(id);
+    await _db.deleteStage(id);
+    if (taskId != null) await _tasks.touchUpdatedAt(taskId, DateTime.now());
+  }
 
   /// Пере-планирует напоминания для всех дел (после импорта/восстановления).
   Future<void> rescheduleAll() async {

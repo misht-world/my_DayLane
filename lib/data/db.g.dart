@@ -21,6 +21,18 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _syncUidMeta = const VerificationMeta(
+    'syncUid',
+  );
+  @override
+  late final GeneratedColumn<String> syncUid = GeneratedColumn<String>(
+    'sync_uid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _titleMeta = const VerificationMeta('title');
   @override
   late final GeneratedColumn<String> title = GeneratedColumn<String>(
@@ -404,6 +416,7 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    syncUid,
     title,
     kind,
     startDate,
@@ -452,6 +465,12 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('sync_uid')) {
+      context.handle(
+        _syncUidMeta,
+        syncUid.isAcceptableOrUnknown(data['sync_uid']!, _syncUidMeta),
+      );
     }
     if (data.containsKey('title')) {
       context.handle(
@@ -692,6 +711,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      syncUid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}sync_uid'],
+      )!,
       title: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}title'],
@@ -848,6 +871,10 @@ class $TasksTable extends Tasks with TableInfo<$TasksTable, TaskRow> {
 
 class TaskRow extends DataClass implements Insertable<TaskRow> {
   final int id;
+
+  /// Стабильный кросс-устройственный идентификатор для синхронизации
+  /// (локальный [id] на разных устройствах разный). Присваивается один раз.
+  final String syncUid;
   final String title;
   final TaskKind kind;
   final DateTime startDate;
@@ -895,6 +922,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   final DateTime updatedAt;
   const TaskRow({
     required this.id,
+    required this.syncUid,
     required this.title,
     required this.kind,
     required this.startDate,
@@ -933,6 +961,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['sync_uid'] = Variable<String>(syncUid);
     map['title'] = Variable<String>(title);
     {
       map['kind'] = Variable<int>($TasksTable.$converterkind.toSql(kind));
@@ -990,6 +1019,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   TasksCompanion toCompanion(bool nullToAbsent) {
     return TasksCompanion(
       id: Value(id),
+      syncUid: Value(syncUid),
       title: Value(title),
       kind: Value(kind),
       startDate: Value(startDate),
@@ -1039,6 +1069,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return TaskRow(
       id: serializer.fromJson<int>(json['id']),
+      syncUid: serializer.fromJson<String>(json['syncUid']),
       title: serializer.fromJson<String>(json['title']),
       kind: $TasksTable.$converterkind.fromJson(
         serializer.fromJson<int>(json['kind']),
@@ -1085,6 +1116,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'syncUid': serializer.toJson<String>(syncUid),
       'title': serializer.toJson<String>(title),
       'kind': serializer.toJson<int>($TasksTable.$converterkind.toJson(kind)),
       'startDate': serializer.toJson<DateTime>(startDate),
@@ -1127,6 +1159,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
 
   TaskRow copyWith({
     int? id,
+    String? syncUid,
     String? title,
     TaskKind? kind,
     DateTime? startDate,
@@ -1162,6 +1195,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
     DateTime? updatedAt,
   }) => TaskRow(
     id: id ?? this.id,
+    syncUid: syncUid ?? this.syncUid,
     title: title ?? this.title,
     kind: kind ?? this.kind,
     startDate: startDate ?? this.startDate,
@@ -1203,6 +1237,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   TaskRow copyWithCompanion(TasksCompanion data) {
     return TaskRow(
       id: data.id.present ? data.id.value : this.id,
+      syncUid: data.syncUid.present ? data.syncUid.value : this.syncUid,
       title: data.title.present ? data.title.value : this.title,
       kind: data.kind.present ? data.kind.value : this.kind,
       startDate: data.startDate.present ? data.startDate.value : this.startDate,
@@ -1271,6 +1306,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   String toString() {
     return (StringBuffer('TaskRow(')
           ..write('id: $id, ')
+          ..write('syncUid: $syncUid, ')
           ..write('title: $title, ')
           ..write('kind: $kind, ')
           ..write('startDate: $startDate, ')
@@ -1311,6 +1347,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
   @override
   int get hashCode => Object.hashAll([
     id,
+    syncUid,
     title,
     kind,
     startDate,
@@ -1350,6 +1387,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
       identical(this, other) ||
       (other is TaskRow &&
           other.id == this.id &&
+          other.syncUid == this.syncUid &&
           other.title == this.title &&
           other.kind == this.kind &&
           other.startDate == this.startDate &&
@@ -1387,6 +1425,7 @@ class TaskRow extends DataClass implements Insertable<TaskRow> {
 
 class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<int> id;
+  final Value<String> syncUid;
   final Value<String> title;
   final Value<TaskKind> kind;
   final Value<DateTime> startDate;
@@ -1422,6 +1461,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   final Value<DateTime> updatedAt;
   const TasksCompanion({
     this.id = const Value.absent(),
+    this.syncUid = const Value.absent(),
     this.title = const Value.absent(),
     this.kind = const Value.absent(),
     this.startDate = const Value.absent(),
@@ -1458,6 +1498,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   });
   TasksCompanion.insert({
     this.id = const Value.absent(),
+    this.syncUid = const Value.absent(),
     required String title,
     required TaskKind kind,
     required DateTime startDate,
@@ -1499,6 +1540,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
        updatedAt = Value(updatedAt);
   static Insertable<TaskRow> custom({
     Expression<int>? id,
+    Expression<String>? syncUid,
     Expression<String>? title,
     Expression<int>? kind,
     Expression<DateTime>? startDate,
@@ -1535,6 +1577,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (syncUid != null) 'sync_uid': syncUid,
       if (title != null) 'title': title,
       if (kind != null) 'kind': kind,
       if (startDate != null) 'start_date': startDate,
@@ -1574,6 +1617,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
 
   TasksCompanion copyWith({
     Value<int>? id,
+    Value<String>? syncUid,
     Value<String>? title,
     Value<TaskKind>? kind,
     Value<DateTime>? startDate,
@@ -1610,6 +1654,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   }) {
     return TasksCompanion(
       id: id ?? this.id,
+      syncUid: syncUid ?? this.syncUid,
       title: title ?? this.title,
       kind: kind ?? this.kind,
       startDate: startDate ?? this.startDate,
@@ -1651,6 +1696,9 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (syncUid.present) {
+      map['sync_uid'] = Variable<String>(syncUid.value);
     }
     if (title.present) {
       map['title'] = Variable<String>(title.value);
@@ -1762,6 +1810,7 @@ class TasksCompanion extends UpdateCompanion<TaskRow> {
   String toString() {
     return (StringBuffer('TasksCompanion(')
           ..write('id: $id, ')
+          ..write('syncUid: $syncUid, ')
           ..write('title: $title, ')
           ..write('kind: $kind, ')
           ..write('startDate: $startDate, ')
@@ -3495,6 +3544,218 @@ class TripStagesCompanion extends UpdateCompanion<TripStageRow> {
   }
 }
 
+class $TombstonesTable extends Tombstones
+    with TableInfo<$TombstonesTable, TombstoneRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $TombstonesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _uidMeta = const VerificationMeta('uid');
+  @override
+  late final GeneratedColumn<String> uid = GeneratedColumn<String>(
+    'uid',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deletedAtMeta = const VerificationMeta(
+    'deletedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> deletedAt = GeneratedColumn<DateTime>(
+    'deleted_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [uid, deletedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'tombstones';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<TombstoneRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('uid')) {
+      context.handle(
+        _uidMeta,
+        uid.isAcceptableOrUnknown(data['uid']!, _uidMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_uidMeta);
+    }
+    if (data.containsKey('deleted_at')) {
+      context.handle(
+        _deletedAtMeta,
+        deletedAt.isAcceptableOrUnknown(data['deleted_at']!, _deletedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_deletedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {uid};
+  @override
+  TombstoneRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return TombstoneRow(
+      uid: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}uid'],
+      )!,
+      deletedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}deleted_at'],
+      )!,
+    );
+  }
+
+  @override
+  $TombstonesTable createAlias(String alias) {
+    return $TombstonesTable(attachedDatabase, alias);
+  }
+}
+
+class TombstoneRow extends DataClass implements Insertable<TombstoneRow> {
+  final String uid;
+  final DateTime deletedAt;
+  const TombstoneRow({required this.uid, required this.deletedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['uid'] = Variable<String>(uid);
+    map['deleted_at'] = Variable<DateTime>(deletedAt);
+    return map;
+  }
+
+  TombstonesCompanion toCompanion(bool nullToAbsent) {
+    return TombstonesCompanion(uid: Value(uid), deletedAt: Value(deletedAt));
+  }
+
+  factory TombstoneRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return TombstoneRow(
+      uid: serializer.fromJson<String>(json['uid']),
+      deletedAt: serializer.fromJson<DateTime>(json['deletedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'uid': serializer.toJson<String>(uid),
+      'deletedAt': serializer.toJson<DateTime>(deletedAt),
+    };
+  }
+
+  TombstoneRow copyWith({String? uid, DateTime? deletedAt}) => TombstoneRow(
+    uid: uid ?? this.uid,
+    deletedAt: deletedAt ?? this.deletedAt,
+  );
+  TombstoneRow copyWithCompanion(TombstonesCompanion data) {
+    return TombstoneRow(
+      uid: data.uid.present ? data.uid.value : this.uid,
+      deletedAt: data.deletedAt.present ? data.deletedAt.value : this.deletedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TombstoneRow(')
+          ..write('uid: $uid, ')
+          ..write('deletedAt: $deletedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(uid, deletedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is TombstoneRow &&
+          other.uid == this.uid &&
+          other.deletedAt == this.deletedAt);
+}
+
+class TombstonesCompanion extends UpdateCompanion<TombstoneRow> {
+  final Value<String> uid;
+  final Value<DateTime> deletedAt;
+  final Value<int> rowid;
+  const TombstonesCompanion({
+    this.uid = const Value.absent(),
+    this.deletedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  TombstonesCompanion.insert({
+    required String uid,
+    required DateTime deletedAt,
+    this.rowid = const Value.absent(),
+  }) : uid = Value(uid),
+       deletedAt = Value(deletedAt);
+  static Insertable<TombstoneRow> custom({
+    Expression<String>? uid,
+    Expression<DateTime>? deletedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (uid != null) 'uid': uid,
+      if (deletedAt != null) 'deleted_at': deletedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  TombstonesCompanion copyWith({
+    Value<String>? uid,
+    Value<DateTime>? deletedAt,
+    Value<int>? rowid,
+  }) {
+    return TombstonesCompanion(
+      uid: uid ?? this.uid,
+      deletedAt: deletedAt ?? this.deletedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (uid.present) {
+      map['uid'] = Variable<String>(uid.value);
+    }
+    if (deletedAt.present) {
+      map['deleted_at'] = Variable<DateTime>(deletedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('TombstonesCompanion(')
+          ..write('uid: $uid, ')
+          ..write('deletedAt: $deletedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -3505,6 +3766,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $TripStagesTable tripStages = $TripStagesTable(this);
+  late final $TombstonesTable tombstones = $TombstonesTable(this);
   late final TaskDao taskDao = TaskDao(this as AppDatabase);
   late final SubtaskDao subtaskDao = SubtaskDao(this as AppDatabase);
   @override
@@ -3517,6 +3779,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSettings,
     recurrenceDones,
     tripStages,
+    tombstones,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -3547,6 +3810,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 typedef $$TasksTableCreateCompanionBuilder =
     TasksCompanion Function({
       Value<int> id,
+      Value<String> syncUid,
       required String title,
       required TaskKind kind,
       required DateTime startDate,
@@ -3584,6 +3848,7 @@ typedef $$TasksTableCreateCompanionBuilder =
 typedef $$TasksTableUpdateCompanionBuilder =
     TasksCompanion Function({
       Value<int> id,
+      Value<String> syncUid,
       Value<String> title,
       Value<TaskKind> kind,
       Value<DateTime> startDate,
@@ -3690,6 +3955,11 @@ class $$TasksTableFilterComposer extends Composer<_$AppDatabase, $TasksTable> {
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get syncUid => $composableBuilder(
+    column: $table.syncUid,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3951,6 +4221,11 @@ class $$TasksTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get syncUid => $composableBuilder(
+    column: $table.syncUid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get title => $composableBuilder(
     column: $table.title,
     builder: (column) => ColumnOrderings(column),
@@ -4128,6 +4403,9 @@ class $$TasksTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get syncUid =>
+      $composableBuilder(column: $table.syncUid, builder: (column) => column);
 
   GeneratedColumn<String> get title =>
       $composableBuilder(column: $table.title, builder: (column) => column);
@@ -4367,6 +4645,7 @@ class $$TasksTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> syncUid = const Value.absent(),
                 Value<String> title = const Value.absent(),
                 Value<TaskKind> kind = const Value.absent(),
                 Value<DateTime> startDate = const Value.absent(),
@@ -4402,6 +4681,7 @@ class $$TasksTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => TasksCompanion(
                 id: id,
+                syncUid: syncUid,
                 title: title,
                 kind: kind,
                 startDate: startDate,
@@ -4439,6 +4719,7 @@ class $$TasksTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> syncUid = const Value.absent(),
                 required String title,
                 required TaskKind kind,
                 required DateTime startDate,
@@ -4474,6 +4755,7 @@ class $$TasksTableTableManager
                 required DateTime updatedAt,
               }) => TasksCompanion.insert(
                 id: id,
+                syncUid: syncUid,
                 title: title,
                 kind: kind,
                 startDate: startDate,
@@ -5877,6 +6159,149 @@ typedef $$TripStagesTableProcessedTableManager =
       TripStageRow,
       PrefetchHooks Function({bool taskId})
     >;
+typedef $$TombstonesTableCreateCompanionBuilder =
+    TombstonesCompanion Function({
+      required String uid,
+      required DateTime deletedAt,
+      Value<int> rowid,
+    });
+typedef $$TombstonesTableUpdateCompanionBuilder =
+    TombstonesCompanion Function({
+      Value<String> uid,
+      Value<DateTime> deletedAt,
+      Value<int> rowid,
+    });
+
+class $$TombstonesTableFilterComposer
+    extends Composer<_$AppDatabase, $TombstonesTable> {
+  $$TombstonesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get uid => $composableBuilder(
+    column: $table.uid,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$TombstonesTableOrderingComposer
+    extends Composer<_$AppDatabase, $TombstonesTable> {
+  $$TombstonesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get uid => $composableBuilder(
+    column: $table.uid,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get deletedAt => $composableBuilder(
+    column: $table.deletedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$TombstonesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $TombstonesTable> {
+  $$TombstonesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get uid =>
+      $composableBuilder(column: $table.uid, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get deletedAt =>
+      $composableBuilder(column: $table.deletedAt, builder: (column) => column);
+}
+
+class $$TombstonesTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $TombstonesTable,
+          TombstoneRow,
+          $$TombstonesTableFilterComposer,
+          $$TombstonesTableOrderingComposer,
+          $$TombstonesTableAnnotationComposer,
+          $$TombstonesTableCreateCompanionBuilder,
+          $$TombstonesTableUpdateCompanionBuilder,
+          (
+            TombstoneRow,
+            BaseReferences<_$AppDatabase, $TombstonesTable, TombstoneRow>,
+          ),
+          TombstoneRow,
+          PrefetchHooks Function()
+        > {
+  $$TombstonesTableTableManager(_$AppDatabase db, $TombstonesTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$TombstonesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$TombstonesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$TombstonesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> uid = const Value.absent(),
+                Value<DateTime> deletedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => TombstonesCompanion(
+                uid: uid,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String uid,
+                required DateTime deletedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => TombstonesCompanion.insert(
+                uid: uid,
+                deletedAt: deletedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$TombstonesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $TombstonesTable,
+      TombstoneRow,
+      $$TombstonesTableFilterComposer,
+      $$TombstonesTableOrderingComposer,
+      $$TombstonesTableAnnotationComposer,
+      $$TombstonesTableCreateCompanionBuilder,
+      $$TombstonesTableUpdateCompanionBuilder,
+      (
+        TombstoneRow,
+        BaseReferences<_$AppDatabase, $TombstonesTable, TombstoneRow>,
+      ),
+      TombstoneRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -5891,6 +6316,8 @@ class $AppDatabaseManager {
       $$RecurrenceDonesTableTableManager(_db, _db.recurrenceDones);
   $$TripStagesTableTableManager get tripStages =>
       $$TripStagesTableTableManager(_db, _db.tripStages);
+  $$TombstonesTableTableManager get tombstones =>
+      $$TombstonesTableTableManager(_db, _db.tombstones);
 }
 
 mixin _$TaskDaoMixin on DatabaseAccessor<AppDatabase> {

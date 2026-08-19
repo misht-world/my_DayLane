@@ -26,6 +26,11 @@ const Object _unset = Object();
 class TaskModel {
   /// null для ещё не сохранённого дела.
   final int? id;
+
+  /// Стабильный кросс-устройственный id для синхронизации. Пусто — ещё не
+  /// присвоен (проставляется при создании в репозитории).
+  final String syncUid;
+
   final String title;
   final TaskKind kind;
 
@@ -115,6 +120,7 @@ class TaskModel {
 
   const TaskModel({
     this.id,
+    this.syncUid = '',
     required this.title,
     required this.kind,
     required this.startDate,
@@ -161,6 +167,7 @@ class TaskModel {
 
   TaskModel copyWith({
     Object? id = _unset,
+    String? syncUid,
     String? title,
     TaskKind? kind,
     DateTime? startDate,
@@ -197,6 +204,7 @@ class TaskModel {
   }) {
     return TaskModel(
       id: identical(id, _unset) ? this.id : id as int?,
+      syncUid: syncUid ?? this.syncUid,
       title: title ?? this.title,
       kind: kind ?? this.kind,
       startDate: startDate ?? this.startDate,

@@ -49,4 +49,10 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
       ),
     );
   }
+
+  /// Бампит только `updatedAt` дела — для синхронизации при изменении его
+  /// «детей» (подпункт/этап/отметка повторения), не меняющем поля самого дела.
+  Future<void> touchUpdatedAt(int id, DateTime now) =>
+      (update(tasks)..where((t) => t.id.equals(id)))
+          .write(TasksCompanion(updatedAt: Value(now)));
 }

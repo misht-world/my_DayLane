@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:uuid/uuid.dart';
 
 import '../data/db.dart';
 import '../domain/models.dart';
@@ -32,6 +33,7 @@ class BackupService {
         for (final t in tasks)
           {
             'id': t.id,
+            'syncUid': t.syncUid,
             'title': t.title,
             'kind': t.kind.index,
             'startDate': t.startDate.millisecondsSinceEpoch,
@@ -146,6 +148,7 @@ class BackupService {
       for (final t in tasks) {
         await _db.into(_db.tasks).insert(TasksCompanion(
               id: Value(t['id'] as int),
+              syncUid: Value((t['syncUid'] as String?) ?? const Uuid().v4()),
               title: Value(t['title'] as String),
               kind: Value(TaskKind.values[t['kind'] as int]),
               startDate: Value(dt(t['startDate'])),

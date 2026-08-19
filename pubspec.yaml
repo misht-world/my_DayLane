@@ -49,6 +49,7 @@ dependencies:
   url_launcher: ^6.3.1
   open_filex: ^4.5.0
   path: ^1.9.0
+  uuid: ^4.5.3
 
 dev_dependencies:
   flutter_test:
