@@ -22,8 +22,9 @@ void openTaskOrTrip(BuildContext context, TaskModel t) {
   }
 }
 
-/// Сколько недель видно в окне календаря (у окна свой вертикальный скролл).
-const int _visibleWeeks = 5;
+/// Сколько недель видно в окне календаря по умолчанию (у окна свой скролл).
+/// На десктопе панель шире и выше — число недель задаётся через конструктор.
+const int _kDefaultVisibleWeeks = 5;
 
 /// Общий диапазон прокрутки в неделях (~11 лет вокруг «сегодня»).
 const int _weeksSpan = 574;
@@ -38,7 +39,10 @@ const double _laneHeight = 20;
 const double _barHeight = 16;
 
 class CalendarView extends ConsumerStatefulWidget {
-  const CalendarView({super.key});
+  const CalendarView({super.key, this.visibleWeeks = _kDefaultVisibleWeeks});
+
+  /// Высота окна календаря в неделях (десктоп передаёт больше).
+  final int visibleWeeks;
 
   @override
   ConsumerState<CalendarView> createState() => _CalendarViewState();
@@ -238,7 +242,7 @@ class _CalendarViewState extends ConsumerState<CalendarView> {
         // Поэтому сам список физически не скроллится (NeverScrollable), а
         // центральная зона двигает его через контроллер.
         SizedBox(
-          height: rowHeight * _visibleWeeks,
+          height: rowHeight * widget.visibleWeeks,
           child: LayoutBuilder(builder: (context, c) {
             final colW = c.maxWidth / 7;
             return Stack(

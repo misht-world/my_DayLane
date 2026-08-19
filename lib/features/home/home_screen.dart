@@ -10,6 +10,7 @@ import '../../core/note_l10n.dart';
 import '../../core/theme.dart';
 import '../../core/undo_snack.dart';
 import '../../domain/models.dart';
+import '../../domain/scheduling.dart';
 import '../../l10n/app_localizations.dart';
 import '../calendar/calendar_view.dart';
 import '../notes/note_editor.dart';
@@ -35,47 +36,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   bool _showToday = true;
   bool _showDeferred = false;
 
+  /// Ширина окна, с которой включается двух-панельная (десктопная) раскладка.
+  static const double _wideBreakpoint = 900;
+
   @override
   Widget build(BuildContext context) {
     final focused = ref.watch(focusedDateProvider);
     final sections = ref.watch(sectionsProvider);
-    final l = AppLocalizations.of(context);
 
     return Scaffold(
       body: SafeArea(
         child: sections == null
             ? const Center(child: CircularProgressIndicator())
-            : ListView(
-                padding: const EdgeInsets.only(bottom: 28),
-                children: [
-                  _topBar(context),
-                  _hero(context, focused),
-                  _section(
-                    kind: _Horizon.today,
-                    label: l.sectionToday,
-                    day: focused,
-                    tasks: sections.today,
-                    expanded: _showToday,
-                    onToggle: () => setState(() => _showToday = !_showToday),
-                    danger: false,
-                    emptyText: l.todayEmpty,
-                  ),
-                  _section(
-                    kind: _Horizon.tomorrow,
-                    label: l.sectionTomorrow,
-                    day: addDays(focused, 1),
-                    tasks: sections.tomorrow,
-                    expanded: _showTomorrow,
-                    onToggle: () =>
-                        setState(() => _showTomorrow = !_showTomorrow),
-                    danger: false,
-                    emptyText: l.tomorrowEmpty,
-                  ),
-                  _notesSection(context),
-                  _calendarSection(context),
-                ],
-              ),
+            : LayoutBuilder(builder: (context, c) {
+                final planner = _plannerChildren(context, focused, sections);
+                if (c.maxWidth < _wideBreakpoint) {
+                  return ListView(
+                    padding: const EdgeInsets.only(bottom: 28),
+                    children: [...planner, _calendarSection(context)],
+                  );
+                }
+                return _wideLayout(context, planner);
+              }),
       ),
+    );
+  }
+
+  /// Левая колонка планировщика (без календаря): шапка, дата-герой, секции
+  /// сегодня/завтра и «Заметки». Одинакова для телефона и десктопа.
+  List<Widget> _plannerChildren(
+    BuildContext context,
+    DateTime focused,
+    DaySections sections,
+  ) {
+    final l = AppLocalizations.of(context);
+    return [
+      _topBar(context),
+      _hero(context, focused),
+      _section(
+        kind: _Horizon.today,
+        label: l.sectionToday,
+        day: focused,
+        tasks: sections.today,
+        expanded: _showToday,
+        onToggle: () => setState(() => _showToday = !_showToday),
+        danger: false,
+        emptyText: l.todayEmpty,
+      ),
+      _section(
+        kind: _Horizon.tomorrow,
+        label: l.sectionTomorrow,
+        day: addDays(focused, 1),
+        tasks: sections.tomorrow,
+        expanded: _showTomorrow,
+        onToggle: () => setState(() => _showTomorrow = !_showTomorrow),
+        danger: false,
+        emptyText: l.tomorrowEmpty,
+      ),
+      _notesSection(context),
+    ];
+  }
+
+  /// Десктопная раскладка: слева фиксированная колонка планировщика, справа —
+  /// крупный календарь во всю оставшуюся ширину и высоту окна.
+  Widget _wideLayout(BuildContext context, List<Widget> planner) {
+    final dl = context.dl;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          width: 460,
+          child: ListView(
+            padding: const EdgeInsets.only(bottom: 28),
+            children: planner,
+          ),
+        ),
+        Container(width: 1, color: dl.line),
+        Expanded(
+          child: LayoutBuilder(builder: (context, c) {
+            // Подгоняем число недель под высоту панели (грубая оценка строки).
+            final weeks = ((c.maxHeight - 96) / 64).floor().clamp(5, 14);
+            return ListView(
+              padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+              children: [CalendarView(visibleWeeks: weeks)],
+            );
+          }),
+        ),
+      ],
     );
   }
 
