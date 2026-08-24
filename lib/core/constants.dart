@@ -11,6 +11,9 @@ const String kAppVersion = '1.16.0';
 /// нетронутой. Включение: `flutter build ... --dart-define=connected=true`.
 const bool kConnected = bool.fromEnvironment('connected');
 
+/// Ширина окна, с которой включается десктопная (двух-панельная) раскладка.
+const double kWideBreakpoint = 900;
+
 /// Фиксированная палитра цветов дел. `colorId` — индекс в этом списке.
 /// Цвета подобраны так, чтобы читаться и в светлой, и в тёмной теме.
 class TaskPalette {

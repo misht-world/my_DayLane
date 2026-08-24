@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../app/desktop_nav.dart';
 import '../../app/providers.dart';
 import '../../core/constants.dart';
 import '../../core/date_utils.dart';
@@ -97,32 +98,75 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ];
   }
 
-  /// Десктопная раскладка: слева фиксированная колонка планировщика, справа —
-  /// крупный календарь во всю оставшуюся ширину и высоту окна.
+  /// Десктопная раскладка (master-detail): слева — колонка задач/заметок
+  /// (планировщик) с небольшим календарём внизу; справа — большая панель, где
+  /// открывается выбранное дело/заметка для комфортной работы с текстом.
   Widget _wideLayout(BuildContext context, List<Widget> planner) {
     final dl = context.dl;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SizedBox(
-          width: 460,
+          width: 360,
           child: ListView(
             padding: const EdgeInsets.only(bottom: 28),
-            children: planner,
+            children: [...planner, _calendarSection(context)],
           ),
         ),
         Container(width: 1, color: dl.line),
-        Expanded(
-          child: LayoutBuilder(builder: (context, c) {
-            // Подгоняем число недель под высоту панели (грубая оценка строки).
-            final weeks = ((c.maxHeight - 96) / 64).floor().clamp(5, 14);
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
-              children: [CalendarView(visibleWeeks: weeks)],
-            );
-          }),
-        ),
+        Expanded(child: _detailPane(context)),
       ],
+    );
+  }
+
+  /// Правая панель десктопа: редактор выбранного дела/заметки или пустое
+  /// состояние. Смена выбора пересоздаёт редактор (по ключу) — прежний при
+  /// этом авто-сохраняется.
+  Widget _detailPane(BuildContext context) {
+    final req = ref.watch(detailReqProvider);
+    void close() => ref.read(detailReqProvider.notifier).close();
+
+    return switch (req) {
+      null => _detailEmpty(context),
+      EditExisting(:final task) => task.isNote
+          ? NoteEditorScreen(
+              key: ValueKey('note-${task.id}'),
+              existing: task,
+              category: task.noteCategory,
+              onClose: close)
+          : TaskEditorScreen(
+              key: ValueKey('task-${task.id}'),
+              existing: task,
+              onClose: close),
+      ComposeTask(:final initialDate, :final deferred, :final trip) =>
+        TaskEditorScreen(
+            key: const ValueKey('compose-task'),
+            initialDate: initialDate,
+            deferred: deferred,
+            trip: trip,
+            onClose: close),
+      ComposeNote(:final category) => NoteEditorScreen(
+          key: ValueKey('compose-note-$category'),
+          category: category,
+          onClose: close),
+    };
+  }
+
+  Widget _detailEmpty(BuildContext context) {
+    final dl = context.dl;
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.edit_note_rounded, size: 52, color: dl.inkFaint),
+          const SizedBox(height: 12),
+          Text('Выберите дело или заметку слева',
+              style: TextStyle(fontSize: 15, color: dl.inkSoft)),
+          const SizedBox(height: 4),
+          Text('или создайте новое кнопкой +',
+              style: TextStyle(fontSize: 12, color: dl.inkFaint)),
+        ],
+      ),
     );
   }
 

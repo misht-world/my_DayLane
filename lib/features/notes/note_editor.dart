@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/desktop_nav.dart';
 import '../../app/providers.dart';
 import '../../core/constants.dart';
 import '../../core/date_utils.dart';
@@ -17,6 +18,13 @@ import '../common/links_editor.dart';
 /// иначе редактирование (категория берётся из заметки).
 void openNoteEditor(BuildContext context, {TaskModel? existing, int? category}) {
   final cat = existing?.noteCategory ?? category ?? 0;
+  // На широком окне (десктоп) — в правой панели, а не отдельным экраном.
+  if (useDesktopDetail(context)) {
+    ProviderScope.containerOf(context, listen: false)
+        .read(detailReqProvider.notifier)
+        .open(existing != null ? EditExisting(existing) : ComposeNote(cat));
+    return;
+  }
   Navigator.of(context).push(MaterialPageRoute(
     fullscreenDialog: true,
     builder: (_) => NoteEditorScreen(existing: existing, category: cat),
@@ -33,9 +41,13 @@ class _SubItem {
 }
 
 class NoteEditorScreen extends ConsumerStatefulWidget {
-  const NoteEditorScreen({super.key, this.existing, required this.category});
+  const NoteEditorScreen(
+      {super.key, this.existing, required this.category, this.onClose});
   final TaskModel? existing;
   final int category;
+
+  /// В десктопной панели — закрыть через колбэк вместо Navigator.pop.
+  final VoidCallback? onClose;
 
   @override
   ConsumerState<NoteEditorScreen> createState() => _NoteEditorScreenState();
@@ -78,8 +90,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     }
   }
 
+  /// Закрытие: в панели — колбэк (очистить выбор), иначе — обычный pop.
+  void _leave() {
+    final cb = widget.onClose;
+    if (cb != null) {
+      cb();
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   void dispose() {
+    // В панели переключение на другой элемент = уход → авто-сохранение.
+    if (widget.onClose != null) _autosave();
     _title.dispose();
     _author.dispose();
     _year.dispose();
@@ -106,7 +130,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.close_rounded),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: _leave,
           ),
           title: Text(noteCatName(l, cat),
               style: context.serif.copyWith(fontSize: 18)),
@@ -396,13 +420,13 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   Future<void> _save() async {
     if (_title.text.trim().isEmpty) {
-      Navigator.of(context).pop();
+      _leave();
       return;
     }
     _skipAutosave = true;
     await _doSave();
     if (!mounted) return;
-    Navigator.of(context).pop();
+    _leave();
   }
 
   Future<void> _delete() async {
@@ -412,6 +436,6 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         await ref.read(repositoryProvider).deleteTask(widget.existing!.id!);
     if (!mounted) return;
     showUndoSnack(context, l.noteDeleted, undo);
-    Navigator.of(context).pop();
+    _leave();
   }
 }

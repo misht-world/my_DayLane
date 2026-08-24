@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/desktop_nav.dart';
 import '../../app/providers.dart';
 import '../../core/constants.dart';
 import '../../core/date_utils.dart';
@@ -22,6 +23,16 @@ import '../trips/trip_screen.dart';
 /// [trip] — сразу создать путешествие (период с дневником).
 void openTaskEditor(BuildContext context, TaskModel? existing,
     {DateTime? initialDate, bool deferred = false, bool trip = false}) {
+  // На широком окне (десктоп) — в правой панели, а не отдельным экраном.
+  if (useDesktopDetail(context)) {
+    ProviderScope.containerOf(context, listen: false)
+        .read(detailReqProvider.notifier)
+        .open(existing != null
+            ? EditExisting(existing)
+            : ComposeTask(
+                initialDate: initialDate, deferred: deferred, trip: trip));
+    return;
+  }
   Navigator.of(context).push(MaterialPageRoute(
     fullscreenDialog: true,
     builder: (_) => TaskEditorScreen(
@@ -47,11 +58,16 @@ class TaskEditorScreen extends ConsumerStatefulWidget {
       this.existing,
       this.initialDate,
       this.deferred = false,
-      this.trip = false});
+      this.trip = false,
+      this.onClose});
   final TaskModel? existing;
   final DateTime? initialDate;
   final bool deferred;
   final bool trip;
+
+  /// В десктопной панели — закрыть/сохранить через колбэк (очистить выбор),
+  /// а не Navigator.pop. null — обычный полноэкранный режим.
+  final VoidCallback? onClose;
 
   @override
   ConsumerState<TaskEditorScreen> createState() => _TaskEditorScreenState();
@@ -140,8 +156,20 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     }
   }
 
+  /// Закрытие: в панели — колбэк (очистить выбор), иначе — обычный pop.
+  void _leave() {
+    final cb = widget.onClose;
+    if (cb != null) {
+      cb();
+    } else {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   void dispose() {
+    // В панели переключение на другой элемент = уход с карточки → авто-сохранение.
+    if (widget.onClose != null) _autosave();
     _title.dispose();
     _note.dispose();
     _place.dispose();
@@ -167,7 +195,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.close_rounded),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: _leave,
         ),
         title: Text(_l.taskTitle, style: context.serif.copyWith(fontSize: 18)),
         actions: [
@@ -1213,20 +1241,23 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   /// Кнопка «Готово»: сохранить и закрыть (новую поездку — открыть дневником).
   Future<void> _save() async {
     if (_title.text.trim().isEmpty) {
-      Navigator.of(context).pop(); // пустое — просто закрыть, ничего не создаём
+      _leave(); // пустое — просто закрыть, ничего не создаём
       return;
     }
     _skipAutosave = true; // сохраняем здесь, чтобы не сохранять повторно при pop
     final id = await _doSave();
     if (!mounted) return;
+    // Новую поездку открываем дневником только в полноэкранном режиме; в
+    // десктопной панели просто закрываем — дневник откроется по клику.
     if (_kind == TaskKind.period &&
         _isTrip &&
         !_deferred &&
-        widget.existing == null) {
+        widget.existing == null &&
+        widget.onClose == null) {
       Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (_) => TripScreen(taskId: id)));
     } else {
-      Navigator.of(context).pop();
+      _leave();
     }
   }
 
@@ -1237,6 +1268,6 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     if (!mounted) return;
     // Messenger общий на всё приложение — плашка переживёт закрытие карточки.
     showUndoSnack(context, _l.taskDeleted, undo);
-    Navigator.of(context).pop();
+    _leave();
   }
 }
