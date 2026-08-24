@@ -4,6 +4,26 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.17.0] — 2026-08-24
+
+### Added
+- **Connected edition (optional, behind a build flag).** A Windows desktop
+  build and optional two-way sync between devices through a private GitHub
+  repository (a single `state.json`, last-write-wins by aggregate, tombstones
+  for deletes; token kept in the OS secure store). The plain offline Android
+  app is unchanged and builds without any of this.
+- **Desktop master-detail layout.** On wide windows the home splits into a
+  task/notes column with a small side calendar and a large pane where the
+  selected task or note opens inline for comfortable text editing. Phones keep
+  the original single-scroll layout.
+
+### Fixed
+- **Sync no longer duplicates tasks.** The task and note editors used to
+  reassign a fresh sync id on every save, so editing an item made the other
+  device treat it as new and insert a copy (growing with each edit). Editors
+  now keep a stable sync id and update the same row; desktop panels autosave a
+  card left open. Covered by two-database sync integration tests.
+
 ## [1.16.0] — 2026-08-12
 
 ### Added
