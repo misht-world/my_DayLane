@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../app/desktop_nav.dart';
 import '../../app/providers.dart';
@@ -64,6 +67,14 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   final List<_SubItem> _subs = [];
   bool _skipAutosave = false;
 
+  /// Стабильный синк-id (см. пояснение в редакторе дела): не меняется между
+  /// сохранениями, иначе заметка двоится на другом устройстве.
+  late final String _syncUid;
+  int? _savedId;
+
+  /// Дебаунс авто-сохранения в панельном (десктоп) режиме.
+  Timer? _autosaveTimer;
+
   NoteCategory get _cat => kNoteCategories[widget.category];
   bool get _editing => widget.existing != null;
 
@@ -71,6 +82,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   void initState() {
     super.initState();
     final e = widget.existing;
+    _syncUid =
+        (e != null && e.syncUid.isNotEmpty) ? e.syncUid : const Uuid().v4();
+    _savedId = e?.id;
     _title = TextEditingController(text: e?.title ?? '');
     _author = TextEditingController(text: e?.author ?? '');
     _year = TextEditingController(text: e?.year?.toString() ?? '');
@@ -88,6 +102,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
         });
       });
     }
+
+    // В панели (десктоп) заметка может оставаться открытой — авто-сохраняем.
+    if (widget.onClose != null) {
+      for (final c in [_title, _author, _year, _note]) {
+        c.addListener(_scheduleAutosave);
+      }
+    }
+  }
+
+  void _scheduleAutosave() {
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) _autosave();
+    });
   }
 
   /// Закрытие: в панели — колбэк (очистить выбор), иначе — обычный pop.
@@ -102,6 +130,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     // В панели переключение на другой элемент = уход → авто-сохранение.
     if (widget.onClose != null) _autosave();
     _title.dispose();
@@ -378,7 +407,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     final now = DateTime.now();
     final today = dateOnly(now);
     return TaskModel(
-      id: e?.id,
+      id: _savedId,
+      syncUid: _syncUid,
       title: _title.text.trim(),
       kind: TaskKind.single,
       startDate: e?.startDate ?? today,
@@ -399,18 +429,20 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     );
   }
 
-  Future<int> _doSave() {
+  Future<int> _doSave() async {
     final repo = ref.read(repositoryProvider);
     final subs = [
       for (final s in _subs)
         if (s.controller.text.trim().isNotEmpty)
           SubtaskModel(
-            taskId: widget.existing?.id ?? 0,
+            taskId: _savedId ?? 0,
             title: s.controller.text.trim(),
             isDone: s.isDone,
           ),
     ];
-    return repo.saveTask(_model(), subtasks: subs);
+    final id = await repo.saveTask(_model(), subtasks: subs);
+    _savedId = id;
+    return id;
   }
 
   void _autosave() {

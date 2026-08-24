@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../app/desktop_nav.dart';
 import '../../app/providers.dart';
@@ -103,8 +106,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   final List<_SubItem> _subs = [];
 
+  /// Стабильный синк-id карточки. Для существующего дела — его же uid; для
+  /// нового — генерируется один раз здесь, чтобы повторные сохранения (авто-
+  /// сохранение при закрытии/переключении) НЕ плодили новый uid каждый раз
+  /// (иначе на другом устройстве дело двоится при каждой правке).
+  late final String _syncUid;
+
+  /// id сохранённой строки — чтобы повторные сохранения обновляли её, а не
+  /// вставляли копию.
+  int? _savedId;
+
   /// Не авто-сохранять при закрытии (после удаления или явного «Готово»).
   bool _skipAutosave = false;
+
+  /// Дебаунс авто-сохранения в панельном (десктоп) режиме.
+  Timer? _autosaveTimer;
 
   bool get _editing => widget.existing != null;
   bool get _linked => _dependsOn != null;
@@ -114,6 +130,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   void initState() {
     super.initState();
     final e = widget.existing;
+    _syncUid =
+        (e != null && e.syncUid.isNotEmpty) ? e.syncUid : const Uuid().v4();
+    _savedId = e?.id;
     final today = dateOnly(widget.initialDate ?? DateTime.now());
     _title = TextEditingController(text: e?.title ?? '');
     _note = TextEditingController(text: e?.note ?? '');
@@ -154,6 +173,21 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
         });
       });
     }
+
+    // В панели (десктоп) карточка может оставаться открытой — авто-сохраняем
+    // изменения текста с задержкой, чтобы дело не потерялось, если не закрыть.
+    if (widget.onClose != null) {
+      for (final c in [_title, _note, _place]) {
+        c.addListener(_scheduleAutosave);
+      }
+    }
+  }
+
+  void _scheduleAutosave() {
+    _autosaveTimer?.cancel();
+    _autosaveTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) _autosave();
+    });
   }
 
   /// Закрытие: в панели — колбэк (очистить выбор), иначе — обычный pop.
@@ -168,6 +202,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   @override
   void dispose() {
+    _autosaveTimer?.cancel();
     // В панели переключение на другой элемент = уход с карточки → авто-сохранение.
     if (widget.onClose != null) _autosave();
     _title.dispose();
@@ -1174,7 +1209,8 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
     final duration =
         _kind == TaskKind.single ? 1 : daysBetween(_start, end) + 1;
     return TaskModel(
-      id: e?.id,
+      id: _savedId,
+      syncUid: _syncUid,
       title: _title.text.trim(),
       kind: _kind,
       startDate: _start,
@@ -1216,7 +1252,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   /// Собственно сохранение. Все чтения контроллеров — синхронно (до await),
   /// поэтому безопасно вызывать даже при закрытии карточки. Возвращает id.
-  Future<int> _doSave() {
+  Future<int> _doSave() async {
     final repo = ref.read(repositoryProvider);
     final model = _currentModel();
     final subs = [
@@ -1228,7 +1264,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
             isDone: s.isDone,
           ),
     ];
-    return repo.saveTask(model, subtasks: subs);
+    final id = await repo.saveTask(model, subtasks: subs);
+    // Запоминаем id — следующее авто-сохранение обновит ту же строку.
+    _savedId = id;
+    return id;
   }
 
   /// Авто-сохранение при закрытии/свайпе назад: пустое (без заголовка) —
