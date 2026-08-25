@@ -4,6 +4,18 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.17.2] — 2026-08-24
+
+### Fixed
+- **Sync now runs from app launch.** The sync controller used to be created
+  lazily only when the Settings screen was opened, so auto-sync, the timer and
+  the lifecycle hooks did nothing until you visited Settings. It is now kept
+  alive from startup.
+- **Near-immediate upload after a change.** Marking a task done (or any edit)
+  now triggers a debounced sync a few seconds later, while the app is still in
+  the foreground — more reliable than syncing on close, which Android often
+  suspends before the upload finishes.
+
 ## [1.17.1] — 2026-08-24
 
 ### Changed

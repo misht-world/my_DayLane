@@ -57,6 +57,7 @@ class SyncUiState {
 class SyncController extends Notifier<SyncUiState>
     with WidgetsBindingObserver {
   Timer? _timer;
+  Timer? _nudgeTimer;
   bool _busy = false;
 
   @override
@@ -65,9 +66,24 @@ class SyncController extends Notifier<SyncUiState>
     ref.onDispose(() {
       WidgetsBinding.instance.removeObserver(this);
       _timer?.cancel();
+      _nudgeTimer?.cancel();
     });
+    // Локальное изменение любого дела (правка/галочка/добавление/удаление —
+    // всё бампит строку в tasks) → выгрузить вскоре, пока приложение открыто.
+    // На закрытие Android не оставляет времени доделать сетевой запрос, поэтому
+    // надёжнее синкать сразу после самой правки, а не «при выходе».
+    ref.listen(tasksProvider, (_, _) => _nudge());
     _load();
     return const SyncUiState();
+  }
+
+  /// Отложенный синк после локальной правки (дебаунс, чтобы серия изменений
+  /// свелась к одной выгрузке). Применение удалённых изменений тоже дёрнет этот
+  /// сигнал, но тогда план окажется пустым — лишний проход безвреден и затухает.
+  void _nudge() {
+    if (!kConnected || !state.config.isComplete) return;
+    _nudgeTimer?.cancel();
+    _nudgeTimer = Timer(const Duration(seconds: 3), () => syncNow());
   }
 
   /// Синк по жизненному циклу приложения: при возврате — подтянуть свежее,

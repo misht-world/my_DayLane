@@ -10,6 +10,7 @@ import '../l10n/app_localizations.dart';
 import '../data/seed.dart';
 import '../features/home/home_screen.dart';
 import 'providers.dart';
+import 'sync_providers.dart';
 
 class DayLaneApp extends ConsumerStatefulWidget {
   const DayLaneApp({super.key});
@@ -23,6 +24,13 @@ class _DayLaneAppState extends ConsumerState<DayLaneApp> {
 
   @override
   Widget build(BuildContext context) {
+    // Держим контроллер синхронизации живым с запуска приложения (иначе он
+    // создавался бы лениво только при открытии Настроек — и авто-синк/таймер/
+    // жизненный цикл не работали бы до захода туда). listen — без перерисовок.
+    if (kConnected) {
+      ref.listen(syncControllerProvider, (_, _) {});
+    }
+
     // Однократное стартовое обслуживание после загрузки настроек.
     ref.listen(settingsProvider, (_, next) {
       final s = next.value;
