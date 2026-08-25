@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/constants.dart';
@@ -53,15 +54,37 @@ class SyncUiState {
 
 /// Состояние и управление синхронизацией: загрузка настроек, ручной запуск,
 /// периодический авто-синк, сохранение/сброс настроек.
-class SyncController extends Notifier<SyncUiState> {
+class SyncController extends Notifier<SyncUiState>
+    with WidgetsBindingObserver {
   Timer? _timer;
   bool _busy = false;
 
   @override
   SyncUiState build() {
-    ref.onDispose(() => _timer?.cancel());
+    WidgetsBinding.instance.addObserver(this);
+    ref.onDispose(() {
+      WidgetsBinding.instance.removeObserver(this);
+      _timer?.cancel();
+    });
     _load();
     return const SyncUiState();
+  }
+
+  /// Синк по жизненному циклу приложения: при возврате — подтянуть свежее,
+  /// при сворачивании/закрытии — выгрузить свои изменения (best-effort:
+  /// система даёт короткое окно, но быстрый PUT обычно успевает).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!kConnected || !this.state.config.isComplete) return;
+    switch (state) {
+      case AppLifecycleState.resumed:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        unawaited(syncNow());
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.detached:
+        break;
+    }
   }
 
   Future<void> _load() async {

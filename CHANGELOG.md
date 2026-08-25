@@ -4,6 +4,15 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.17.1] — 2026-08-24
+
+### Changed
+- **Sync on app open and close (Connected).** Besides the launch sync and the
+  2-minute timer, the app now syncs when it goes to the background (pushing your
+  changes before you leave) and when it comes back to the foreground (pulling
+  the latest). Marking something done and immediately closing the app now
+  uploads reliably.
+
 ## [1.17.0] — 2026-08-24
 
 ### Added
