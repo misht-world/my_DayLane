@@ -782,4 +782,90 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bucketDone => 'Done';
+
+  @override
+  String get syncSection => 'Sync';
+
+  @override
+  String get syncHint =>
+      'A private GitHub repo as the cloud between your devices. The token is kept in the device\'s secure store.';
+
+  @override
+  String get syncRepo => 'Repository';
+
+  @override
+  String get syncRepoHint => 'user/daylane-sync';
+
+  @override
+  String get syncToken => 'Token (fine-grained PAT)';
+
+  @override
+  String get syncNow => 'Sync';
+
+  @override
+  String get commonSave => 'Save';
+
+  @override
+  String get syncDisconnect => 'Disconnect';
+
+  @override
+  String get syncSaved => 'Sync settings saved';
+
+  @override
+  String get syncReady => 'Ready to sync';
+
+  @override
+  String get syncNotConfigured => 'Not configured';
+
+  @override
+  String get syncFillRepoToken => 'Fill in the repository and token';
+
+  @override
+  String get syncUpToDate => 'Already up to date';
+
+  @override
+  String get syncErrNetwork => 'No network';
+
+  @override
+  String get syncErrAuth =>
+      'No access — check the token and its Contents permission';
+
+  @override
+  String get syncErrRead => 'Read error';
+
+  @override
+  String get syncErrWrite => 'Write error';
+
+  @override
+  String get syncErrOther => 'Sync error';
+
+  @override
+  String get digestSection => 'Telegram digest';
+
+  @override
+  String get digestEnable => 'Send the day plan';
+
+  @override
+  String get digestEnableSub =>
+      'Open tasks for today and tomorrow, in Telegram';
+
+  @override
+  String get digestConfigureSyncFirst => 'Set up sync above first';
+
+  @override
+  String get digestTime => 'Send time';
+
+  @override
+  String get digestSaved => 'Digest setting sent';
+
+  @override
+  String get detailEmptyTitle => 'Select a task or note on the left';
+
+  @override
+  String get detailEmptySub => 'or create a new one with +';
+
+  @override
+  String syncUpdatedAt(String time) {
+    return 'updated at $time';
+  }
 }

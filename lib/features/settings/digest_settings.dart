@@ -6,6 +6,8 @@ import '../../app/providers.dart';
 import '../../app/sync_providers.dart';
 import '../../core/theme.dart';
 import '../../data/db.dart';
+import '../../l10n/app_localizations.dart';
+import '../../services/sync_transport.dart';
 
 /// Настройка утреннего Телеграм-дайджеста (только connected). Хранится локально
 /// и публикуется в sync-репозиторий (`digest.json`), откуда её читает скрипт на
@@ -24,21 +26,34 @@ class DigestSettingsSection extends ConsumerWidget {
     required bool enabled,
     required int minutes,
   }) async {
+    final l = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
     await ref.read(databaseProvider).updateSettings(AppSettingsCompanion(
           digestEnabled: Value(enabled),
           digestTimeMinutes: Value(minutes),
         ));
-    final err =
-        await ref.read(syncControllerProvider.notifier).publishDigest(enabled, minutes);
-    messenger.showSnackBar(SnackBar(
-      content: Text(err ?? 'Настройка дайджеста отправлена'),
-    ));
+    final res = await ref
+        .read(syncControllerProvider.notifier)
+        .publishDigest(enabled, minutes);
+    final String text;
+    if (res.needsConfig) {
+      text = l.digestConfigureSyncFirst;
+    } else if (res.error != null) {
+      text = switch (res.error!) {
+        SyncErrorKind.network => l.syncErrNetwork,
+        SyncErrorKind.auth => l.syncErrAuth,
+        _ => l.syncErrOther,
+      };
+    } else {
+      text = l.digestSaved;
+    }
+    messenger.showSnackBar(SnackBar(content: Text(text)));
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final s = ref.watch(settingsProvider).value;
     final configured = ref.watch(syncControllerProvider).config.isComplete;
     if (s == null) return const SizedBox.shrink();
@@ -50,18 +65,16 @@ class DigestSettingsSection extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text('Телеграм-дайджест',
+          child: Text(l.digestSection,
               style: TextStyle(
                   fontSize: 13,
                   color: dl.inkSoft,
                   fontWeight: FontWeight.w500)),
         ),
         SwitchListTile(
-          title: const Text('Присылать план на день'),
+          title: Text(l.digestEnable),
           subtitle: Text(
-            configured
-                ? 'Список невыполненных дел на сегодня и завтра в Телеграм'
-                : 'Сначала настройте синхронизацию выше',
+            configured ? l.digestEnableSub : l.digestConfigureSyncFirst,
             style: TextStyle(fontSize: 12, color: dl.inkFaint),
           ),
           value: enabled,
@@ -70,7 +83,7 @@ class DigestSettingsSection extends ConsumerWidget {
         ListTile(
           enabled: enabled,
           leading: Icon(Icons.schedule_rounded, color: dl.inkSoft),
-          title: const Text('Время рассылки'),
+          title: Text(l.digestTime),
           trailing: Text(_fmt(minutes),
               style: TextStyle(
                   fontSize: 15,

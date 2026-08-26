@@ -23,28 +23,37 @@ class SyncUiState {
   const SyncUiState({
     this.config = const SyncConfig(),
     this.phase = SyncPhase.idle,
-    this.message,
+    this.result,
+    this.errorKind,
     this.lastSyncAt,
     this.loaded = false,
   });
 
   final SyncConfig config;
   final SyncPhase phase;
-  final String? message;
+
+  /// Итог последнего успешного синка (счётчики нейтральны к языку).
+  final SyncResult? result;
+
+  /// Тип последней ошибки — текст локализуется в UI по нему.
+  final SyncErrorKind? errorKind;
   final DateTime? lastSyncAt;
   final bool loaded;
 
   SyncUiState copyWith({
     SyncConfig? config,
     SyncPhase? phase,
-    Object? message = _keep,
+    Object? result = _keep,
+    Object? errorKind = _keep,
     DateTime? lastSyncAt,
     bool? loaded,
   }) =>
       SyncUiState(
         config: config ?? this.config,
         phase: phase ?? this.phase,
-        message: message == _keep ? this.message : message as String?,
+        result: result == _keep ? this.result : result as SyncResult?,
+        errorKind:
+            errorKind == _keep ? this.errorKind : errorKind as SyncErrorKind?,
         lastSyncAt: lastSyncAt ?? this.lastSyncAt,
         loaded: loaded ?? this.loaded,
       );
@@ -131,10 +140,12 @@ class SyncController extends Notifier<SyncUiState>
   }
 
   /// Публикует настройку Телеграм-дайджеста в sync-репозиторий (`digest.json`),
-  /// откуда её читает скрипт на сервере. Возвращает текст ошибки или null.
-  Future<String?> publishDigest(bool enabled, int timeMinutes) async {
+  /// откуда её читает скрипт на сервере. Возвращает признак «не настроено» и/или
+  /// тип ошибки — текст локализуется в UI.
+  Future<({bool needsConfig, SyncErrorKind? error})> publishDigest(
+      bool enabled, int timeMinutes) async {
     final c = state.config;
-    if (!c.isComplete) return 'Сначала настройте синхронизацию';
+    if (!c.isComplete) return (needsConfig: true, error: null);
     final store = GitHubStore(
         owner: c.owner,
         repo: c.repo,
@@ -153,13 +164,13 @@ class SyncController extends Notifier<SyncUiState>
         final rf = await store.pull();
         try {
           await store.push(payload, rf.sha);
-          return null;
+          return (needsConfig: false, error: null);
         } on SyncConflictException {
           if (i >= 3) rethrow;
         }
       }
     } on SyncException catch (e) {
-      return e.message;
+      return (needsConfig: false, error: e.kind);
     }
   }
 
@@ -168,36 +179,29 @@ class SyncController extends Notifier<SyncUiState>
     if (_busy) return;
     final store = state.config.store();
     if (store == null) {
+      // Нет репозитория/токена — errorKind null; UI покажет «заполните…».
       state = state.copyWith(
-          phase: SyncPhase.error, message: 'Заполните репозиторий и токен');
+          phase: SyncPhase.error, errorKind: null, result: null);
       return;
     }
     _busy = true;
-    state = state.copyWith(phase: SyncPhase.syncing, message: null);
+    state = state.copyWith(phase: SyncPhase.syncing, errorKind: null);
     try {
       final res = await ref.read(syncServiceProvider).syncOnce(store);
       state = state.copyWith(
         phase: SyncPhase.ok,
         lastSyncAt: DateTime.now(),
-        message: _summary(res),
+        result: res,
+        errorKind: null,
       );
     } on SyncException catch (e) {
-      state = state.copyWith(phase: SyncPhase.error, message: e.message);
-    } catch (e) {
-      state = state.copyWith(phase: SyncPhase.error, message: '$e');
+      state = state.copyWith(phase: SyncPhase.error, errorKind: e.kind);
+    } catch (_) {
+      state = state.copyWith(
+          phase: SyncPhase.error, errorKind: SyncErrorKind.other);
     } finally {
       _busy = false;
     }
-  }
-
-  String _summary(SyncResult r) {
-    if (!r.changedLocally && !r.pushedRemote) return 'Уже синхронизировано';
-    final parts = <String>[
-      if (r.applied > 0) '↓ ${r.applied}',
-      if (r.deleted > 0) '− ${r.deleted}',
-      if (r.pushed > 0) '↑ ${r.pushed}',
-    ];
-    return parts.isEmpty ? 'Готово' : parts.join('  ');
   }
 }
 

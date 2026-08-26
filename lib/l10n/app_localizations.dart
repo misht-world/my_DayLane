@@ -1537,6 +1537,168 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Done'**
   String get bucketDone;
+
+  /// No description provided for @syncSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get syncSection;
+
+  /// No description provided for @syncHint.
+  ///
+  /// In en, this message translates to:
+  /// **'A private GitHub repo as the cloud between your devices. The token is kept in the device\'s secure store.'**
+  String get syncHint;
+
+  /// No description provided for @syncRepo.
+  ///
+  /// In en, this message translates to:
+  /// **'Repository'**
+  String get syncRepo;
+
+  /// No description provided for @syncRepoHint.
+  ///
+  /// In en, this message translates to:
+  /// **'user/daylane-sync'**
+  String get syncRepoHint;
+
+  /// No description provided for @syncToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Token (fine-grained PAT)'**
+  String get syncToken;
+
+  /// No description provided for @syncNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get syncNow;
+
+  /// No description provided for @commonSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get commonSave;
+
+  /// No description provided for @syncDisconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect'**
+  String get syncDisconnect;
+
+  /// No description provided for @syncSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync settings saved'**
+  String get syncSaved;
+
+  /// No description provided for @syncReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to sync'**
+  String get syncReady;
+
+  /// No description provided for @syncNotConfigured.
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get syncNotConfigured;
+
+  /// No description provided for @syncFillRepoToken.
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the repository and token'**
+  String get syncFillRepoToken;
+
+  /// No description provided for @syncUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Already up to date'**
+  String get syncUpToDate;
+
+  /// No description provided for @syncErrNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'No network'**
+  String get syncErrNetwork;
+
+  /// No description provided for @syncErrAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'No access — check the token and its Contents permission'**
+  String get syncErrAuth;
+
+  /// No description provided for @syncErrRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read error'**
+  String get syncErrRead;
+
+  /// No description provided for @syncErrWrite.
+  ///
+  /// In en, this message translates to:
+  /// **'Write error'**
+  String get syncErrWrite;
+
+  /// No description provided for @syncErrOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync error'**
+  String get syncErrOther;
+
+  /// No description provided for @digestSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Telegram digest'**
+  String get digestSection;
+
+  /// No description provided for @digestEnable.
+  ///
+  /// In en, this message translates to:
+  /// **'Send the day plan'**
+  String get digestEnable;
+
+  /// No description provided for @digestEnableSub.
+  ///
+  /// In en, this message translates to:
+  /// **'Open tasks for today and tomorrow, in Telegram'**
+  String get digestEnableSub;
+
+  /// No description provided for @digestConfigureSyncFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up sync above first'**
+  String get digestConfigureSyncFirst;
+
+  /// No description provided for @digestTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Send time'**
+  String get digestTime;
+
+  /// No description provided for @digestSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Digest setting sent'**
+  String get digestSaved;
+
+  /// No description provided for @detailEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a task or note on the left'**
+  String get detailEmptyTitle;
+
+  /// No description provided for @detailEmptySub.
+  ///
+  /// In en, this message translates to:
+  /// **'or create a new one with +'**
+  String get detailEmptySub;
+
+  /// No description provided for @syncUpdatedAt.
+  ///
+  /// In en, this message translates to:
+  /// **'updated at {time}'**
+  String syncUpdatedAt(String time);
 }
 
 class _AppLocalizationsDelegate

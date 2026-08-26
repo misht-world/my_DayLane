@@ -4,7 +4,9 @@ import 'package:intl/intl.dart';
 
 import '../../app/sync_providers.dart';
 import '../../core/theme.dart';
+import '../../l10n/app_localizations.dart';
 import '../../services/sync_config.dart';
+import '../../services/sync_transport.dart';
 
 /// Секция настроек синхронизации (только в connected-редакции): поле
 /// «репозиторий», токен (в защищённом хранилище) и запуск синхронизации.
@@ -30,6 +32,7 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
   }
 
   Future<void> _save() async {
+    final l = AppLocalizations.of(context);
     final (owner, repo) = SyncConfig.parseRepoPath(_repo.text);
     final cfg = ref.read(syncControllerProvider).config.copyWith(
           owner: owner,
@@ -38,17 +41,17 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
         );
     await ref.read(syncControllerProvider.notifier).saveConfig(cfg);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Настройки синхронизации сохранены')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(l.syncSaved)));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     final st = ref.watch(syncControllerProvider);
 
-    // Один раз подставляем сохранённые значения в поля.
     if (st.loaded && !_prefilled) {
       _repo.text = st.config.repoPath;
       _token.text = st.config.token;
@@ -60,7 +63,7 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text('Синхронизация',
+          child: Text(l.syncSection,
               style: TextStyle(
                   fontSize: 13,
                   color: dl.inkSoft,
@@ -68,20 +71,17 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-          child: Text(
-            'Приватный GitHub-репозиторий как «облако» между устройствами. '
-            'Токен хранится в защищённом хранилище устройства.',
-            style: TextStyle(fontSize: 12, color: dl.inkFaint),
-          ),
+          child: Text(l.syncHint,
+              style: TextStyle(fontSize: 12, color: dl.inkFaint)),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: TextField(
             controller: _repo,
-            decoration: const InputDecoration(
-              labelText: 'Репозиторий',
-              hintText: 'логин/daylane-sync',
-              border: OutlineInputBorder(),
+            decoration: InputDecoration(
+              labelText: l.syncRepo,
+              hintText: l.syncRepoHint,
+              border: const OutlineInputBorder(),
               isDense: true,
             ),
           ),
@@ -92,7 +92,7 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
             controller: _token,
             obscureText: _obscure,
             decoration: InputDecoration(
-              labelText: 'Токен (fine-grained PAT)',
+              labelText: l.syncToken,
               hintText: 'github_pat_…',
               border: const OutlineInputBorder(),
               isDense: true,
@@ -112,37 +112,34 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
           child: Row(
             children: [
               FilledButton.icon(
-                onPressed:
-                    st.phase == SyncPhase.syncing ? null : () => _sync(),
+                onPressed: st.phase == SyncPhase.syncing ? null : _sync,
                 icon: st.phase == SyncPhase.syncing
                     ? const SizedBox(
                         width: 16,
                         height: 16,
                         child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.sync_rounded, size: 18),
-                label: const Text('Синхронизировать'),
+                label: Text(l.syncNow),
               ),
               const SizedBox(width: 8),
-              OutlinedButton(
-                  onPressed: _save, child: const Text('Сохранить')),
+              OutlinedButton(onPressed: _save, child: Text(l.commonSave)),
               const Spacer(),
               if (st.config.isComplete)
                 IconButton(
-                  tooltip: 'Отключить',
+                  tooltip: l.syncDisconnect,
                   icon: Icon(Icons.link_off_rounded, color: dl.inkSoft),
                   onPressed: _disconnect,
                 ),
             ],
           ),
         ),
-        _statusLine(context, st),
+        _statusLine(context, l, st),
         const Divider(height: 24),
       ],
     );
   }
 
   Future<void> _sync() async {
-    // Сохраняем то, что в полях, и сразу синхронизируем.
     await _save();
     await ref.read(syncControllerProvider.notifier).syncNow();
   }
@@ -153,7 +150,44 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
     _token.clear();
   }
 
-  Widget _statusLine(BuildContext context, SyncUiState st) {
+  String _errText(AppLocalizations l, SyncErrorKind k) => switch (k) {
+        SyncErrorKind.network => l.syncErrNetwork,
+        SyncErrorKind.auth => l.syncErrAuth,
+        SyncErrorKind.read => l.syncErrRead,
+        SyncErrorKind.write => l.syncErrWrite,
+        SyncErrorKind.conflict => l.syncErrOther,
+        SyncErrorKind.other => l.syncErrOther,
+      };
+
+  String _statusText(AppLocalizations l, SyncUiState st) {
+    switch (st.phase) {
+      case SyncPhase.syncing:
+        return '…';
+      case SyncPhase.error:
+        return st.errorKind == null
+            ? l.syncFillRepoToken
+            : _errText(l, st.errorKind!);
+      case SyncPhase.ok:
+        final r = st.result;
+        final parts = <String>[
+          if (r != null && !r.changedLocally && !r.pushedRemote)
+            l.syncUpToDate
+          else if (r != null) ...[
+            if (r.applied > 0) '↓ ${r.applied}',
+            if (r.deleted > 0) '− ${r.deleted}',
+            if (r.pushed > 0) '↑ ${r.pushed}',
+          ],
+          if (st.lastSyncAt != null)
+            l.syncUpdatedAt(DateFormat('HH:mm').format(st.lastSyncAt!)),
+        ];
+        return parts.isEmpty ? l.syncReady : parts.join(' · ');
+      case SyncPhase.idle:
+        return st.config.isComplete ? l.syncReady : l.syncNotConfigured;
+    }
+  }
+
+  Widget _statusLine(
+      BuildContext context, AppLocalizations l, SyncUiState st) {
     final dl = context.dl;
     final (IconData icon, Color color) = switch (st.phase) {
       SyncPhase.ok => (Icons.check_circle_rounded, dl.accent),
@@ -161,14 +195,6 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
       SyncPhase.syncing => (Icons.sync_rounded, dl.inkSoft),
       SyncPhase.idle => (Icons.cloud_off_rounded, dl.inkFaint),
     };
-    final parts = <String>[
-      if (st.message != null) st.message!,
-      if (st.lastSyncAt != null)
-        'обновлено в ${DateFormat('HH:mm').format(st.lastSyncAt!)}',
-    ];
-    final text = parts.isEmpty
-        ? (st.config.isComplete ? 'Готово к синхронизации' : 'Не настроено')
-        : parts.join(' · ');
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
       child: Row(
@@ -176,7 +202,7 @@ class _SyncSettingsSectionState extends ConsumerState<SyncSettingsSection> {
           Icon(icon, size: 15, color: color),
           const SizedBox(width: 6),
           Expanded(
-            child: Text(text,
+            child: Text(_statusText(l, st),
                 style: TextStyle(fontSize: 12, color: dl.inkFaint)),
           ),
         ],

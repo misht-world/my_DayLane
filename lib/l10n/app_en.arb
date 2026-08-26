@@ -1,69 +1,58 @@
 {
   "@@locale": "en",
-
   "commonDone": "Done",
   "commonCancel": "Cancel",
   "commonDelete": "Delete",
   "commonAdd": "Add",
-
   "tooltipAllTasks": "All tasks",
   "tooltipPayments": "Payments",
   "tooltipTrips": "Trips",
   "tooltipSettings": "Settings",
   "tooltipAddTask": "Add task",
   "tooltipAddNote": "Add note",
-
   "sectionToday": "Today",
   "sectionTomorrow": "Tomorrow",
   "sectionNotes": "Notes",
   "todayEmpty": "nothing for today",
   "tomorrowEmpty": "nothing for tomorrow",
   "notesEmpty": "empty — add via \"+\"",
-
   "notesWhereToAdd": "Add to",
   "notesUndated": "Undated tasks",
   "undatedEmpty": "empty — \"waiting for their time\"",
-
   "catBooks": "Books",
   "catFilms": "Films & series",
   "catMusic": "Music",
   "catProjects": "Projects",
   "catShopping": "Shopping",
   "catOther": "Other",
-
   "personBooks": "Author",
   "personFilms": "Director / studio",
   "personMusic": "Artist",
   "personShopping": "Section / topic",
-
   "doneBooks": "Read",
   "doneFilms": "Watched",
   "doneMusic": "Listened",
   "doneProjects": "Completed",
   "doneShopping": "Bought",
   "doneOther": "Done",
-
   "archiveBooks": "Read",
   "archiveFilms": "Watched",
   "archiveMusic": "Listened",
   "archiveProjects": "Completed",
   "archiveShopping": "Bought",
   "archiveOther": "Done",
-
   "hintBooks": "Book title",
   "hintFilms": "Title",
   "hintMusic": "Album / track",
   "hintProjects": "Project name",
   "hintShopping": "What to buy",
   "hintOther": "Note",
-
   "addBooks": "Add a book",
   "addFilms": "Add",
   "addMusic": "Add",
   "addProjects": "Add a project",
   "addShopping": "Add a purchase",
   "addOther": "Add",
-
   "audienceUnset": "unspecified",
   "audienceAdults": "adults",
   "audienceKids": "kids",
@@ -71,7 +60,6 @@
   "headerKids": "Kids",
   "headerNoTag": "No tag",
   "noSection": "No section",
-
   "noteYear": "Year",
   "noteFor": "For",
   "notePoints": "Items",
@@ -83,16 +71,18 @@
   "noteFieldHint": "Note",
   "noteDoneWhenAll": "done when all items are completed",
   "noteDeleted": "Note deleted",
-
   "linkAdd": "Add link",
   "linkFileFromPhone": "File from phone",
   "linkDialogTitle": "Link",
   "linkHint": "https://… (Yandex.Disk, Google Drive, any)",
   "linkAttachFailed": "Couldn't attach the file: {error}",
   "@linkAttachFailed": {
-    "placeholders": { "error": { "type": "Object" } }
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
   },
-
   "settingsTitle": "Settings",
   "settingsAutoCarry": "Auto-carry unfinished",
   "settingsAutoCarrySubtitle": "On launch, move overdue single-day tasks to today",
@@ -116,14 +106,22 @@
   "settingsImportSubtitle": "Replace all data from a backup",
   "settingsImported": "Tasks imported: {count}",
   "@settingsImported": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
-
   "commonReplace": "Replace",
   "commonUndo": "Undo",
   "daysAbbrev": "{count} d.",
-  "@daysAbbrev": { "placeholders": { "count": { "type": "int" } } },
-
+  "@daysAbbrev": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskTitle": "Task",
   "taskTitleHint": "What needs doing?",
   "taskDefer": "Defer (no date)",
@@ -142,9 +140,19 @@
   "linkEnd": "End",
   "duration": "Duration",
   "linkedAfter": "after \"{title}\"  ·  {date}",
-  "@linkedAfter": { "placeholders": { "title": {}, "date": {} } },
+  "@linkedAfter": {
+    "placeholders": {
+      "title": {},
+      "date": {}
+    }
+  },
   "linkedBefore": "before \"{title}\"  ·  {date}",
-  "@linkedBefore": { "placeholders": { "title": {}, "date": {} } },
+  "@linkedBefore": {
+    "placeholders": {
+      "title": {},
+      "date": {}
+    }
+  },
   "linkToTask": "Link to a task",
   "linkToTaskSubtitle": "dates shift with the linked task automatically",
   "segStartAfter": "Start after",
@@ -162,7 +170,12 @@
   "recurRepeat": "Repeat",
   "recurInterval": "Interval",
   "recurEvery": "every {n} {unit}",
-  "@recurEvery": { "placeholders": { "n": {}, "unit": {} } },
+  "@recurEvery": {
+    "placeholders": {
+      "n": {},
+      "unit": {}
+    }
+  },
   "recurDaysToEnd": "Days before end",
   "unitDays": "d.",
   "unitWeeks": "wk.",
@@ -190,7 +203,11 @@
   "remAtEnd": "At end",
   "remTime": "Reminder time",
   "remByTaskTime": "at {time} · by task time",
-  "@remByTaskTime": { "placeholders": { "time": {} } },
+  "@remByTaskTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
   "remWhen": "When to remind",
   "remOnDay": "On the day",
   "remDayBefore": "1 day before",
@@ -199,7 +216,6 @@
   "remWeekBefore": "A week before",
   "taskSubtasks": "Subtasks",
   "pickPeriod": "Select a period",
-
   "paymentsEmpty": "No tasks with the \"Payment\" template",
   "resetToday": "today",
   "carriedToToday": "Carried to today",
@@ -208,19 +224,32 @@
   "quickTomorrow": "tomorrow",
   "onDate": "On a date",
   "scheduledFor": "Scheduled for {date}",
-  "@scheduledFor": { "placeholders": { "date": {} } },
+  "@scheduledFor": {
+    "placeholders": {
+      "date": {}
+    }
+  },
   "untitled": "(untitled)",
-
   "daySheetEmpty": "no tasks",
-
   "importQuestion": "Import?",
   "importWarning": "All current tasks will be replaced with data from the file. This can't be undone.",
   "exportFailed": "Failed: {error}",
-  "@exportFailed": { "placeholders": { "error": { "type": "Object" } } },
+  "@exportFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
   "importFailed": "Import error: {error}",
-  "@importFailed": { "placeholders": { "error": { "type": "Object" } } },
+  "@importFailed": {
+    "placeholders": {
+      "error": {
+        "type": "Object"
+      }
+    }
+  },
   "backupSubject": "DayLane — backup",
-
   "tripTitle": "Trip",
   "tripShowInCalendar": "Show in calendar",
   "tripEditTask": "Edit task",
@@ -233,11 +262,25 @@
   "tripOpenAsRoute": "Open as route",
   "tripRouteThroughAll": "through all points in order",
   "tripCheckInOn": "check-in {date}",
-  "@tripCheckInOn": { "placeholders": { "date": {} } },
+  "@tripCheckInOn": {
+    "placeholders": {
+      "date": {}
+    }
+  },
   "tripStaysCovered": "Stays cover all nights ({n})",
-  "@tripStaysCovered": { "placeholders": { "n": { "type": "int" } } },
+  "@tripStaysCovered": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "tripNoStay": "No stay: {list}",
-  "@tripNoStay": { "placeholders": { "list": {} } },
+  "@tripNoStay": {
+    "placeholders": {
+      "list": {}
+    }
+  },
   "tripStageStay": "Stay",
   "tripStagePlace": "Place",
   "tripNewStage": "New stage",
@@ -247,31 +290,72 @@
   "tripCheckInOut": "Check-in — check-out",
   "tripDays": "Days",
   "tripStayNote": "{nights} · no night on the checkout day — so a same-day move dovetails",
-  "@tripStayNote": { "placeholders": { "nights": {} } },
+  "@tripStayNote": {
+    "placeholders": {
+      "nights": {}
+    }
+  },
   "tripPlaceLabel": "Place (hotel, museum…)",
   "tripPlaceOnMap": "place on the map",
   "tripAttachments": "attachments: {n}",
-  "@tripAttachments": { "placeholders": { "n": { "type": "int" } } },
+  "@tripAttachments": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "tripLinksFilesLabel": "Links and files (booking, ticket, document)",
   "tripNotesHint": "Notes (wrap-up: how it went, what you liked)",
   "tripDayN": "day {n}",
-  "@tripDayN": { "placeholders": { "n": { "type": "int" } } },
+  "@tripDayN": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "tripDaysRange": "days {a}–{b}",
-  "@tripDaysRange": { "placeholders": { "a": { "type": "int" }, "b": { "type": "int" } } },
+  "@tripDaysRange": {
+    "placeholders": {
+      "a": {
+        "type": "int"
+      },
+      "b": {
+        "type": "int"
+      }
+    }
+  },
   "tripCheckInOutMeta": "check-in {a} → check-out {b} · {nights}",
-  "@tripCheckInOutMeta": { "placeholders": { "a": {}, "b": {}, "nights": {} } },
+  "@tripCheckInOutMeta": {
+    "placeholders": {
+      "a": {},
+      "b": {},
+      "nights": {}
+    }
+  },
   "nightsLabel": "{count, plural, =1{1 night} other{{count} nights}}",
-  "@nightsLabel": { "placeholders": { "count": { "type": "int" } } },
+  "@nightsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "tripStagesCount": " · stages: {n}",
-  "@tripStagesCount": { "placeholders": { "n": { "type": "int" } } },
-
+  "@tripStagesCount": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "tripsTitle": "Trips",
   "tripsNew": "New trip",
   "tripsEmpty": "No trips yet.\nCreate a trip — it's a period with a journal: stages by day, places and notes.",
   "tripsNow": "Now",
   "tripsUpcoming": "Upcoming",
   "tripsPast": "Past",
-
   "carriedOverChip": "carried",
   "chipOnMap": "on the map",
   "moveToUndated": "To undated",
@@ -280,11 +364,44 @@
   "addItemShort": "item",
   "newItem": "New item",
   "newItemHint": "What to do?",
-
   "tasksEmptyDefault": "No tasks yet",
   "noDate": "no date",
   "bucketOverdue": "Overdue",
   "bucketSoon": "Upcoming days",
   "bucketLater": "Later",
-  "bucketDone": "Done"
+  "bucketDone": "Done",
+  "syncSection": "Sync",
+  "syncHint": "A private GitHub repo as the cloud between your devices. The token is kept in the device's secure store.",
+  "syncRepo": "Repository",
+  "syncRepoHint": "user/daylane-sync",
+  "syncToken": "Token (fine-grained PAT)",
+  "syncNow": "Sync",
+  "commonSave": "Save",
+  "syncDisconnect": "Disconnect",
+  "syncSaved": "Sync settings saved",
+  "syncReady": "Ready to sync",
+  "syncNotConfigured": "Not configured",
+  "syncFillRepoToken": "Fill in the repository and token",
+  "syncUpToDate": "Already up to date",
+  "syncErrNetwork": "No network",
+  "syncErrAuth": "No access — check the token and its Contents permission",
+  "syncErrRead": "Read error",
+  "syncErrWrite": "Write error",
+  "syncErrOther": "Sync error",
+  "digestSection": "Telegram digest",
+  "digestEnable": "Send the day plan",
+  "digestEnableSub": "Open tasks for today and tomorrow, in Telegram",
+  "digestConfigureSyncFirst": "Set up sync above first",
+  "digestTime": "Send time",
+  "digestSaved": "Digest setting sent",
+  "detailEmptyTitle": "Select a task or note on the left",
+  "detailEmptySub": "or create a new one with +",
+  "syncUpdatedAt": "updated at {time}",
+  "@syncUpdatedAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  }
 }

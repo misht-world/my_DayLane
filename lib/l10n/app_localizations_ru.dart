@@ -782,4 +782,89 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get bucketDone => 'Выполнено';
+
+  @override
+  String get syncSection => 'Синхронизация';
+
+  @override
+  String get syncHint =>
+      'Приватный GitHub-репозиторий как «облако» между устройствами. Токен хранится в защищённом хранилище устройства.';
+
+  @override
+  String get syncRepo => 'Репозиторий';
+
+  @override
+  String get syncRepoHint => 'логин/daylane-sync';
+
+  @override
+  String get syncToken => 'Токен (fine-grained PAT)';
+
+  @override
+  String get syncNow => 'Синхронизировать';
+
+  @override
+  String get commonSave => 'Сохранить';
+
+  @override
+  String get syncDisconnect => 'Отключить';
+
+  @override
+  String get syncSaved => 'Настройки синхронизации сохранены';
+
+  @override
+  String get syncReady => 'Готово к синхронизации';
+
+  @override
+  String get syncNotConfigured => 'Не настроено';
+
+  @override
+  String get syncFillRepoToken => 'Заполните репозиторий и токен';
+
+  @override
+  String get syncUpToDate => 'Уже синхронизировано';
+
+  @override
+  String get syncErrNetwork => 'Нет сети';
+
+  @override
+  String get syncErrAuth => 'Нет доступа — проверьте токен и права (Contents)';
+
+  @override
+  String get syncErrRead => 'Ошибка чтения';
+
+  @override
+  String get syncErrWrite => 'Ошибка записи';
+
+  @override
+  String get syncErrOther => 'Ошибка синхронизации';
+
+  @override
+  String get digestSection => 'Телеграм-дайджест';
+
+  @override
+  String get digestEnable => 'Присылать план на день';
+
+  @override
+  String get digestEnableSub =>
+      'Невыполненные дела на сегодня и завтра — в Телеграм';
+
+  @override
+  String get digestConfigureSyncFirst => 'Сначала настройте синхронизацию выше';
+
+  @override
+  String get digestTime => 'Время рассылки';
+
+  @override
+  String get digestSaved => 'Настройка дайджеста отправлена';
+
+  @override
+  String get detailEmptyTitle => 'Выберите дело или заметку слева';
+
+  @override
+  String get detailEmptySub => 'или создайте новое кнопкой +';
+
+  @override
+  String syncUpdatedAt(String time) {
+    return 'обновлено в $time';
+  }
 }

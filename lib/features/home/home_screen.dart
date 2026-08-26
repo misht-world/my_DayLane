@@ -154,16 +154,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _detailEmpty(BuildContext context) {
     final dl = context.dl;
+    final l = AppLocalizations.of(context);
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.edit_note_rounded, size: 52, color: dl.inkFaint),
           const SizedBox(height: 12),
-          Text('Выберите дело или заметку слева',
+          Text(l.detailEmptyTitle,
               style: TextStyle(fontSize: 15, color: dl.inkSoft)),
           const SizedBox(height: 4),
-          Text('или создайте новое кнопкой +',
+          Text(l.detailEmptySub,
               style: TextStyle(fontSize: 12, color: dl.inkFaint)),
         ],
       ),

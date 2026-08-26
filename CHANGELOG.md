@@ -4,6 +4,14 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.18.1] — 2026-08-26
+
+### Fixed
+- **Localization of the Connected screens.** The sync and Telegram-digest
+  settings, their status/error messages, and the desktop empty-detail pane were
+  hardcoded in Russian and showed up untranslated when the app language was
+  English. They now follow the selected language (EN/RU).
+
 ## [1.18.0] — 2026-08-26
 
 ### Added

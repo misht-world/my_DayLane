@@ -1,23 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
 
-/// Ошибки транспорта синхронизации.
+/// Тип ошибки синхронизации — для локализации сообщения в UI.
+enum SyncErrorKind { network, auth, read, write, conflict, other }
+
+/// Ошибки транспорта синхронизации. `message` — для логов; в интерфейсе текст
+/// выбирается по `kind` (локализуемо).
 class SyncException implements Exception {
-  SyncException(this.message);
+  SyncException(this.message, [this.kind = SyncErrorKind.other]);
   final String message;
+  final SyncErrorKind kind;
   @override
-  String toString() => 'SyncException: $message';
+  String toString() => 'SyncException($kind): $message';
 }
 
 /// Неверный/просроченный токен или нет прав на репозиторий (401/403).
 class SyncAuthException extends SyncException {
-  SyncAuthException(super.message);
+  SyncAuthException(String message) : super(message, SyncErrorKind.auth);
 }
 
 /// Файл изменился на сервере между чтением и записью (устаревший sha) —
 /// нужно перечитать и повторить слияние.
 class SyncConflictException extends SyncException {
-  SyncConflictException() : super('remote changed, retry');
+  SyncConflictException() : super('remote changed, retry', SyncErrorKind.conflict);
 }
 
 /// Результат чтения удалённого файла состояния.
@@ -70,7 +75,7 @@ class GitHubStore implements SyncStore {
       if (resp.statusCode == 404) return const RemoteFile(null, null);
       _checkAuth(resp.statusCode, body);
       if (resp.statusCode != 200) {
-        throw SyncException('Ошибка чтения (${resp.statusCode})');
+        throw SyncException('read ${resp.statusCode}', SyncErrorKind.read);
       }
       final m = jsonDecode(body) as Map<String, dynamic>;
       final b64 = (m['content'] as String? ?? '').replaceAll('\n', '');
@@ -78,7 +83,7 @@ class GitHubStore implements SyncStore {
       final decoded = b64.isEmpty ? '{}' : utf8.decode(base64.decode(b64));
       return RemoteFile(jsonDecode(decoded) as Map<String, dynamic>, sha);
     } on SocketException {
-      throw SyncException('Нет сети');
+      throw SyncException('network', SyncErrorKind.network);
     } finally {
       client.close();
     }
@@ -108,10 +113,10 @@ class GitHubStore implements SyncStore {
       }
       _checkAuth(resp.statusCode, body);
       if (resp.statusCode != 200 && resp.statusCode != 201) {
-        throw SyncException('Ошибка записи (${resp.statusCode})');
+        throw SyncException('write ${resp.statusCode}', SyncErrorKind.write);
       }
     } on SocketException {
-      throw SyncException('Нет сети');
+      throw SyncException('network', SyncErrorKind.network);
     } finally {
       client.close();
     }
