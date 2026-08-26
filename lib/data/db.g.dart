@@ -2258,6 +2258,33 @@ class $AppSettingsTable extends AppSettings
     requiredDuringInsert: false,
     defaultValue: const Constant('ru'),
   );
+  static const VerificationMeta _digestEnabledMeta = const VerificationMeta(
+    'digestEnabled',
+  );
+  @override
+  late final GeneratedColumn<bool> digestEnabled = GeneratedColumn<bool>(
+    'digest_enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("digest_enabled" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _digestTimeMinutesMeta = const VerificationMeta(
+    'digestTimeMinutes',
+  );
+  @override
+  late final GeneratedColumn<int> digestTimeMinutes = GeneratedColumn<int>(
+    'digest_time_minutes',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(480),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2265,6 +2292,8 @@ class $AppSettingsTable extends AppSettings
     themeMode,
     firstWeekday,
     localeCode,
+    digestEnabled,
+    digestTimeMinutes,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2308,6 +2337,24 @@ class $AppSettingsTable extends AppSettings
         localeCode.isAcceptableOrUnknown(data['locale_code']!, _localeCodeMeta),
       );
     }
+    if (data.containsKey('digest_enabled')) {
+      context.handle(
+        _digestEnabledMeta,
+        digestEnabled.isAcceptableOrUnknown(
+          data['digest_enabled']!,
+          _digestEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('digest_time_minutes')) {
+      context.handle(
+        _digestTimeMinutesMeta,
+        digestTimeMinutes.isAcceptableOrUnknown(
+          data['digest_time_minutes']!,
+          _digestTimeMinutesMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -2337,6 +2384,14 @@ class $AppSettingsTable extends AppSettings
         DriftSqlType.string,
         data['${effectivePrefix}locale_code'],
       )!,
+      digestEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}digest_enabled'],
+      )!,
+      digestTimeMinutes: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}digest_time_minutes'],
+      )!,
     );
   }
 
@@ -2360,12 +2415,22 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
   /// По умолчанию — русский (интерфейс приложения RU-first; локализация EN
   /// пока частичная, поэтому не переключаем автоматически на язык системы).
   final String localeCode;
+
+  /// Connected: утренний Телеграм-дайджест дел на сегодня/завтра.
+  /// Исполняется вне приложения (скрипт на сервере читает digest.json из
+  /// sync-репозитория); здесь — только настройка, публикуемая в репозиторий.
+  final bool digestEnabled;
+
+  /// Время рассылки в минутах от полуночи (по умолчанию 08:00 = 480).
+  final int digestTimeMinutes;
   const SettingsRow({
     required this.id,
     required this.autoCarry,
     required this.themeMode,
     required this.firstWeekday,
     required this.localeCode,
+    required this.digestEnabled,
+    required this.digestTimeMinutes,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2375,6 +2440,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     map['theme_mode'] = Variable<int>(themeMode);
     map['first_weekday'] = Variable<int>(firstWeekday);
     map['locale_code'] = Variable<String>(localeCode);
+    map['digest_enabled'] = Variable<bool>(digestEnabled);
+    map['digest_time_minutes'] = Variable<int>(digestTimeMinutes);
     return map;
   }
 
@@ -2385,6 +2452,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       themeMode: Value(themeMode),
       firstWeekday: Value(firstWeekday),
       localeCode: Value(localeCode),
+      digestEnabled: Value(digestEnabled),
+      digestTimeMinutes: Value(digestTimeMinutes),
     );
   }
 
@@ -2399,6 +2468,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       themeMode: serializer.fromJson<int>(json['themeMode']),
       firstWeekday: serializer.fromJson<int>(json['firstWeekday']),
       localeCode: serializer.fromJson<String>(json['localeCode']),
+      digestEnabled: serializer.fromJson<bool>(json['digestEnabled']),
+      digestTimeMinutes: serializer.fromJson<int>(json['digestTimeMinutes']),
     );
   }
   @override
@@ -2410,6 +2481,8 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       'themeMode': serializer.toJson<int>(themeMode),
       'firstWeekday': serializer.toJson<int>(firstWeekday),
       'localeCode': serializer.toJson<String>(localeCode),
+      'digestEnabled': serializer.toJson<bool>(digestEnabled),
+      'digestTimeMinutes': serializer.toJson<int>(digestTimeMinutes),
     };
   }
 
@@ -2419,12 +2492,16 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
     int? themeMode,
     int? firstWeekday,
     String? localeCode,
+    bool? digestEnabled,
+    int? digestTimeMinutes,
   }) => SettingsRow(
     id: id ?? this.id,
     autoCarry: autoCarry ?? this.autoCarry,
     themeMode: themeMode ?? this.themeMode,
     firstWeekday: firstWeekday ?? this.firstWeekday,
     localeCode: localeCode ?? this.localeCode,
+    digestEnabled: digestEnabled ?? this.digestEnabled,
+    digestTimeMinutes: digestTimeMinutes ?? this.digestTimeMinutes,
   );
   SettingsRow copyWithCompanion(AppSettingsCompanion data) {
     return SettingsRow(
@@ -2437,6 +2514,12 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
       localeCode: data.localeCode.present
           ? data.localeCode.value
           : this.localeCode,
+      digestEnabled: data.digestEnabled.present
+          ? data.digestEnabled.value
+          : this.digestEnabled,
+      digestTimeMinutes: data.digestTimeMinutes.present
+          ? data.digestTimeMinutes.value
+          : this.digestTimeMinutes,
     );
   }
 
@@ -2447,14 +2530,23 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           ..write('autoCarry: $autoCarry, ')
           ..write('themeMode: $themeMode, ')
           ..write('firstWeekday: $firstWeekday, ')
-          ..write('localeCode: $localeCode')
+          ..write('localeCode: $localeCode, ')
+          ..write('digestEnabled: $digestEnabled, ')
+          ..write('digestTimeMinutes: $digestTimeMinutes')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, autoCarry, themeMode, firstWeekday, localeCode);
+  int get hashCode => Object.hash(
+    id,
+    autoCarry,
+    themeMode,
+    firstWeekday,
+    localeCode,
+    digestEnabled,
+    digestTimeMinutes,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -2463,7 +2555,9 @@ class SettingsRow extends DataClass implements Insertable<SettingsRow> {
           other.autoCarry == this.autoCarry &&
           other.themeMode == this.themeMode &&
           other.firstWeekday == this.firstWeekday &&
-          other.localeCode == this.localeCode);
+          other.localeCode == this.localeCode &&
+          other.digestEnabled == this.digestEnabled &&
+          other.digestTimeMinutes == this.digestTimeMinutes);
 }
 
 class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
@@ -2472,12 +2566,16 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
   final Value<int> themeMode;
   final Value<int> firstWeekday;
   final Value<String> localeCode;
+  final Value<bool> digestEnabled;
+  final Value<int> digestTimeMinutes;
   const AppSettingsCompanion({
     this.id = const Value.absent(),
     this.autoCarry = const Value.absent(),
     this.themeMode = const Value.absent(),
     this.firstWeekday = const Value.absent(),
     this.localeCode = const Value.absent(),
+    this.digestEnabled = const Value.absent(),
+    this.digestTimeMinutes = const Value.absent(),
   });
   AppSettingsCompanion.insert({
     this.id = const Value.absent(),
@@ -2485,6 +2583,8 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
     this.themeMode = const Value.absent(),
     this.firstWeekday = const Value.absent(),
     this.localeCode = const Value.absent(),
+    this.digestEnabled = const Value.absent(),
+    this.digestTimeMinutes = const Value.absent(),
   });
   static Insertable<SettingsRow> custom({
     Expression<int>? id,
@@ -2492,6 +2592,8 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
     Expression<int>? themeMode,
     Expression<int>? firstWeekday,
     Expression<String>? localeCode,
+    Expression<bool>? digestEnabled,
+    Expression<int>? digestTimeMinutes,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -2499,6 +2601,8 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
       if (themeMode != null) 'theme_mode': themeMode,
       if (firstWeekday != null) 'first_weekday': firstWeekday,
       if (localeCode != null) 'locale_code': localeCode,
+      if (digestEnabled != null) 'digest_enabled': digestEnabled,
+      if (digestTimeMinutes != null) 'digest_time_minutes': digestTimeMinutes,
     });
   }
 
@@ -2508,6 +2612,8 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
     Value<int>? themeMode,
     Value<int>? firstWeekday,
     Value<String>? localeCode,
+    Value<bool>? digestEnabled,
+    Value<int>? digestTimeMinutes,
   }) {
     return AppSettingsCompanion(
       id: id ?? this.id,
@@ -2515,6 +2621,8 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
       themeMode: themeMode ?? this.themeMode,
       firstWeekday: firstWeekday ?? this.firstWeekday,
       localeCode: localeCode ?? this.localeCode,
+      digestEnabled: digestEnabled ?? this.digestEnabled,
+      digestTimeMinutes: digestTimeMinutes ?? this.digestTimeMinutes,
     );
   }
 
@@ -2536,6 +2644,12 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
     if (localeCode.present) {
       map['locale_code'] = Variable<String>(localeCode.value);
     }
+    if (digestEnabled.present) {
+      map['digest_enabled'] = Variable<bool>(digestEnabled.value);
+    }
+    if (digestTimeMinutes.present) {
+      map['digest_time_minutes'] = Variable<int>(digestTimeMinutes.value);
+    }
     return map;
   }
 
@@ -2546,7 +2660,9 @@ class AppSettingsCompanion extends UpdateCompanion<SettingsRow> {
           ..write('autoCarry: $autoCarry, ')
           ..write('themeMode: $themeMode, ')
           ..write('firstWeekday: $firstWeekday, ')
-          ..write('localeCode: $localeCode')
+          ..write('localeCode: $localeCode, ')
+          ..write('digestEnabled: $digestEnabled, ')
+          ..write('digestTimeMinutes: $digestTimeMinutes')
           ..write(')'))
         .toString();
   }
@@ -5219,6 +5335,8 @@ typedef $$AppSettingsTableCreateCompanionBuilder =
       Value<int> themeMode,
       Value<int> firstWeekday,
       Value<String> localeCode,
+      Value<bool> digestEnabled,
+      Value<int> digestTimeMinutes,
     });
 typedef $$AppSettingsTableUpdateCompanionBuilder =
     AppSettingsCompanion Function({
@@ -5227,6 +5345,8 @@ typedef $$AppSettingsTableUpdateCompanionBuilder =
       Value<int> themeMode,
       Value<int> firstWeekday,
       Value<String> localeCode,
+      Value<bool> digestEnabled,
+      Value<int> digestTimeMinutes,
     });
 
 class $$AppSettingsTableFilterComposer
@@ -5260,6 +5380,16 @@ class $$AppSettingsTableFilterComposer
 
   ColumnFilters<String> get localeCode => $composableBuilder(
     column: $table.localeCode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get digestEnabled => $composableBuilder(
+    column: $table.digestEnabled,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get digestTimeMinutes => $composableBuilder(
+    column: $table.digestTimeMinutes,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -5297,6 +5427,16 @@ class $$AppSettingsTableOrderingComposer
     column: $table.localeCode,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get digestEnabled => $composableBuilder(
+    column: $table.digestEnabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get digestTimeMinutes => $composableBuilder(
+    column: $table.digestTimeMinutes,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AppSettingsTableAnnotationComposer
@@ -5324,6 +5464,16 @@ class $$AppSettingsTableAnnotationComposer
 
   GeneratedColumn<String> get localeCode => $composableBuilder(
     column: $table.localeCode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get digestEnabled => $composableBuilder(
+    column: $table.digestEnabled,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get digestTimeMinutes => $composableBuilder(
+    column: $table.digestTimeMinutes,
     builder: (column) => column,
   );
 }
@@ -5364,12 +5514,16 @@ class $$AppSettingsTableTableManager
                 Value<int> themeMode = const Value.absent(),
                 Value<int> firstWeekday = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
+                Value<bool> digestEnabled = const Value.absent(),
+                Value<int> digestTimeMinutes = const Value.absent(),
               }) => AppSettingsCompanion(
                 id: id,
                 autoCarry: autoCarry,
                 themeMode: themeMode,
                 firstWeekday: firstWeekday,
                 localeCode: localeCode,
+                digestEnabled: digestEnabled,
+                digestTimeMinutes: digestTimeMinutes,
               ),
           createCompanionCallback:
               ({
@@ -5378,12 +5532,16 @@ class $$AppSettingsTableTableManager
                 Value<int> themeMode = const Value.absent(),
                 Value<int> firstWeekday = const Value.absent(),
                 Value<String> localeCode = const Value.absent(),
+                Value<bool> digestEnabled = const Value.absent(),
+                Value<int> digestTimeMinutes = const Value.absent(),
               }) => AppSettingsCompanion.insert(
                 id: id,
                 autoCarry: autoCarry,
                 themeMode: themeMode,
                 firstWeekday: firstWeekday,
                 localeCode: localeCode,
+                digestEnabled: digestEnabled,
+                digestTimeMinutes: digestTimeMinutes,
               ),
           withReferenceMapper: (p0) => p0
               .map((e) => (e.readTable(table), BaseReferences(db, table, e)))

@@ -146,6 +146,15 @@ class AppSettings extends Table {
   /// пока частичная, поэтому не переключаем автоматически на язык системы).
   TextColumn get localeCode => text().withDefault(const Constant('ru'))();
 
+  /// Connected: утренний Телеграм-дайджест дел на сегодня/завтра.
+  /// Исполняется вне приложения (скрипт на сервере читает digest.json из
+  /// sync-репозитория); здесь — только настройка, публикуемая в репозиторий.
+  BoolColumn get digestEnabled => boolean().withDefault(const Constant(true))();
+
+  /// Время рассылки в минутах от полуночи (по умолчанию 08:00 = 480).
+  IntColumn get digestTimeMinutes =>
+      integer().withDefault(const Constant(480))();
+
   @override
   Set<Column> get primaryKey => {id};
 }
@@ -160,7 +169,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.connection);
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -231,6 +240,10 @@ class AppDatabase extends _$AppDatabase {
               await (update(tasks)..where((t) => t.id.equals(row.id)))
                   .write(TasksCompanion(syncUid: Value(gen.v4())));
             }
+          }
+          if (from < 15) {
+            await m.addColumn(appSettings, appSettings.digestEnabled);
+            await m.addColumn(appSettings, appSettings.digestTimeMinutes);
           }
         },
         beforeOpen: (details) async {

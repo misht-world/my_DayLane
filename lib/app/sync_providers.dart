@@ -130,6 +130,39 @@ class SyncController extends Notifier<SyncUiState>
     state = const SyncUiState(loaded: true);
   }
 
+  /// Публикует настройку Телеграм-дайджеста в sync-репозиторий (`digest.json`),
+  /// откуда её читает скрипт на сервере. Возвращает текст ошибки или null.
+  Future<String?> publishDigest(bool enabled, int timeMinutes) async {
+    final c = state.config;
+    if (!c.isComplete) return 'Сначала настройте синхронизацию';
+    final store = GitHubStore(
+        owner: c.owner,
+        repo: c.repo,
+        token: c.token,
+        branch: c.branch,
+        path: 'digest.json');
+    String two(int v) => v.toString().padLeft(2, '0');
+    final payload = {
+      'enabled': enabled,
+      'time': '${two(timeMinutes ~/ 60)}:${two(timeMinutes % 60)}',
+      'updatedAt': DateTime.now().millisecondsSinceEpoch,
+    };
+    try {
+      // до 3 попыток при гонке sha
+      for (var i = 0;; i++) {
+        final rf = await store.pull();
+        try {
+          await store.push(payload, rf.sha);
+          return null;
+        } on SyncConflictException {
+          if (i >= 3) rethrow;
+        }
+      }
+    } on SyncException catch (e) {
+      return e.message;
+    }
+  }
+
   /// Один проход синхронизации. Не запускается повторно, если уже идёт.
   Future<void> syncNow() async {
     if (_busy) return;

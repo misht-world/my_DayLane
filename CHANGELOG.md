@@ -4,6 +4,15 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.18.0] — 2026-08-26
+
+### Added
+- **Telegram digest settings (Connected).** A new Settings section lets you
+  turn on a morning digest of today/tomorrow's open tasks and pick the time.
+  The app publishes the choice (`digest.json`) to the sync repository; a small
+  server-side script reads it and sends the message via Telegram. Requires sync
+  to be configured.
+
 ## [1.17.2] — 2026-08-24
 
 ### Fixed
