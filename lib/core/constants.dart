@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 const String kAppName = 'DayLane';
 
 /// Версия приложения (синхронизировать с `version:` в pubspec.yaml).
-const String kAppVersion = '1.18.1';
+const String kAppVersion = '1.18.2';
 
 /// «Подключённая» редакция: включает синхронизацию через GitHub и прочие
 /// онлайн-функции. Чистая офлайн-DayLane собирается без этого флага и остаётся

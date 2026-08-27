@@ -116,6 +116,9 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   /// вставляли копию.
   int? _savedId;
 
+  /// Снимок загруженных подпунктов — чтобы понять, было ли реальное изменение.
+  List<(String, bool)> _loadedSubs = const [];
+
   /// Не авто-сохранять при закрытии (после удаления или явного «Готово»).
   bool _skipAutosave = false;
 
@@ -170,6 +173,7 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
           for (final s in list) {
             _subs.add(_SubItem(s.title, s.isDone));
           }
+          _loadedSubs = [for (final s in list) (s.title, s.isDone)];
         });
       });
     }
@@ -1272,8 +1276,57 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   /// Авто-сохранение при закрытии/свайпе назад: пустое (без заголовка) —
   /// не создаём. Fire-and-forget: сохранение доживает даже после закрытия.
+  /// Есть ли реальные изменения относительно загруженного дела. Нужно, чтобы
+  /// простое ОТКРЫТИЕ карточки (без правок) не переписывало `updatedAt` — иначе
+  /// при синхронизации «пустое» сохранение затрёт более раннюю, но настоящую
+  /// правку с другого устройства (LWW по времени).
+  bool _hasChanges() {
+    final e = widget.existing;
+    final m = _currentModel();
+    if (e == null) {
+      return m.title.isNotEmpty ||
+          _subs.any((s) => s.controller.text.trim().isNotEmpty);
+    }
+    final taskSame = m.title == e.title &&
+        m.kind == e.kind &&
+        isSameDate(m.startDate, e.startDate) &&
+        isSameDate(m.endDate, e.endDate) &&
+        m.durationDays == e.durationDays &&
+        m.dependsOnTaskId == e.dependsOnTaskId &&
+        m.dependsBefore == e.dependsBefore &&
+        m.timeOfDayMinutes == e.timeOfDayMinutes &&
+        m.reminderEnabled == e.reminderEnabled &&
+        m.reminderRule == e.reminderRule &&
+        m.reminderMinutes == e.reminderMinutes &&
+        m.reminderDaysBefore == e.reminderDaysBefore &&
+        m.colorId == e.colorId &&
+        m.iconId == e.iconId &&
+        m.deferred == e.deferred &&
+        m.isTrip == e.isTrip &&
+        m.recurrenceType == e.recurrenceType &&
+        m.recurrenceInterval == e.recurrenceInterval &&
+        m.recurrenceAnchor == e.recurrenceAnchor &&
+        m.note == e.note &&
+        m.placeName == e.placeName &&
+        m.placeUrl == e.placeUrl &&
+        m.links == e.links;
+    if (!taskSame) return true;
+    final cur = [
+      for (final s in _subs)
+        if (s.controller.text.trim().isNotEmpty)
+          (s.controller.text.trim(), s.isDone)
+    ];
+    if (cur.length != _loadedSubs.length) return true;
+    for (var i = 0; i < cur.length; i++) {
+      if (cur[i].$1 != _loadedSubs[i].$1 || cur[i].$2 != _loadedSubs[i].$2) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void _autosave() {
-    if (_skipAutosave || _title.text.trim().isEmpty) return;
+    if (_skipAutosave || _title.text.trim().isEmpty || !_hasChanges()) return;
     _doSave();
   }
 

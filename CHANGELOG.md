@@ -4,6 +4,20 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.18.2] — 2026-08-27
+
+### Fixed
+- **Sync no longer loses an edit made on another device.** Opening a task or
+  note without changing anything used to re-save it, bumping its "updated" time;
+  a device holding a stale copy could then win the last-write-wins merge and
+  overwrite a real edit made elsewhere. Editors now save only when something
+  actually changed.
+
+### Changed
+- **Morning digest counts overdue tasks.** The Telegram digest now lists
+  overdue unfinished single-day tasks under "Today" (marked ⏳), independent of
+  whether carry-over has run on a device — so the 8:00 message reflects them.
+
 ## [1.18.1] — 2026-08-26
 
 ### Fixed

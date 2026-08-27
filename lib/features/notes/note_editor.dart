@@ -72,6 +72,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   late final String _syncUid;
   int? _savedId;
 
+  /// Снимок загруженных подпунктов — чтобы не сохранять без реальных изменений
+  /// (иначе «пустое» сохранение затрёт правку с другого устройства при синке).
+  List<(String, bool)> _loadedSubs = const [];
+
   /// Дебаунс авто-сохранения в панельном (десктоп) режиме.
   Timer? _autosaveTimer;
 
@@ -99,6 +103,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           for (final s in l) {
             _subs.add(_SubItem(s.title, s.isDone));
           }
+          _loadedSubs = [for (final s in l) (s.title, s.isDone)];
         });
       });
     }
@@ -445,8 +450,39 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     return id;
   }
 
+  /// Реальные ли изменения относительно загруженной заметки (см. пояснение в
+  /// редакторе дела) — чтобы открытие без правок не переписывало `updatedAt`.
+  bool _hasChanges() {
+    final e = widget.existing;
+    if (e == null) {
+      return _title.text.trim().isNotEmpty ||
+          _subs.any((s) => s.controller.text.trim().isNotEmpty);
+    }
+    final m = _model();
+    final same = m.title == e.title &&
+        m.author == e.author &&
+        m.year == e.year &&
+        m.audience == e.audience &&
+        m.note == e.note &&
+        m.links == e.links &&
+        m.isDone == e.isDone;
+    if (!same) return true;
+    final cur = [
+      for (final s in _subs)
+        if (s.controller.text.trim().isNotEmpty)
+          (s.controller.text.trim(), s.isDone)
+    ];
+    if (cur.length != _loadedSubs.length) return true;
+    for (var i = 0; i < cur.length; i++) {
+      if (cur[i].$1 != _loadedSubs[i].$1 || cur[i].$2 != _loadedSubs[i].$2) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void _autosave() {
-    if (_skipAutosave || _title.text.trim().isEmpty) return;
+    if (_skipAutosave || _title.text.trim().isEmpty || !_hasChanges()) return;
     _doSave();
   }
 
