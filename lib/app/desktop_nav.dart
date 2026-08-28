@@ -30,6 +30,19 @@ class ComposeNote extends DetailReq {
   final int category;
 }
 
+/// Показать список раздела «Заметки» (категория) в правой панели.
+class ShowCategory extends DetailReq {
+  const ShowCategory(this.category);
+  final int category;
+}
+
+/// Рабочая карточка заметки/проекта (не форма настроек): чек-лист, описание,
+/// ссылки. Правка полей — по кнопке (открывает [EditExisting]).
+class ShowNote extends DetailReq {
+  const ShowNote(this.note);
+  final TaskModel note;
+}
+
 class DetailReqNotifier extends Notifier<DetailReq?> {
   @override
   DetailReq? build() => null;

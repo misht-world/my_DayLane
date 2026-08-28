@@ -4,6 +4,15 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.19.0] — 2026-08-28
+
+### Added
+- **Desktop workspace panel for Notes.** On wide windows, tapping a Notes
+  category (e.g. Projects, Books) now opens its list in the right pane, and
+  tapping an entry opens a **workspace card** — title, category, description,
+  a live checklist of its subtasks, and links — instead of the edit form.
+  Editing the fields is one click away (pencil). Phones are unchanged.
+
 ## [1.18.3] — 2026-08-27
 
 ### Fixed

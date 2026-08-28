@@ -149,6 +149,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           key: ValueKey('compose-note-$category'),
           category: category,
           onClose: close),
+      ShowCategory(:final category) =>
+        _CategoryView(key: ValueKey('cat-$category'), category: category),
+      ShowNote(:final note) =>
+        _NoteWorkspace(key: ValueKey('ws-${note.id}'), note: note),
     };
   }
 
@@ -876,7 +880,17 @@ class _NoteCategoryTileState extends ConsumerState<_NoteCategoryTile> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         InkWell(
-          onTap: () => setState(() => _open = !_open),
+          onTap: () {
+            // Десктоп: показать список категории в правой панели;
+            // телефон: раскрыть/свернуть инлайн.
+            if (useDesktopDetail(context)) {
+              ref
+                  .read(detailReqProvider.notifier)
+                  .open(ShowCategory(widget.category));
+            } else {
+              setState(() => _open = !_open);
+            }
+          },
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 7),
             child: Row(
@@ -1072,7 +1086,15 @@ class _NoteItemRowState extends ConsumerState<_NoteItemRow> {
             Expanded(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: () => openNoteEditor(context, existing: n),
+                onTap: () {
+                  // Десктоп: открыть рабочую карточку в правой панели;
+                  // телефон: обычный редактор заметки.
+                  if (useDesktopDetail(context)) {
+                    ref.read(detailReqProvider.notifier).open(ShowNote(n));
+                  } else {
+                    openNoteEditor(context, existing: n);
+                  }
+                },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 3),
                   child: Column(
@@ -1191,6 +1213,260 @@ class _UndatedGroupState extends ConsumerState<_UndatedGroup> {
               ],
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// Правая панель десктопа: список категории «Заметки». Тап по записи открывает
+/// её рабочую карточку; «+» создаёт новую в этой категории.
+class _CategoryView extends ConsumerWidget {
+  const _CategoryView({super.key, required this.category});
+  final int category;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dl = context.dl;
+    final l = AppLocalizations.of(context);
+    final cat = kNoteCategories[category];
+    final color = TaskPalette.byId(cat.colorId);
+    final notes = ref.watch(notesByCategoryProvider(category));
+    final active = notes.where((n) => !n.isDone).toList();
+    final done = notes.where((n) => n.isDone).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(24, 20, 20, 10),
+          child: Row(
+            children: [
+              Icon(cat.icon, color: color),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(noteCatName(l, category),
+                    style: context.serif.copyWith(fontSize: 22, color: dl.ink)),
+              ),
+              FilledButton.icon(
+                onPressed: () => openNoteEditor(context, category: category),
+                style: FilledButton.styleFrom(
+                    backgroundColor: color,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: Text(noteAddLabel(l, category)),
+              ),
+            ],
+          ),
+        ),
+        Divider(height: 1, color: dl.line),
+        Expanded(
+          child: (active.isEmpty && done.isEmpty)
+              ? Center(
+                  child: Text(l.notesEmpty,
+                      style: TextStyle(color: dl.inkFaint)))
+              : ListView(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  children: [
+                    for (final n in active) _row(context, ref, n),
+                    if (done.isNotEmpty) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 12, 24, 4),
+                        child: Text(
+                            '${noteArchiveLabel(l, category)} · ${done.length}',
+                            style:
+                                TextStyle(fontSize: 12, color: dl.inkSoft)),
+                      ),
+                      for (final n in done) _row(context, ref, n),
+                    ],
+                  ],
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _row(BuildContext context, WidgetRef ref, TaskModel n) {
+    final dl = context.dl;
+    final progress = ref.watch(subtaskProgressProvider)[n.id] ?? (0, 0);
+    return InkWell(
+      onTap: () => ref.read(detailReqProvider.notifier).open(ShowNote(n)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+        child: Row(
+          children: [
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => ref.read(repositoryProvider).toggleDone(n),
+              child: Icon(
+                  n.isDone
+                      ? Icons.check_circle_rounded
+                      : Icons.radio_button_unchecked_rounded,
+                  size: 20,
+                  color: n.isDone ? dl.accent : dl.inkFaint),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                n.title.isEmpty ? l(context).untitled : n.title,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: n.isDone ? dl.inkFaint : dl.ink,
+                  decoration: n.isDone ? TextDecoration.lineThrough : null,
+                ),
+              ),
+            ),
+            if (progress.$2 > 0)
+              Text('${progress.$1}/${progress.$2}',
+                  style: TextStyle(fontSize: 12, color: dl.inkSoft)),
+            Icon(Icons.chevron_right_rounded, size: 20, color: dl.inkFaint),
+          ],
+        ),
+      ),
+    );
+  }
+
+  AppLocalizations l(BuildContext c) => AppLocalizations.of(c);
+}
+
+/// Рабочая карточка заметки/проекта в правой панели: заголовок, категория,
+/// описание, чек-лист дел и ссылки. Правка полей — кнопкой (открывает форму).
+class _NoteWorkspace extends ConsumerWidget {
+  const _NoteWorkspace({super.key, required this.note});
+  final TaskModel note;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dl = context.dl;
+    final l = AppLocalizations.of(context);
+    // Берём свежую версию (могла обновиться).
+    var live = note;
+    for (final t in ref.watch(tasksProvider).value ?? const []) {
+      if (t.id == note.id) {
+        live = t;
+        break;
+      }
+    }
+    final cat = (live.noteCategory >= 0 &&
+            live.noteCategory < kNoteCategories.length)
+        ? kNoteCategories[live.noteCategory]
+        : null;
+    final color = cat != null ? TaskPalette.byId(cat.colorId) : dl.accent;
+    final repo = ref.read(repositoryProvider);
+    void close() => ref.read(detailReqProvider.notifier).close();
+
+    final meta = <String>[
+      if (live.author.trim().isNotEmpty) live.author.trim(),
+      if (live.year != null) '${live.year}',
+    ];
+    final links =
+        live.links.split('\n').where((s) => s.trim().isNotEmpty).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(8, 10, 8, 2),
+          child: Row(
+            children: [
+              if (cat != null)
+                IconButton(
+                  icon: Icon(Icons.arrow_back_rounded, color: dl.inkSoft),
+                  onPressed: () => ref
+                      .read(detailReqProvider.notifier)
+                      .open(ShowCategory(live.noteCategory)),
+                ),
+              const Spacer(),
+              IconButton(
+                icon: Icon(Icons.edit_rounded, color: dl.inkSoft),
+                onPressed: () => openNoteEditor(context, existing: live),
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline_rounded, color: dl.inkSoft),
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  final undo = await repo.deleteTask(live.id!);
+                  showUndoSnackOn(messenger, l.noteDeleted, undo);
+                  close();
+                },
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(28, 0, 28, 28),
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => repo.toggleDone(live),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 4, right: 12),
+                      child: Icon(
+                          live.isDone
+                              ? Icons.check_circle_rounded
+                              : Icons.radio_button_unchecked_rounded,
+                          color: live.isDone ? dl.accent : color,
+                          size: 24),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(live.title.isEmpty ? l.untitled : live.title,
+                        style: context.serif
+                            .copyWith(fontSize: 25, color: dl.ink)),
+                  ),
+                ],
+              ),
+              if (cat != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 36),
+                  child: Row(
+                    children: [
+                      Icon(cat.icon, size: 15, color: color),
+                      const SizedBox(width: 6),
+                      Text(noteCatName(l, live.noteCategory),
+                          style:
+                              TextStyle(fontSize: 13, color: dl.inkSoft)),
+                      if (meta.isNotEmpty)
+                        Text('  ·  ${meta.join(' · ')}',
+                            style:
+                                TextStyle(fontSize: 13, color: dl.inkSoft)),
+                    ],
+                  ),
+                ),
+              if (live.note.trim().isNotEmpty) ...[
+                const SizedBox(height: 18),
+                Text(live.note.trim(),
+                    style: TextStyle(
+                        fontSize: 15, height: 1.4, color: dl.inkSoft)),
+              ],
+              const SizedBox(height: 14),
+              SubtaskChecklist(taskId: live.id!),
+              if (links.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                for (final ln in links)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      children: [
+                        Icon(Icons.link_rounded, size: 15, color: dl.inkFaint),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(ln.trim(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 13, color: dl.inkFaint)),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }
