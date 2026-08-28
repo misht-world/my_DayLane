@@ -116,6 +116,10 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
   /// вставляли копию.
   int? _savedId;
 
+  /// Цепочка сохранений: следующее ждёт предыдущее (которое проставит id),
+  /// иначе авто-сохранение и «Готово» могут вставить две строки нового дела.
+  Future<int>? _saveChain;
+
   /// Снимок загруженных подпунктов — чтобы понять, было ли реальное изменение.
   List<(String, bool)> _loadedSubs = const [];
 
@@ -1256,22 +1260,33 @@ class _TaskEditorScreenState extends ConsumerState<TaskEditorScreen> {
 
   /// Собственно сохранение. Все чтения контроллеров — синхронно (до await),
   /// поэтому безопасно вызывать даже при закрытии карточки. Возвращает id.
-  Future<int> _doSave() async {
-    final repo = ref.read(repositoryProvider);
-    final model = _currentModel();
-    final subs = [
-      for (final s in _subs)
-        if (s.controller.text.trim().isNotEmpty)
-          SubtaskModel(
-            taskId: model.id ?? 0,
-            title: s.controller.text.trim(),
-            isDone: s.isDone,
-          ),
-    ];
-    final id = await repo.saveTask(model, subtasks: subs);
-    // Запоминаем id — следующее авто-сохранение обновит ту же строку.
-    _savedId = id;
-    return id;
+  Future<int> _doSave() {
+    final prev = _saveChain;
+    final f = Future(() async {
+      // Ждём предыдущее сохранение — оно проставит _savedId, и мы обновим ту же
+      // строку, а не вставим дубль.
+      if (prev != null) {
+        try {
+          await prev;
+        } catch (_) {}
+      }
+      final repo = ref.read(repositoryProvider);
+      final model = _currentModel(); // читает свежий _savedId
+      final subs = [
+        for (final s in _subs)
+          if (s.controller.text.trim().isNotEmpty)
+            SubtaskModel(
+              taskId: model.id ?? 0,
+              title: s.controller.text.trim(),
+              isDone: s.isDone,
+            ),
+      ];
+      final id = await repo.saveTask(model, subtasks: subs);
+      _savedId = id;
+      return id;
+    });
+    _saveChain = f;
+    return f;
   }
 
   /// Авто-сохранение при закрытии/свайпе назад: пустое (без заголовка) —

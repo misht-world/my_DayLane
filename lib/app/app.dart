@@ -41,6 +41,8 @@ class _DayLaneAppState extends ConsumerState<DayLaneApp> {
           if (kDebugMode) {
             await seedIfEmpty(ref.read(databaseProvider), repo);
           }
+          // Схлопываем возможные дубли по syncUid (баг двойной вставки).
+          await ref.read(databaseProvider).dedupeBySyncUid();
           await repo.runStartupMaintenance(autoCarry: s.autoCarry);
         });
       }

@@ -4,6 +4,16 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.18.3] — 2026-08-27
+
+### Fixed
+- **No more duplicate rows when creating a task/note on desktop.** The panel's
+  autosave and pressing "Done" could each insert the new item before the first
+  save had assigned its row id, producing two local rows with the same sync id
+  (they collapsed to one on the phone after sync). Saves are now serialized;
+  applying a remote update and app startup also de-duplicate any existing
+  same-sync-id rows.
+
 ## [1.18.2] — 2026-08-27
 
 ### Fixed

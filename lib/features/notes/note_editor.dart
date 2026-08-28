@@ -72,6 +72,10 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   late final String _syncUid;
   int? _savedId;
 
+  /// Цепочка сохранений (см. редактор дел) — чтобы авто-сохранение и «Готово»
+  /// не вставили две строки новой заметки.
+  Future<int>? _saveChain;
+
   /// Снимок загруженных подпунктов — чтобы не сохранять без реальных изменений
   /// (иначе «пустое» сохранение затрёт правку с другого устройства при синке).
   List<(String, bool)> _loadedSubs = const [];
@@ -434,20 +438,30 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     );
   }
 
-  Future<int> _doSave() async {
-    final repo = ref.read(repositoryProvider);
-    final subs = [
-      for (final s in _subs)
-        if (s.controller.text.trim().isNotEmpty)
-          SubtaskModel(
-            taskId: _savedId ?? 0,
-            title: s.controller.text.trim(),
-            isDone: s.isDone,
-          ),
-    ];
-    final id = await repo.saveTask(_model(), subtasks: subs);
-    _savedId = id;
-    return id;
+  Future<int> _doSave() {
+    final prev = _saveChain;
+    final f = Future(() async {
+      if (prev != null) {
+        try {
+          await prev;
+        } catch (_) {}
+      }
+      final repo = ref.read(repositoryProvider);
+      final subs = [
+        for (final s in _subs)
+          if (s.controller.text.trim().isNotEmpty)
+            SubtaskModel(
+              taskId: _savedId ?? 0,
+              title: s.controller.text.trim(),
+              isDone: s.isDone,
+            ),
+      ];
+      final id = await repo.saveTask(_model(), subtasks: subs);
+      _savedId = id;
+      return id;
+    });
+    _saveChain = f;
+    return f;
   }
 
   /// Реальные ли изменения относительно загруженной заметки (см. пояснение в

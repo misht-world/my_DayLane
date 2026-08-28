@@ -120,6 +120,16 @@ void main() {
     expect(await _rowCount(phone), 2);
   });
 
+  test('dedupeBySyncUid оставляет самую свежую строку', () async {
+    await _insert(desktop, _t('X old', 'dup', updated: DateTime(2026, 1, 1)));
+    await _insert(desktop, _t('X new', 'dup', updated: DateTime(2026, 1, 5)));
+    expect(await _rowCount(desktop), 2);
+    await desktop.dedupeBySyncUid();
+    final rows = await desktop.select(desktop.tasks).get();
+    expect(rows.length, 1);
+    expect(rows.single.title, 'X new');
+  });
+
   test('удаление на ПК доезжает как надгробие', () async {
     await _insert(desktop, _t('X', 'x1'));
     await ds.syncOnce(store);

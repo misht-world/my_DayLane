@@ -382,9 +382,15 @@ class AppDatabase extends _$AppDatabase {
   Future<void> applyRemoteAggregate(TaskAggregate a) async {
     if (a.uid.isEmpty) return;
     await transaction(() async {
-      final existing = await (select(tasks)
+      final rows = await (select(tasks)
             ..where((t) => t.syncUid.equals(a.uid)))
-          .getSingleOrNull();
+          .get();
+      // Самоисцеление: если по одному syncUid оказалось несколько строк
+      // (баг двойной вставки), оставляем первую, лишние удаляем.
+      for (final extra in rows.skip(1)) {
+        await (delete(tasks)..where((t) => t.id.equals(extra.id))).go();
+      }
+      final existing = rows.isEmpty ? null : rows.first;
       final int taskId;
       if (existing == null) {
         taskId = await into(tasks).insert(a.task.toCompanion());
@@ -413,6 +419,23 @@ class AppDatabase extends _$AppDatabase {
       }
       await removeTombstone(a.uid);
     });
+  }
+
+  /// Убирает дубли по `syncUid` (оставляет самую свежую по `updatedAt` строку,
+  /// лишние удаляет каскадом). Самоисцеление от бага двойной вставки.
+  Future<void> dedupeBySyncUid() async {
+    final rows = await select(tasks).get();
+    final byUid = <String, List<TaskRow>>{};
+    for (final r in rows) {
+      if (r.syncUid.isNotEmpty) (byUid[r.syncUid] ??= []).add(r);
+    }
+    for (final group in byUid.values) {
+      if (group.length < 2) continue;
+      group.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+      for (final extra in group.skip(1)) {
+        await (delete(tasks)..where((t) => t.id.equals(extra.id))).go();
+      }
+    }
   }
 
   /// Удаляет дело по `syncUid` (дети — каскадом) и ставит надгробие с меткой
