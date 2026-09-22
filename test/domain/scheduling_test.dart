@@ -89,6 +89,38 @@ void main() {
       expect(buildSections(tasks, now).today.map((t) => t.id), [1]);
     });
 
+    group('перенос повторения', () {
+      final t = task(
+          id: 1, start: d(2026, 6, 5), recurrenceType: RecurrenceType.months);
+      final today = d(2026, 6, 20); // вхождение 5-го пропущено
+
+      test('пропущенное вхождение переносится на сегодня', () {
+        final s = buildSections([t], today, isDoneOn: (_, _) => false);
+        expect(s.today.map((x) => x.id), [1]);
+        expect(overdueRecurrenceDue(t, today, (_, _) => false), d(2026, 6, 5));
+      });
+
+      test('выполненное вхождение не переносится', () {
+        final s = buildSections([t], today,
+            isDoneOn: (_, day) => day == d(2026, 6, 5));
+        expect(s.today, isEmpty);
+      });
+
+      test('в свой день — как обычно, без переноса-дубля', () {
+        final s = buildSections([t], d(2026, 6, 5), isDoneOn: (_, _) => false);
+        expect(s.today.map((x) => x.id), [1]);
+      });
+
+      test('отложенное повторение не переносится', () {
+        final defTask = task(
+                id: 2,
+                start: d(2026, 6, 5),
+                recurrenceType: RecurrenceType.months)
+            .copyWith(deferred: true);
+        expect(overdueRecurrenceDue(defTask, today, (_, _) => false), isNull);
+      });
+    });
+
     test('сортировка по времени дня, без времени — в конце', () {
       final tasks = [
         task(id: 1, start: now, timeOfDayMinutes: null),

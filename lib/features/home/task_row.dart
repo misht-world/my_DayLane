@@ -47,9 +47,17 @@ class _TaskRowState extends ConsumerState<TaskRow> {
     final color = context.taskColor(t);
     final today = ref.watch(todayProvider);
     final dones = ref.watch(donesMapProvider);
-    final done = isTaskDoneOn(dones, t, widget.day);
+    // Перенесённое повторение: строка показана в widget.day, но его вхождение —
+    // раньше. Статус и отметку берём по ИСХОДНОЙ дате вхождения, чтобы отметка
+    // «возвращалась» на исходный день.
+    final effDay = (t.isRecurring && !occursOn(t, widget.day))
+        ? (overdueRecurrenceDue(
+                t, today, (task, d) => isTaskDoneOn(dones, task, d)) ??
+            widget.day)
+        : widget.day;
+    final done = isTaskDoneOn(dones, t, effDay);
     final overdue = t.isRecurring
-        ? (!done && dateOnly(widget.day).isBefore(today))
+        ? (!done && dateOnly(effDay).isBefore(today))
         : isOverdue(t, today);
     final progress = ref.watch(subtaskProgressProvider)[t.id] ?? (0, 0);
     final hasSubs = progress.$2 > 0;
@@ -94,7 +102,7 @@ class _TaskRowState extends ConsumerState<TaskRow> {
                   onTap: () {
                     final repo = ref.read(repositoryProvider);
                     if (t.isRecurring) {
-                      repo.toggleOccurrence(t, widget.day, !done);
+                      repo.toggleOccurrence(t, effDay, !done);
                     } else {
                       repo.toggleDone(t);
                     }

@@ -4,6 +4,23 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.20.0] — 2026-09-22
+
+### Added
+- **Carry-over for recurring tasks.** An unfinished recurring occurrence (e.g.
+  a monthly payment missed on its day) now stays under **Today** until you tick
+  it — shown in red / with ⏳ — instead of disappearing the next day. Ticking it
+  records completion on the original occurrence day, so it "returns" there. The
+  morning Telegram digest reflects the same.
+
+### Fixed
+- **No duplicate task/note when creating on desktop.** Creating an item and
+  pressing "Done" could insert it twice (two rows with the same sync id) when a
+  save's side effect (e.g. the notification scheduler on Windows) failed before
+  the new row id was remembered. Saving is now idempotent by sync id and no
+  longer breaks on notification errors; existing duplicates still self-heal on
+  next launch.
+
 ## [1.19.0] — 2026-08-28
 
 ### Added

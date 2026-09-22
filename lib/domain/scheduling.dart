@@ -16,6 +16,33 @@ bool isPresentOn(TaskModel t, DateTime day) {
 /// Номер дня периода в дне [day] (1-based). Для single всегда 1.
 int dayNumberOf(TaskModel t, DateTime day) => daysBetween(t.startDate, day) + 1;
 
+/// Последнее вхождение повторяющегося дела на дату [today] или раньше (или null).
+DateTime? latestOccurrenceOnOrBefore(TaskModel t, DateTime today) {
+  if (!t.isRecurring) return null;
+  final start = dateOnly(t.startDate);
+  var d = dateOnly(today);
+  if (d.isBefore(start)) return null;
+  for (var i = 0; i < 3700; i++) {
+    if (occursOn(t, d)) return d;
+    final prev = addDays(d, -1);
+    if (prev.isBefore(start)) return null;
+    d = prev;
+  }
+  return null;
+}
+
+/// «Активное» невыполненное вхождение повторяющегося дела: последнее вхождение
+/// на сегодня-или-раньше, если оно ещё не отмечено выполненным. Возвращается
+/// дата этого вхождения (может быть раньше сегодня — тогда дело «переносится»
+/// на сегодня, пока не отметят; отметка ставится на эту исходную дату).
+DateTime? overdueRecurrenceDue(
+    TaskModel t, DateTime today, bool Function(TaskModel, DateTime) isDoneOn) {
+  if (!t.isRecurring || t.deferred) return null;
+  final d = latestOccurrenceOnOrBefore(t, today);
+  if (d == null || isDoneOn(t, d)) return null;
+  return d;
+}
+
 /// Дело просрочено: не выполнено и его конец строго раньше сегодня.
 /// Для повторяющихся просрочка считается по конкретному вхождению в UI.
 bool isOverdue(TaskModel t, DateTime today) =>
@@ -75,7 +102,14 @@ DaySections buildSections(
 
   for (final task in tasks) {
     if (isPresentOn(task, yesterday) && !doneOn(task, yesterday)) y.add(task);
-    if (isPresentOn(task, today)) t.add(task);
+    if (isPresentOn(task, today)) {
+      t.add(task);
+    } else {
+      // Просроченное невыполненное повторение переносится на сегодня, пока не
+      // отметят (напр. ежемесячная оплата, пропущенная в свой день).
+      final due = overdueRecurrenceDue(task, today, doneOn);
+      if (due != null && due.isBefore(today)) t.add(task);
+    }
     if (isPresentOn(task, tomorrow)) tm.add(task);
   }
 

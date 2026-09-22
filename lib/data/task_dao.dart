@@ -24,6 +24,18 @@ class TaskDao extends DatabaseAccessor<AppDatabase> with _$TaskDaoMixin {
   Future<int> insertTask(TaskModel task) =>
       into(tasks).insert(task.toCompanion());
 
+  /// id существующего дела по стабильному `syncUid` (или null). Нужно для
+  /// идемпотентного сохранения: повторное сохранение нового дела не должно
+  /// вставлять дубль, даже если локальный id ещё не был запомнен.
+  Future<int?> idBySyncUid(String syncUid) async {
+    if (syncUid.isEmpty) return null;
+    return (select(tasks)
+          ..where((t) => t.syncUid.equals(syncUid))
+          ..limit(1))
+        .map((t) => t.id)
+        .getSingleOrNull();
+  }
+
   Future<void> updateTask(TaskModel task) =>
       update(tasks).replace(task.toCompanion());
 

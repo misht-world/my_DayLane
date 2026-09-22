@@ -39,12 +39,19 @@ class TaskRepository {
       syncUid: task.syncUid.isEmpty ? const Uuid().v4() : task.syncUid,
     );
 
+    // Идемпотентность по syncUid: если id не задан, но дело с таким syncUid уже
+    // есть — обновляем его, а не вставляем дубль. Защищает от повторного
+    // сохранения нового дела (напр., если предыдущее сохранение не успело
+    // запомнить id из-за исключения в побочных шагах).
+    var existingId = toSave.id;
+    existingId ??= await _tasks.idBySyncUid(toSave.syncUid);
+
     final int id;
-    if (toSave.id == null) {
+    if (existingId == null) {
       id = await _tasks.insertTask(toSave);
     } else {
-      id = toSave.id!;
-      await _tasks.updateTask(toSave);
+      id = existingId;
+      await _tasks.updateTask(toSave.copyWith(id: existingId));
     }
 
     if (subtasks != null) {
@@ -60,7 +67,12 @@ class TaskRepository {
       }
     }
 
-    await _recomputeAndSync(touchedIds: {id});
+    // Каскад дат и пере-планирование напоминаний — побочный эффект; его сбой
+    // (напр., ошибка планировщика уведомлений на десктопе) НЕ должен ронять
+    // сохранение и терять уже присвоенный id.
+    try {
+      await _recomputeAndSync(touchedIds: {id});
+    } catch (_) {}
     return id;
   }
 
