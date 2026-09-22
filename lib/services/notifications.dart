@@ -91,22 +91,28 @@ class NotificationService {
       );
 
   /// Пере-планирует напоминания для дела (сперва отменяет старые).
+  /// Любой сбой платформы уведомлений НЕ должен ронять сохранение/удаление дела
+  /// (напр. на десктопе плагин может быть недоступен) — глотаем ошибки.
   Future<void> reschedule(TaskModel task) async {
-    await init();
-    await cancelForTask(task.id);
-    if (task.id == null || !task.reminderEnabled || task.isDone ||
-        task.deferred) {
-      return;
-    }
+    try {
+      await init();
+      await cancelForTask(task.id);
+      if (task.id == null || !task.reminderEnabled || task.isDone ||
+          task.deferred) {
+        return;
+      }
 
-    final base = _baseId(task.id!);
-    final dates = _reminderDates(task);
-    for (var i = 0; i < dates.length && i < _slotsPerTask; i++) {
-      // Сдвиг «за N дней до».
-      final fireDate = addDays(dates[i], -task.reminderDaysBefore);
-      final when = _atTime(fireDate, task.reminderMinutes);
-      if (when.isBefore(tz.TZDateTime.now(tz.local))) continue;
-      await _scheduleAt(base + i, task.title, _body(task, dates[i]), when);
+      final base = _baseId(task.id!);
+      final dates = _reminderDates(task);
+      for (var i = 0; i < dates.length && i < _slotsPerTask; i++) {
+        // Сдвиг «за N дней до».
+        final fireDate = addDays(dates[i], -task.reminderDaysBefore);
+        final when = _atTime(fireDate, task.reminderMinutes);
+        if (when.isBefore(tz.TZDateTime.now(tz.local))) continue;
+        await _scheduleAt(base + i, task.title, _body(task, dates[i]), when);
+      }
+    } catch (_) {
+      /* Уведомления недоступны — задача всё равно сохраняется/удаляется. */
     }
   }
 
@@ -136,10 +142,14 @@ class NotificationService {
 
   Future<void> cancelForTask(int? taskId) async {
     if (taskId == null) return;
-    await init();
-    final base = _baseId(taskId);
-    for (var i = 0; i < _slotsPerTask; i++) {
-      await _plugin.cancel(id: base + i);
+    try {
+      await init();
+      final base = _baseId(taskId);
+      for (var i = 0; i < _slotsPerTask; i++) {
+        await _plugin.cancel(id: base + i);
+      }
+    } catch (_) {
+      /* Плагин недоступен (напр. десктоп) — не роняем операцию с делом. */
     }
   }
 

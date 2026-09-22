@@ -4,6 +4,14 @@ All notable changes to DayLane. Format based on
 [Keep a Changelog](https://keepachangelog.com/), versioning by
 [SemVer](https://semver.org/).
 
+## [1.20.1] — 2026-09-22
+
+### Fixed
+- **Deleting a task did nothing on desktop.** Clearing the task's reminders
+  could throw on desktop and abort the delete before the row was removed, so the
+  task stayed. Notification operations are now non-fatal, so delete (and every
+  other task action) always completes.
+
 ## [1.20.0] — 2026-09-22
 
 ### Added
